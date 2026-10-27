@@ -149,7 +149,7 @@ class MainActivity : Activity() {
         val modelInput = EditText(this).apply {
             hint = "OpenRouter model ID, e.g. nvidia/nemotron-3-ultra-550b-a55b:free"
             setSingleLine(true)
-            setText(prefs.getString("model", "") ?: "")
+            setText(prefs.getString("model", "nvidia/nemotron-3-ultra-550b-a55b:free") ?: "nvidia/nemotron-3-ultra-550b-a55b:free")
         }
         val keyInput = EditText(this).apply {
             hint = if (getApiKey().isNullOrBlank()) "Paste OpenRouter API key" else "API key saved securely; enter replacement"
