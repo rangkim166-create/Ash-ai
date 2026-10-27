@@ -7,6 +7,7 @@ import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
+import android.content.Intent
 import android.app.DownloadManager
 import android.net.Uri
 import android.os.Environment
@@ -20,6 +21,11 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import android.speech.RecognizerIntent
+import android.speech.tts.TextToSpeech
+import java.util.Locale
+import android.provider.Settings
+import android.text.InputType
 import android.app.AlertDialog
 import org.json.JSONArray
 import org.json.JSONObject
@@ -41,11 +47,16 @@ class MainActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("ash_jarvis", Context.MODE_PRIVATE) }
     private val history = JSONArray()
     private val keyAlias = "ash_jarvis_api_key"
+    private var tts: TextToSpeech? = null
+    private val speechRequestCode = 7124
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(10, 15, 28)
         window.navigationBarColor = Color.rgb(10, 15, 28)
+        tts = TextToSpeech(this) { status ->
+            if (status == TextToSpeech.SUCCESS) tts?.language = Locale.getDefault()
+        }
         buildUi()
         restoreHistory()
         if (history.length() == 0) addMessage("Ash Jarvis", "Welcome. Set up your OpenRouter API key and model to start real AI chat.")
@@ -68,6 +79,7 @@ class MainActivity : Activity() {
         titleRow.addView(title, LinearLayout.LayoutParams(0, -2, 1f))
         titleRow.addView(Button(this).apply { text = "AI SETUP"; setOnClickListener { showAiSetup() } })
         titleRow.addView(Button(this).apply { text = "DOLPHIN"; setOnClickListener { confirmDolphinDownload() } })
+        titleRow.addView(Button(this).apply { text = "PHONE"; setOnClickListener { showPhoneTools() } })
         val subtitle = TextView(this).apply {
             text = "UNIVERSAL ANDROID AI  •  PRIVATE LOCAL CHAT HISTORY"
             textSize = 10f
@@ -89,6 +101,7 @@ class MainActivity : Activity() {
             backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(65, 140, 190))
         }
         row.addView(input, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        row.addView(Button(this).apply { text = "🎙"; contentDescription = "Speak to Ash"; setOnClickListener { startVoiceInput() } })
         row.addView(Button(this).apply { text = "SEND"; setOnClickListener { sendMessage() } })
         footer = TextView(this).apply {
             textSize = 11f
@@ -103,6 +116,80 @@ class MainActivity : Activity() {
         setContentView(root)
     }
 
+    private fun startVoiceInput() {
+        try {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PROMPT, "Talk to Ash Jarvis")
+            }
+            startActivityForResult(intent, speechRequestCode)
+        } catch (_: Exception) {
+            Toast.makeText(this, "Speech recognition isn't available on this phone", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    @Deprecated("Deprecated in Android API; retained for broad device compatibility")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == speechRequestCode && resultCode == RESULT_OK) {
+            val spoken = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spoken.isNullOrBlank()) {
+                input.setText(spoken)
+                input.setSelection(input.text.length)
+                sendMessage()
+            }
+        }
+    }
+
+    private fun showPhoneTools() {
+        val options = arrayOf("Enable screen reading / tapping", "Read last captured screen aloud", "Tap a visible item by its text", "Type a reply into focused field")
+        AlertDialog.Builder(this)
+            .setTitle("Ash phone tools")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> AlertDialog.Builder(this)
+                        .setTitle("Enable Ash screen control")
+                        .setMessage("Android requires you to enable Ash Jarvis Screen Control manually. This permission lets Ash read visible text and perform actions you request. Only enable it if you trust this app.")
+                        .setNegativeButton("CANCEL", null)
+                        .setPositiveButton("OPEN SETTINGS") { _, _ ->
+                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                        }.show()
+                    1 -> {
+                        val screen = prefs.getString(AshAccessibilityService.KEY_SCREEN, null)
+                        if (screen.isNullOrBlank()) {
+                            Toast.makeText(this, "No screen text captured yet. Enable Ash accessibility, open the target app, then return here.", Toast.LENGTH_LONG).show()
+                        } else {
+                            AlertDialog.Builder(this).setTitle("Last captured screen")
+                                .setMessage(screen.take(9000))
+                                .setPositiveButton("SPEAK") { _, _ -> tts?.speak(screen.take(3500), TextToSpeech.QUEUE_FLUSH, null, "ash-screen") }
+                                .setNegativeButton("CLOSE", null).show()
+                        }
+                    }
+                    2 -> {
+                        val field = EditText(this).apply { hint = "Exact visible text to tap"; setSingleLine(true) }
+                        AlertDialog.Builder(this).setTitle("Tap screen item")
+                            .setMessage("This sends a tap to the currently active app. Check the target carefully before confirming.")
+                            .setView(field).setNegativeButton("CANCEL", null)
+                            .setPositiveButton("TAP") { _, _ ->
+                                val target = field.text.toString().trim()
+                                if (target.isNotBlank()) sendBroadcast(Intent(AshAccessibilityService.ACTION_TAP_TEXT).setPackage(packageName).putExtra(AshAccessibilityService.EXTRA_TEXT, target))
+                            }.show()
+                    }
+                    3 -> {
+                        val field = EditText(this).apply { hint = "Text to insert"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }
+                        AlertDialog.Builder(this).setTitle("Type into focused field")
+                            .setMessage("First switch to the target app and focus its message box. Then return to Ash and use this tool. This inserts text only; it does not send the message.")
+                            .setView(field).setNegativeButton("CANCEL", null)
+                            .setPositiveButton("INSERT") { _, _ ->
+                                val value = field.text.toString()
+                                if (value.isNotBlank()) sendBroadcast(Intent(AshAccessibilityService.ACTION_TYPE_TEXT).setPackage(packageName).putExtra(AshAccessibilityService.EXTRA_TEXT, value))
+                            }.show()
+                    }
+                }
+            }.show()
+    }
+
     private fun updateStatus() {
         footer.text = if (getApiKey().isNullOrBlank()) {
             "AI engine: not configured • Tap AI SETUP"
@@ -111,7 +198,7 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun confirmDolphinDownload() {
+    override fun onDestroy() {\n        tts?.stop()\n        tts?.shutdown()\n        super.onDestroy()\n    }\n\n    private fun confirmDolphinDownload() {
         AlertDialog.Builder(this)
             .setTitle("Download Dolphin 2.9 • Llama 3 8B")
             .setMessage("This offline model file (Q4_K_M) is about 4.9 GB. It will be saved to Downloads/AshJarvis on your phone. This can use several GB of mobile data and storage. The app still needs its local inference engine integrated before this file can answer chats. Wi-Fi and at least 7 GB free space are strongly recommended. Continue?")
@@ -209,6 +296,7 @@ class MainActivity : Activity() {
                 val answer = callOpenRouter(text)
                 runOnUiThread {
                     addMessage("Ash Jarvis", answer)
+                    tts?.speak(answer.take(3500), TextToSpeech.QUEUE_FLUSH, null, "ash-reply")
                     updateStatus()
                 }
             } catch (e: Exception) {
