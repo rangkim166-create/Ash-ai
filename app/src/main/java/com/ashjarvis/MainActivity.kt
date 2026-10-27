@@ -40,7 +40,7 @@ class MainActivity : Activity() {
     private lateinit var footer: TextView
     private val prefs by lazy { getSharedPreferences("ash_jarvis", Context.MODE_PRIVATE) }
     private val history = JSONArray()
-    private val keyAlias = "ash_jarvis_ollama_key"
+    private val keyAlias = "ash_jarvis_api_key"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,7 +48,7 @@ class MainActivity : Activity() {
         window.navigationBarColor = Color.rgb(10, 15, 28)
         buildUi()
         restoreHistory()
-        if (history.length() == 0) addMessage("Ash Jarvis", "Welcome. Set up your Ollama Cloud API and model to start real AI chat.")
+        if (history.length() == 0) addMessage("Ash Jarvis", "Welcome. Set up your OpenRouter API key and model to start real AI chat.")
         updateStatus()
     }
 
@@ -107,7 +107,7 @@ class MainActivity : Activity() {
         footer.text = if (getApiKey().isNullOrBlank()) {
             "AI engine: not configured • Tap AI SETUP"
         } else {
-            "Ollama Cloud: configured • Model: " + (prefs.getString("model", "") ?: "")
+            "OpenRouter: configured • Model: " + (prefs.getString("model", "") ?: "")
         }
     }
 
@@ -147,20 +147,20 @@ class MainActivity : Activity() {
             setPadding(24, 12, 24, 4)
         }
         val modelInput = EditText(this).apply {
-            hint = "Exact cloud API model ID, e.g. gemma4:31b"
+            hint = "OpenRouter model ID, e.g. nvidia/nemotron-3-ultra-550b-a55b:free"
             setSingleLine(true)
             setText(prefs.getString("model", "") ?: "")
         }
         val keyInput = EditText(this).apply {
-            hint = if (getApiKey().isNullOrBlank()) "Paste NEW Ollama API key" else "API key saved securely; enter replacement"
+            hint = if (getApiKey().isNullOrBlank()) "Paste OpenRouter API key" else "API key saved securely; enter replacement"
             inputType = 129
             setSingleLine(true)
         }
         panel.addView(modelInput)
         panel.addView(keyInput)
         AlertDialog.Builder(this)
-            .setTitle("Connect Ollama Cloud")
-            .setMessage("Use the exact cloud API model ID from Ollama, e.g. gemma4:31b (not your key name such as “Ash ai”). Your key is encrypted with Android Keystore on this device; it is not written into source code.")
+            .setTitle("Connect OpenRouter")
+            .setMessage("Use an exact OpenRouter model ID. Recommended: nvidia/nemotron-3-ultra-550b-a55b:free. Create a key at openrouter.ai/settings/keys. Your key is encrypted with Android Keystore on this device; it is not written into source code.")
             .setView(panel)
             .setNegativeButton("CANCEL", null)
             .setNeutralButton("CLEAR KEY") { _, _ ->
@@ -206,14 +206,14 @@ class MainActivity : Activity() {
         addMessage("You", text)
         thread {
             try {
-                val answer = callOllama(text)
+                val answer = callOpenRouter(text)
                 runOnUiThread {
                     addMessage("Ash Jarvis", answer)
                     updateStatus()
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    addMessage("Ash Jarvis", "I couldn't reach Ollama: " + (e.message ?: "connection error") + ". Check your internet, API key, model name and account access.")
+                    addMessage("Ash Jarvis", "I couldn't reach OpenRouter: " + (e.message ?: "connection error") + ". Check your internet, API key, model ID and free-model availability.")
                     updateStatus()
                 }
             }
@@ -221,34 +221,36 @@ class MainActivity : Activity() {
     }
 
     private fun testConnection() {
-        footer.text = "Testing Ollama connection…"
+        footer.text = "Testing OpenRouter connection…"
         thread {
             try {
-                val answer = callOllama("Reply with exactly: Ash Jarvis connected")
+                val answer = callOpenRouter("Reply with exactly: Ash Jarvis connected")
                 runOnUiThread {
                     addMessage("Ash Jarvis", answer)
                     updateStatus()
-                    Toast.makeText(this, "Ollama responded successfully", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "OpenRouter responded successfully", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
                 runOnUiThread {
-                    footer.text = "Ollama test failed • Check model, key and internet"
-                    addMessage("Ash Jarvis", "Connection test failed: " + (e.message ?: "unknown error") + ". Verify the model name in the Ollama model library and confirm your API key has access.")
+                    footer.text = "OpenRouter test failed • Check model, key and internet"
+                    addMessage("Ash Jarvis", "Connection test failed: " + (e.message ?: "unknown error") + ". Verify the OpenRouter model ID and confirm your API key has access.")
                 }
             }
         }
     }
 
-    private fun callOllama(userText: String): String {
+    private fun callOpenRouter(userText: String): String {
         val key = getApiKey() ?: throw IllegalStateException("API key missing")
         val model = prefs.getString("model", "")?.trim().orEmpty()
         if (model.isBlank()) throw IllegalStateException("model name missing")
-        val connection = (URL("https://ollama.com/api/chat").openConnection() as HttpURLConnection)
+        val connection = (URL("https://openrouter.ai/api/v1/chat/completions").openConnection() as HttpURLConnection)
         connection.requestMethod = "POST"
         connection.connectTimeout = 20000
-        connection.readTimeout = 60000
+        connection.readTimeout = 90000
         connection.setRequestProperty("Authorization", "Bearer $key")
         connection.setRequestProperty("Content-Type", "application/json")
+        connection.setRequestProperty("HTTP-Referer", "https://github.com/rangkim166-create/Ash-ai")
+        connection.setRequestProperty("X-OpenRouter-Title", "Ash Jarvis")
         connection.doOutput = true
         val recent = JSONArray()
         recent.put(JSONObject().put("role", "system").put("content", "You are Ash Jarvis, a helpful general-purpose AI assistant. Be honest, clear, and safety-conscious."))
@@ -260,30 +262,36 @@ class MainActivity : Activity() {
             if (content.isBlank() || sender == "Ash Jarvis" && content.startsWith("Welcome.")) continue
             recent.put(JSONObject().put("role", if (sender == "You") "user" else "assistant").put("content", content.take(3000)))
         }
-        // The current user message is already in history; don't send it twice.
+        // The current user message is already in local history; don't send it twice.
         val payload = JSONObject()
             .put("model", model)
             .put("messages", recent)
             .put("stream", false)
+            .put("max_tokens", 1200)
         try {
             OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(payload.toString()) }
             val code = connection.responseCode
             val stream = if (code in 200..299) connection.inputStream else connection.errorStream
             val responseText = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
             if (code !in 200..299) {
-                val detail = try { JSONObject(responseText).optString("error", responseText) } catch (_: Exception) { responseText }
+                val detail = try {
+                    val err = JSONObject(responseText).opt("error")
+                    if (err is JSONObject) err.optString("message", err.toString()) else err?.toString() ?: responseText
+                } catch (_: Exception) { responseText }
                 val hint = when (code) {
-                    401 -> " API key was rejected. Create a fresh key in Ollama and replace the saved key."
-                    402 -> " This model or cloud usage may require an eligible plan or usage credits."
-                    403 -> " Ollama returned Forbidden. Check account access/status and use a cloud API model ID such as gemma4:31b, not the API-key label."
-                    404 -> " Model not found. Use an exact model ID listed by Ollama's cloud API."
+                    401 -> " OpenRouter rejected the API key. Create a new key and replace the saved key."
+                    402 -> " The request may require credits or a paid model; confirm the selected model is marked Free."
+                    403 -> " OpenRouter denied access. Check account/key access and the selected provider's terms."
+                    404 -> " Model not found. Use the exact model slug shown on OpenRouter."
+                    429 -> " Free-model rate limit reached or provider is busy. Wait and retry, or choose another free model."
                     else -> ""
                 }
                 throw IllegalStateException("HTTP $code: " + detail.take(240) + hint)
             }
             val json = JSONObject(responseText)
-            return json.optJSONObject("message")?.optString("content")
-                ?.takeIf { it.isNotBlank() } ?: throw IllegalStateException("Ollama returned no answer")
+            return json.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")
+                ?.optString("content")?.takeIf { it.isNotBlank() }
+                ?: throw IllegalStateException("OpenRouter returned no answer")
         } finally {
             connection.disconnect()
         }
