@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Ash Jarvis</string>
+    <string name="ash_accessibility_description">Allows Ash Jarvis to describe visible screen text and perform actions you explicitly request.</string>
+</resources>
