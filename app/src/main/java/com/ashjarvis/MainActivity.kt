@@ -7,6 +7,9 @@ import android.view.Gravity
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
+import android.app.DownloadManager
+import android.net.Uri
+import android.os.Environment
 import android.content.DialogInterface
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -64,6 +67,7 @@ class MainActivity : Activity() {
         }
         titleRow.addView(title, LinearLayout.LayoutParams(0, -2, 1f))
         titleRow.addView(Button(this).apply { text = "AI SETUP"; setOnClickListener { showAiSetup() } })
+        titleRow.addView(Button(this).apply { text = "DOLPHIN"; setOnClickListener { confirmDolphinDownload() } })
         val subtitle = TextView(this).apply {
             text = "UNIVERSAL ANDROID AI  •  PRIVATE LOCAL CHAT HISTORY"
             textSize = 10f
@@ -104,6 +108,36 @@ class MainActivity : Activity() {
             "AI engine: not configured • Tap AI SETUP"
         } else {
             "Ollama Cloud: configured • Model: " + (prefs.getString("model", "") ?: "")
+        }
+    }
+
+    private fun confirmDolphinDownload() {
+        AlertDialog.Builder(this)
+            .setTitle("Download Dolphin 2.9 • Llama 3 8B")
+            .setMessage("This offline model file (Q4_K_M) is about 4.9 GB. It will be saved to Downloads/AshJarvis on your phone. This can use several GB of mobile data and storage. The app still needs its local inference engine integrated before this file can answer chats. Wi-Fi and at least 7 GB free space are strongly recommended. Continue?")
+            .setNegativeButton("NOT NOW", null)
+            .setPositiveButton("DOWNLOAD") { _, _ -> startDolphinDownload() }
+            .show()
+    }
+
+    private fun startDolphinDownload() {
+        try {
+            val fileName = "dolphin-2.9-llama3-8b-Q4_K_M.gguf"
+            val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            val request = DownloadManager.Request(
+                Uri.parse("https://huggingface.co/bartowski/dolphin-2.9-llama3-8b-GGUF/resolve/main/dolphin-2.9-llama3-8b-Q4_K_M.gguf?download=true")
+            )
+                .setTitle("Ash Jarvis • Dolphin 2.9")
+                .setDescription("Downloading offline model (~4.9 GB) to Downloads/AshJarvis")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setAllowedOverMetered(false)
+                .setAllowedOverRoaming(false)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + fileName)
+            val id = manager.enqueue(request)
+            prefs.edit().putLong("dolphin_download_id", id).apply()
+            Toast.makeText(this, "Dolphin download queued. Wi-Fi is required; check the download notification.", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Could not start download: " + (e.message ?: "unknown error"), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -166,10 +200,10 @@ class MainActivity : Activity() {
             showAiSetup()
             return
         }
-        addMessage("You", text)
         input.setText("")
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(input.windowToken, 0)
         footer.text = "Ash is thinking…"
+        addMessage("You", text)
         thread {
             try {
                 val answer = callOllama(text)
@@ -226,7 +260,7 @@ class MainActivity : Activity() {
             if (content.isBlank() || sender == "Ash Jarvis" && content.startsWith("Welcome.")) continue
             recent.put(JSONObject().put("role", if (sender == "You") "user" else "assistant").put("content", content.take(3000)))
         }
-        recent.put(JSONObject().put("role", "user").put("content", userText))
+        // The current user message is already in history; don't send it twice.
         val payload = JSONObject()
             .put("model", model)
             .put("messages", recent)
