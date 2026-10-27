@@ -147,7 +147,7 @@ class MainActivity : Activity() {
             setPadding(24, 12, 24, 4)
         }
         val modelInput = EditText(this).apply {
-            hint = "Ollama model name (from model library)"
+            hint = "Exact cloud API model ID, e.g. gemma4:31b"
             setSingleLine(true)
             setText(prefs.getString("model", "") ?: "")
         }
@@ -160,7 +160,7 @@ class MainActivity : Activity() {
         panel.addView(keyInput)
         AlertDialog.Builder(this)
             .setTitle("Connect Ollama Cloud")
-            .setMessage("Get a model name from ollama.com/search. Your key is encrypted with Android Keystore on this device; it is not written into the source code.")
+            .setMessage("Use the exact cloud API model ID from Ollama, e.g. gemma4:31b (not your key name such as “Ash ai”). Your key is encrypted with Android Keystore on this device; it is not written into source code.")
             .setView(panel)
             .setNegativeButton("CANCEL", null)
             .setNeutralButton("CLEAR KEY") { _, _ ->
@@ -243,7 +243,7 @@ class MainActivity : Activity() {
         val key = getApiKey() ?: throw IllegalStateException("API key missing")
         val model = prefs.getString("model", "")?.trim().orEmpty()
         if (model.isBlank()) throw IllegalStateException("model name missing")
-        val connection = (URL("https://ollama.com/v1/chat/completions").openConnection() as HttpURLConnection)
+        val connection = (URL("https://ollama.com/api/chat").openConnection() as HttpURLConnection)
         connection.requestMethod = "POST"
         connection.connectTimeout = 20000
         connection.readTimeout = 60000
@@ -272,10 +272,17 @@ class MainActivity : Activity() {
             val responseText = stream?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
             if (code !in 200..299) {
                 val detail = try { JSONObject(responseText).optString("error", responseText) } catch (_: Exception) { responseText }
-                throw IllegalStateException("HTTP $code: " + detail.take(240))
+                val hint = when (code) {
+                    401 -> " API key was rejected. Create a fresh key in Ollama and replace the saved key."
+                    402 -> " This model or cloud usage may require an eligible plan or usage credits."
+                    403 -> " Ollama returned Forbidden. Check account access/status and use a cloud API model ID such as gemma4:31b, not the API-key label."
+                    404 -> " Model not found. Use an exact model ID listed by Ollama's cloud API."
+                    else -> ""
+                }
+                throw IllegalStateException("HTTP $code: " + detail.take(240) + hint)
             }
             val json = JSONObject(responseText)
-            return json.optJSONArray("choices")?.optJSONObject(0)?.optJSONObject("message")?.optString("content")
+            return json.optJSONObject("message")?.optString("content")
                 ?.takeIf { it.isNotBlank() } ?: throw IllegalStateException("Ollama returned no answer")
         } finally {
             connection.disconnect()
