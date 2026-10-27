@@ -2,6 +2,9 @@ package com.ashjarvis
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.IntentFilter
 import android.os.Bundle
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
@@ -14,9 +17,38 @@ class AshAccessibilityService : AccessibilityService() {
 
     override fun onInterrupt() {}
 
+    private val commandReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val target = intent?.getStringExtra(EXTRA_TEXT).orEmpty()
+            when (intent?.action) {
+                ACTION_TAP_TEXT -> if (target.isNotBlank()) findNode(rootInActiveWindow, target)?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                ACTION_TYPE_TEXT -> {
+                    val focused = findFocusedEditable(rootInActiveWindow)
+                    if (focused != null) {
+                        focused.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+                        focused.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
+                            putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, target)
+                        })
+                    }
+                }
+            }
+            saveVisibleScreen()
+        }
+    }
+
     override fun onServiceConnected() {
         super.onServiceConnected()
+        val filter = IntentFilter().apply {
+            addAction(ACTION_TAP_TEXT)
+            addAction(ACTION_TYPE_TEXT)
+        }
+        registerReceiver(commandReceiver, filter)
         saveVisibleScreen()
+    }
+
+    override fun onDestroy() {
+        try { unregisterReceiver(commandReceiver) } catch (_: Exception) {}
+        super.onDestroy()
     }
 
     private fun saveVisibleScreen() {
@@ -35,28 +67,6 @@ class AshAccessibilityService : AccessibilityService() {
             .putString(KEY_SCREEN, lines.joinToString("\n").take(12000))
             .putLong(KEY_SCREEN_TIME, System.currentTimeMillis())
             .apply()
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
-            ACTION_TAP_TEXT -> {
-                val target = intent.getStringExtra(EXTRA_TEXT).orEmpty()
-                if (target.isNotBlank()) findNode(rootInActiveWindow, target)?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
-            }
-            ACTION_TYPE_TEXT -> {
-                val value = intent.getStringExtra(EXTRA_TEXT).orEmpty()
-                val root = rootInActiveWindow
-                val focused = findFocusedEditable(root)
-                if (focused != null) {
-                    focused.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
-                    focused.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
-                        putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, value)
-                    })
-                }
-            }
-        }
-        saveVisibleScreen()
-        return START_NOT_STICKY
     }
 
     private fun findNode(node: AccessibilityNodeInfo?, target: String): AccessibilityNodeInfo? {
