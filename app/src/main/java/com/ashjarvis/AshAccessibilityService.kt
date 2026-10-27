@@ -42,7 +42,7 @@ class AshAccessibilityService : AccessibilityService() {
             addAction(ACTION_TAP_TEXT)
             addAction(ACTION_TYPE_TEXT)
         }
-        registerReceiver(commandReceiver, filter)
+        if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(commandReceiver, filter, Context.RECEIVER_NOT_EXPORTED) else @Suppress("DEPRECATION") run { registerReceiver(commandReceiver, filter) }
         saveVisibleScreen()
     }
 
