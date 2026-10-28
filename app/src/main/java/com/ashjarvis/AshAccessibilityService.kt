@@ -48,6 +48,13 @@ class AshAccessibilityService : AccessibilityService() {
                 ACTION_SWIPE_RIGHT -> swipe(0.18f, 0.5f, 0.82f, 0.5f)
                 ACTION_BACK -> performGlobalAction(GLOBAL_ACTION_BACK)
                 ACTION_HOME -> performGlobalAction(GLOBAL_ACTION_HOME)
+                ACTION_NOTIFICATIONS -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
+                ACTION_QUICK_SETTINGS -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
+                ACTION_LOCK_SCREEN -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+                    } else announce("Lock screen action needs Android 9 or newer")
+                }
                 ACTION_OPEN_APP -> if (target.isNotBlank()) openApp(target)
             }
             saveVisibleScreen()
@@ -65,6 +72,9 @@ class AshAccessibilityService : AccessibilityService() {
             addAction(ACTION_SWIPE_RIGHT)
             addAction(ACTION_BACK)
             addAction(ACTION_HOME)
+            addAction(ACTION_NOTIFICATIONS)
+            addAction(ACTION_QUICK_SETTINGS)
+            addAction(ACTION_LOCK_SCREEN)
             addAction(ACTION_OPEN_APP)
         }
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(commandReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
@@ -193,6 +203,9 @@ class AshAccessibilityService : AccessibilityService() {
         const val ACTION_SWIPE_RIGHT = "com.ashjarvis.ACTION_SWIPE_RIGHT"
         const val ACTION_BACK = "com.ashjarvis.ACTION_BACK"
         const val ACTION_HOME = "com.ashjarvis.ACTION_HOME"
+        const val ACTION_NOTIFICATIONS = "com.ashjarvis.ACTION_NOTIFICATIONS"
+        const val ACTION_QUICK_SETTINGS = "com.ashjarvis.ACTION_QUICK_SETTINGS"
+        const val ACTION_LOCK_SCREEN = "com.ashjarvis.ACTION_LOCK_SCREEN"
         const val ACTION_OPEN_APP = "com.ashjarvis.ACTION_OPEN_APP"
         const val EXTRA_TEXT = "text"
     }
