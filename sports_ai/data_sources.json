@@ -1,0 +1,86 @@
+{
+  "purpose": "Coverage registry for Ash sports-history collection. This is a best-effort catalog, not a claim of complete worldwide history.",
+  "sports": {
+    "football": {
+      "sources": [
+        {
+          "name": "OpenFootball football.json",
+          "url": "https://github.com/openfootball/football.json",
+          "coverage": "Selected European competitions and international tournaments, generally 2000/01 onward where seasons exist",
+          "status": "automated",
+          "license": "Public domain"
+        },
+        {
+          "name": "OpenFootball world archive",
+          "url": "https://github.com/openfootball/world",
+          "coverage": "World competition text files; regional import accepts only unambiguous score lines",
+          "status": "automated_and_imported",
+          "license": "Public domain source project"
+        },
+        {
+          "name": "Saudi Professional League datasets",
+          "url": "https://github.com/alioh/Saudi-Professional-League-Datasets",
+          "coverage": "Files present in upstream archive, described as Saudi results since 2000",
+          "status": "automated_research_import",
+          "license": "No clear reuse license found; permission required before commercial use or redistribution"
+        }
+      ],
+      "missing_or_unverified": [
+        "Saudi latest seasons beyond archive contents",
+        "Qatar Stars League",
+        "UAE Pro League",
+        "many Arab and African domestic leagues",
+        "many lower divisions and women's leagues",
+        "complete historical bookmaker odds"
+      ]
+    },
+    "tennis": {
+      "sources": [
+        {
+          "name": "Aneeshers tennis Sackmann archive",
+          "url": "https://github.com/Aneeshers/tennis-sackmann-archive",
+          "coverage": "ATP/WTA match results for years and files available upstream",
+          "status": "automated",
+          "license": "CC BY-NC-SA 4.0; non-commercial unless separately licensed"
+        }
+      ],
+      "missing_or_unverified": [
+        "All historical matches in every tour and level",
+        "full point-by-point records for every match",
+        "licensed historical bookmaker odds"
+      ]
+    },
+    "basketball": {
+      "sources": [
+        {
+          "name": "shufinskiy NBA data",
+          "url": "https://github.com/shufinskiy/nba_data",
+          "coverage": "NBA play-by-play and shot data from 1996/97 where source archives exist",
+          "status": "automated_raw_archive",
+          "license": "Check upstream license before redistribution"
+        },
+        {
+          "name": "timurkulenovic basketball dataset",
+          "url": "https://github.com/timurkulenovic/basketball-dataset",
+          "coverage": "NBA, EuroLeague, EuroCup, ABA League and Slovenian league game tables where available",
+          "status": "automated_and_import_attempted",
+          "license": "No clear reuse license found in README; permission required before commercial use or redistribution"
+        }
+      ],
+      "missing_or_unverified": [
+        "Every national league worldwide",
+        "all African/Middle East leagues",
+        "all historical WNBA/NCAA games",
+        "complete historical bookmaker odds"
+      ]
+    }
+  },
+  "data_policy": {
+    "never_claim": "all matches ever played",
+    "record_missing_sources": true,
+    "record_parser_warnings": true,
+    "display_per_competition_counts": true,
+    "require_license_review_before_commercial_use": true,
+    "probability_disclaimer": "Model outputs are estimates, not guaranteed wins."
+  }
+}
