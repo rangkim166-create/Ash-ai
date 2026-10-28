@@ -349,6 +349,40 @@ class MainActivity : Activity() {
             Toast.makeText(this, "Ash: $command", Toast.LENGTH_SHORT).show()
             return true
         }
+        // Handle common natural-language app-launch requests locally, before sending anything to the AI.
+        // WhatsApp launch does not require the Accessibility service to be enabled.
+        val simplified = lower
+            .replace(Regex("\\b(just|please|can you|could you|for me)\\b"), " ")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+        if ((simplified.startsWith("open ") || simplified.startsWith("launch ") || simplified.startsWith("start ")) &&
+            simplified.contains("whatsapp")) {
+            val packages = listOf("com.whatsapp", "com.whatsapp.w4b")
+            for (packageNameToOpen in packages) {
+                val launchIntent = packageManager.getLaunchIntentForPackage(packageNameToOpen)
+                if (launchIntent != null) {
+                    return try {
+                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(launchIntent)
+                        Toast.makeText(this, "Opening WhatsApp", Toast.LENGTH_SHORT).show()
+                        true
+                    } catch (_: Exception) {
+                        Toast.makeText(this, "Couldn't open WhatsApp on this phone", Toast.LENGTH_LONG).show()
+                        true
+                    }
+                }
+            }
+            Toast.makeText(this, "WhatsApp isn't installed or available on this profile", Toast.LENGTH_LONG).show()
+            return true
+        }
+        if (simplified.startsWith("open app ")) {
+            val appName = simplified.substringAfter("open app ").trim()
+            if (appName.isNotBlank()) return action(AshAccessibilityService.ACTION_OPEN_APP, appName)
+        }
+        if (simplified.startsWith("open ")) {
+            val appName = simplified.substringAfter("open ").removePrefix("my ").trim()
+            if (appName.isNotBlank()) return action(AshAccessibilityService.ACTION_OPEN_APP, appName)
+        }
         if (lower in listOf("scroll down", "scroll down please", "go down", "page down")) return action(AshAccessibilityService.ACTION_SCROLL_DOWN)
         if (lower in listOf("scroll up", "scroll up please", "go up", "page up")) return action(AshAccessibilityService.ACTION_SCROLL_UP)
         if (lower in listOf("swipe left", "move left")) return action(AshAccessibilityService.ACTION_SWIPE_LEFT)
