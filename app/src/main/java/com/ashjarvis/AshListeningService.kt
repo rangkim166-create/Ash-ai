@@ -24,9 +24,16 @@ class AshListeningService : Service() {
     private var recognizer: SpeechRecognizer? = null
     private var listening = false
     private var restarting = false
+    private val stopReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            if (intent?.action == ACTION_STOP) stopSelf()
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(stopReceiver, android.content.IntentFilter(ACTION_STOP), android.content.Context.RECEIVER_NOT_EXPORTED)
+        else @Suppress("DEPRECATION") run { registerReceiver(stopReceiver, android.content.IntentFilter(ACTION_STOP)) }
         createChannel()
         val openApp = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java),
@@ -70,10 +77,7 @@ class AshListeningService : Service() {
                         handleSpeech(said)
                         scheduleRestart()
                     }
-                    override fun onPartialResults(partialResults: Bundle?) {
-                        val said = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-                        if (said.isNotBlank()) handleSpeech(said, partial = true)
-                    }
+                    override fun onPartialResults(partialResults: Bundle?) {}
                     override fun onEvent(eventType: Int, params: Bundle?) {}
                 })
             }
@@ -102,9 +106,7 @@ class AshListeningService : Service() {
             .firstOrNull { lower.startsWith(it) } ?: return
         val command = raw.trim().drop(prefix.length).trim(' ', ',', '.', ':')
         if (command.isBlank() || (partial && command.length < 4)) return
-        val intent = Intent(this, AshAccessibilityService::class.java).setAction(AshAccessibilityService.ACTION_WAKE_COMMAND)
-            .putExtra(AshAccessibilityService.EXTRA_TEXT, command)
-        // The accessibility service itself receives commands through its private receiver.
+        // The accessibility service receives the command through its app-scoped receiver.
         sendBroadcast(Intent(AshAccessibilityService.ACTION_WAKE_COMMAND).setPackage(packageName).putExtra(AshAccessibilityService.EXTRA_TEXT, command))
     }
 
@@ -130,6 +132,7 @@ class AshListeningService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
+        try { unregisterReceiver(stopReceiver) } catch (_: Exception) {}
         try { recognizer?.cancel(); recognizer?.destroy() } catch (_: Exception) {}
         recognizer = null
         super.onDestroy()
