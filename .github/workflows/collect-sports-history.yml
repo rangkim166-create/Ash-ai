@@ -69,6 +69,9 @@ jobs:
           git add data/history/full-history-manifest.json
           if [ -f data/history/ratings.json ]; then git add data/history/ratings.json; fi
           if [ -f data/history/football-data-manifest.json ]; then git add data/history/football-data-manifest.json; fi
+          if [ -f data/history/raw/football_world/manifest.json ]; then git add data/history/raw/football_world/manifest.json; fi
+          if [ -f data/history/raw/arab_football/saudi/manifest.json ]; then git add data/history/raw/arab_football/saudi/manifest.json; fi
+          if [ -f data/history/raw/basketball_parquet/manifest.json ]; then git add data/history/raw/basketball_parquet/manifest.json; fi
           if ! git diff --cached --quiet; then
             git commit -m "Update sports history source manifest"
             git push
