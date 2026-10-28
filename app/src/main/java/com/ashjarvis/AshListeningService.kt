@@ -12,6 +12,7 @@ import android.os.IBinder
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.speech.tts.TextToSpeech
 import android.widget.Toast
 import java.util.Locale
 
@@ -22,6 +23,7 @@ import java.util.Locale
  */
 class AshListeningService : Service() {
     private var recognizer: SpeechRecognizer? = null
+    private var speech: TextToSpeech? = null
     private var listening = false
     private var restarting = false
     private var awaitingCommand = false
@@ -33,6 +35,7 @@ class AshListeningService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        speech = TextToSpeech(this) { status -> if (status == TextToSpeech.SUCCESS) speech?.language = Locale.getDefault() }
         if (Build.VERSION.SDK_INT >= 33) registerReceiver(stopReceiver, android.content.IntentFilter(ACTION_STOP), android.content.Context.RECEIVER_NOT_EXPORTED)
         else @Suppress("DEPRECATION") run { registerReceiver(stopReceiver, android.content.IntentFilter(ACTION_STOP)) }
         createChannel()
@@ -120,7 +123,7 @@ class AshListeningService : Service() {
                 awaitingCommand = true
                 handler.removeCallbacks(commandTimeout)
                 handler.postDelayed(commandTimeout, 12_000)
-                sendBroadcast(Intent(MainActivity.ACTION_WAKE_ACK).setPackage(packageName))
+                speech?.speak("Yes, I'm listening", TextToSpeech.QUEUE_FLUSH, null, "ash-wake-ack")
                 return
             }
             awaitingCommand = false
@@ -167,6 +170,8 @@ class AshListeningService : Service() {
         try { unregisterReceiver(stopReceiver) } catch (_: Exception) {}
         try { recognizer?.cancel(); recognizer?.destroy() } catch (_: Exception) {}
         recognizer = null
+        try { speech?.stop(); speech?.shutdown() } catch (_: Exception) {}
+        speech = null
         super.onDestroy()
     }
 
