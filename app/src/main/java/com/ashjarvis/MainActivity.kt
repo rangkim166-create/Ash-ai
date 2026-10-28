@@ -8,6 +8,7 @@ import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.app.DownloadManager
 import android.net.Uri
 import android.os.Environment
@@ -110,10 +111,55 @@ class MainActivity : Activity() {
         }
         root.addView(titleRow)
         root.addView(subtitle)
+        root.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(Button(this@MainActivity).apply {
+                text = if (prefs.getBoolean("ash_listening_enabled", false)) "STOP LISTENING" else "HEY ASH: LISTEN"
+                setOnClickListener { toggleBackgroundListening(this) }
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(TextView(this@MainActivity).apply {
+                text = "Optional mic • visible notification"
+                textSize = 11f
+                setTextColor(Color.rgb(153, 166, 190))
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(8, 0, 0, 0)
+            })
+        })
         root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
         root.addView(row)
         root.addView(footer)
         setContentView(root)
+    }
+
+    private fun toggleBackgroundListening(button: Button) {
+        if (prefs.getBoolean("ash_listening_enabled", false)) {
+            stopService(Intent(this, AshListeningService::class.java))
+            prefs.edit().putBoolean("ash_listening_enabled", false).apply()
+            button.text = "HEY ASH: LISTEN"
+            Toast.makeText(this, "Ash voice listening stopped", Toast.LENGTH_SHORT).show()
+            return
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 23 && checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(android.Manifest.permission.RECORD_AUDIO), 7130)
+            Toast.makeText(this, "Allow microphone access, then tap HEY ASH: LISTEN again", Toast.LENGTH_LONG).show()
+            return
+        }
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 26) startForegroundService(Intent(this, AshListeningService::class.java))
+            else startService(Intent(this, AshListeningService::class.java))
+            prefs.edit().putBoolean("ash_listening_enabled", true).apply()
+            button.text = "STOP LISTENING"
+            Toast.makeText(this, "Listening enabled. Say “Hey Ash” then a command.", Toast.LENGTH_LONG).show()
+        } catch (_: Exception) {
+            Toast.makeText(this, "Couldn't start listening. Check microphone permission.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == 7130 && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Microphone allowed. Tap HEY ASH: LISTEN to start.", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun startVoiceInput() {
