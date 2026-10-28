@@ -1,0 +1,18 @@
+{
+  "generated_at_utc": "2026-10-28T17:09:08Z",
+  "source": "https://codeload.github.com/openfootball/world/zip/refs/heads/master",
+  "archive": "data/history/raw/football_world/openfootball-world.zip",
+  "archive_bytes": 498774,
+  "text_files_extracted": 172,
+  "regional_targets": [
+    "Egypt",
+    "Morocco",
+    "Algeria",
+    "Nigeria",
+    "Japan",
+    "China",
+    "Australia",
+    "MLS"
+  ],
+  "note": "This source does not guarantee Saudi Pro League, Qatar Stars League, or UAE Pro League history. Text files are preserved for schema-specific normalization; they are not counted as database matches yet."
+}

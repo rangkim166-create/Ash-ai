@@ -1,0 +1,32 @@
+{
+  "generated_at_utc": "2026-10-28T17:09:07Z",
+  "source": "https://codeload.github.com/alioh/Saudi-Professional-League-Datasets/zip/refs/heads/master",
+  "source_readme": "https://github.com/alioh/Saudi-Professional-League-Datasets",
+  "archive_bytes": 52139,
+  "csv_files_extracted": 21,
+  "coverage_note": "Upstream describes Saudi Professional League results since 2000; actual coverage is limited to files present in this archive.",
+  "license_note": "No clear license was found in the upstream README. Do not redistribute or use commercially without permission.",
+  "files": [
+    "data/history/raw/arab_football/saudi/csv/SPL-2000-2001-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2001-2002-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2002-2003-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2003-2004-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2004-2005-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2005-2006-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2006-2007-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2007-2008-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2008-2009-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2008-2009-SS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2009-2010-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2009-2010-SS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2010-2011-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2010-2011-SS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2011-2012-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2012-2013-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2013-2014-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2014-2015-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2015-2016-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2016-2017-FS.csv",
+    "data/history/raw/arab_football/saudi/csv/SPL-2017-2018-FS.csv"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "generated_at_utc": "2026-10-28T17:09:08Z",
+  "source": "https://github.com/timurkulenovic/basketball-dataset",
+  "coverage_note": "NBA, EuroLeague, EuroCup, ABA League and Slovenian league game tables where available; not all global basketball.",
+  "license_note": "No clear license found in upstream README. Do not redistribute or use commercially without permission.",
+  "summary": {
+    "downloaded": 5,
+    "unavailable": 0
+  },
+  "sources": [
+    {
+      "league": "nba",
+      "url": "https://raw.githubusercontent.com/timurkulenovic/basketball-dataset/main/data/nba/games/parquet/games.parquet",
+      "path": "data/history/raw/basketball_parquet/nba-games.parquet",
+      "bytes": 385192,
+      "status": "ok"
+    },
+    {
+      "league": "euroleague",
+      "url": "https://raw.githubusercontent.com/timurkulenovic/basketball-dataset/main/data/euroleague/games/parquet/games.parquet",
+      "path": "data/history/raw/basketball_parquet/euroleague-games.parquet",
+      "bytes": 71482,
+      "status": "ok"
+    },
+    {
+      "league": "eurocup",
+      "url": "https://raw.githubusercontent.com/timurkulenovic/basketball-dataset/main/data/eurocup/games/parquet/games.parquet",
+      "path": "data/history/raw/basketball_parquet/eurocup-games.parquet",
+      "bytes": 65383,
+      "status": "ok"
+    },
+    {
+      "league": "aba",
+      "url": "https://raw.githubusercontent.com/timurkulenovic/basketball-dataset/main/data/aba/games/parquet/games.parquet",
+      "path": "data/history/raw/basketball_parquet/aba-games.parquet",
+      "bytes": 119029,
+      "status": "ok"
+    },
+    {
+      "league": "slovenian-league",
+      "url": "https://raw.githubusercontent.com/timurkulenovic/basketball-dataset/main/data/slo/games/parquet/games.parquet",
+      "path": "data/history/raw/basketball_parquet/slovenian-league-games.parquet",
+      "bytes": 72448,
+      "status": "ok"
+    }
+  ]
+}

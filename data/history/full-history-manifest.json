@@ -1,0 +1,3833 @@
+{
+  "generated_at_utc": "2026-10-28T17:09:06Z",
+  "coverage_note": "Best-effort public historical results, not every match ever played. Missing upstream seasons are expected. NBA source is team game logs; tennis mirror retains the original non-commercial CC BY-NC-SA terms. Results are not historical betting odds.",
+  "sources": [
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/en.2.json",
+      "path": "data/history/raw/football/england-championship/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2000-01/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2000-01.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/en.2.json",
+      "path": "data/history/raw/football/england-championship/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2001-02/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2001-02.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/en.2.json",
+      "path": "data/history/raw/football/england-championship/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2002-03/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2002-03.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/en.2.json",
+      "path": "data/history/raw/football/england-championship/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2003-04/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2003-04.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/en.2.json",
+      "path": "data/history/raw/football/england-championship/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2004-05/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2004-05.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/en.2.json",
+      "path": "data/history/raw/football/england-championship/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2005-06/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2005-06.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/en.2.json",
+      "path": "data/history/raw/football/england-championship/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2006-07/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2006-07.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/en.2.json",
+      "path": "data/history/raw/football/england-championship/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2007-08/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2007-08.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/en.2.json",
+      "path": "data/history/raw/football/england-championship/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2008-09/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2008-09.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/en.2.json",
+      "path": "data/history/raw/football/england-championship/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2009-10/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2009-10.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2010-11.json",
+      "bytes": 114555,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/en.2.json",
+      "path": "data/history/raw/football/england-championship/2010-11.json",
+      "bytes": 165205,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2010-11.json",
+      "bytes": 92871,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2010-11/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2010-11.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2011-12.json",
+      "bytes": 114481,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/en.2.json",
+      "path": "data/history/raw/football/england-championship/2011-12.json",
+      "bytes": 165333,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2011-12.json",
+      "bytes": 92083,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2011-12/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2011-12.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2012-13.json",
+      "bytes": 113425,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/en.2.json",
+      "path": "data/history/raw/football/england-championship/2012-13.json",
+      "bytes": 166799,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2012-13.json",
+      "bytes": 92807,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2012-13.json",
+      "bytes": 92166,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2012-13.json",
+      "bytes": 113155,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2012-13.json",
+      "bytes": 136784,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2012-13/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2012-13.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2013-14.json",
+      "bytes": 113569,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/en.2.json",
+      "path": "data/history/raw/football/england-championship/2013-14.json",
+      "bytes": 166447,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2013-14.json",
+      "bytes": 92927,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2013-14.json",
+      "bytes": 91980,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2013-14.json",
+      "bytes": 112269,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2013-14.json",
+      "bytes": 136434,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2013-14.json",
+      "bytes": 111886,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2013-14.json",
+      "bytes": 139598,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2013-14.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2014-15.json",
+      "bytes": 113725,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/en.2.json",
+      "path": "data/history/raw/football/england-championship/2014-15.json",
+      "bytes": 166249,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2014-15.json",
+      "bytes": 91713,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2014-15.json",
+      "bytes": 92634,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2014-15.json",
+      "bytes": 112533,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2014-15.json",
+      "bytes": 136056,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2014-15.json",
+      "bytes": 111266,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2014-15.json",
+      "bytes": 139623,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2014-15.json",
+      "bytes": 112903,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2014-15.json",
+      "bytes": 113513,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2014-15.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2014-15.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2014-15.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2014-15.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2014-15.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2014-15.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2014-15/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2014-15.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2015-16.json",
+      "bytes": 113631,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/en.2.json",
+      "path": "data/history/raw/football/england-championship/2015-16.json",
+      "bytes": 166139,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2015-16.json",
+      "bytes": 92107,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2015-16.json",
+      "bytes": 92948,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2015-16.json",
+      "bytes": 113118,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2015-16.json",
+      "bytes": 136056,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2015-16.json",
+      "bytes": 111286,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2015-16.json",
+      "bytes": 140816,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2015-16.json",
+      "bytes": 113093,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2015-16.json",
+      "bytes": 112237,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2015-16.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2015-16.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2015-16.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2015-16.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2015-16.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2015-16.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2015-16/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2015-16.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2016-17.json",
+      "bytes": 113759,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/en.2.json",
+      "path": "data/history/raw/football/england-championship/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2016-17.json",
+      "bytes": 92285,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2016-17.json",
+      "bytes": 93176,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2016-17.json",
+      "bytes": 112929,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2016-17.json",
+      "bytes": 136462,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2016-17.json",
+      "bytes": 112044,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2016-17.json",
+      "bytes": 139381,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2016-17.json",
+      "bytes": 112889,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2016-17.json",
+      "bytes": 112513,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2016-17/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2016-17.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2017-18.json",
+      "bytes": 114087,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/en.2.json",
+      "path": "data/history/raw/football/england-championship/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2017-18.json",
+      "bytes": 91935,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2017-18.json",
+      "bytes": 93388,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2017-18.json",
+      "bytes": 112607,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2017-18.json",
+      "bytes": 136700,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2017-18.json",
+      "bytes": 112024,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2017-18.json",
+      "bytes": 140447,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2017-18.json",
+      "bytes": 113289,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2017-18.json",
+      "bytes": 113843,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2017-18/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2017-18.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2018-19.json",
+      "bytes": 114723,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/en.2.json",
+      "path": "data/history/raw/football/england-championship/2018-19.json",
+      "bytes": 166107,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2018-19.json",
+      "bytes": 92533,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2018-19.json",
+      "bytes": 92494,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2018-19.json",
+      "bytes": 112417,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2018-19.json",
+      "bytes": 135576,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2018-19.json",
+      "bytes": 111802,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2018-19.json",
+      "bytes": 105136,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2018-19.json",
+      "bytes": 113091,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2018-19.json",
+      "bytes": 111611,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2018-19.json",
+      "bytes": 90708,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2018-19.json",
+      "bytes": 90875,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2018-19.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2018-19.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2018-19.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2018-19.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2018-19/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2018-19.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2019-20.json",
+      "bytes": 114817,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/en.2.json",
+      "path": "data/history/raw/football/england-championship/2019-20.json",
+      "bytes": 166205,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2019-20.json",
+      "bytes": 92983,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2019-20.json",
+      "bytes": 92392,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2019-20.json",
+      "bytes": 112137,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2019-20.json",
+      "bytes": 136210,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2019-20.json",
+      "bytes": 112416,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2019-20.json",
+      "bytes": 117250,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2019-20.json",
+      "bytes": 103330,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2019-20.json",
+      "bytes": 101565,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2019-20.json",
+      "bytes": 82894,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2019-20.json",
+      "bytes": 91024,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2019-20.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2019-20.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2019-20.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2019-20.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2019-20/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2019-20.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2020-21.json",
+      "bytes": 115947,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/en.2.json",
+      "path": "data/history/raw/football/england-championship/2020-21.json",
+      "bytes": 167559,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2020-21.json",
+      "bytes": 93089,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2020-21.json",
+      "bytes": 93002,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2020-21.json",
+      "bytes": 113635,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2020-21.json",
+      "bytes": 136280,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2020-21.json",
+      "bytes": 113906,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2020-21.json",
+      "bytes": 115792,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2020-21.json",
+      "bytes": 113541,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2020-21.json",
+      "bytes": 111771,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2020-21.json",
+      "bytes": 90553,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2020-21.json",
+      "bytes": 90698,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2020-21.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2020-21.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2020-21.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2020-21.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2020-21/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2020-21.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2021-22.json",
+      "bytes": 115863,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/en.2.json",
+      "path": "data/history/raw/football/england-championship/2021-22.json",
+      "bytes": 184635,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2021-22.json",
+      "bytes": 93609,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2021-22.json",
+      "bytes": 92480,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2021-22.json",
+      "bytes": 113895,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2021-22.json",
+      "bytes": 113576,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2021-22.json",
+      "bytes": 113767,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2021-22.json",
+      "bytes": 90880,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2021-22.json",
+      "bytes": 90988,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2021-22/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2021-22.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2022-23.json",
+      "bytes": 116149,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/en.2.json",
+      "path": "data/history/raw/football/england-championship/2022-23.json",
+      "bytes": 183993,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2022-23.json",
+      "bytes": 93189,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2022-23.json",
+      "bytes": 93498,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2022-23.json",
+      "bytes": 114885,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2022-23.json",
+      "bytes": 113460,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2022-23.json",
+      "bytes": 113237,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2022-23.json",
+      "bytes": 90252,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2022-23.json",
+      "bytes": 90862,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2022-23/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2022-23.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2023-24.json",
+      "bytes": 116669,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/en.2.json",
+      "path": "data/history/raw/football/england-championship/2023-24.json",
+      "bytes": 185625,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2023-24.json",
+      "bytes": 93743,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2023-24.json",
+      "bytes": 93270,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2023-24.json",
+      "bytes": 114187,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2023-24.json",
+      "bytes": 113014,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2023-24.json",
+      "bytes": 92104,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2023-24.json",
+      "bytes": 90812,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2023-24.json",
+      "bytes": 92494,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2023-24/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2023-24.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2024-25.json",
+      "bytes": 110141,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/en.2.json",
+      "path": "data/history/raw/football/england-championship/2024-25.json",
+      "bytes": 165132,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2024-25.json",
+      "bytes": 88232,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2024-25.json",
+      "bytes": 87648,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2024-25.json",
+      "bytes": 108296,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2024-25.json",
+      "bytes": 127330,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2024-25.json",
+      "bytes": 105098,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2024-25.json",
+      "bytes": 108764,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2024-25.json",
+      "bytes": 87793,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2024-25.json",
+      "bytes": 84974,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2024-25.json",
+      "bytes": 85924,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2024-25.json",
+      "bytes": 87194,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2024-25.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2024-25.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2024-25.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2024-25.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2024-25/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2024-25.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2025-26.json",
+      "bytes": 108493,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/en.2.json",
+      "path": "data/history/raw/football/england-championship/2025-26.json",
+      "bytes": 159839,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2025-26.json",
+      "bytes": 88247,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2025-26.json",
+      "bytes": 57270,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2025-26.json",
+      "bytes": 108642,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2025-26.json",
+      "bytes": 79957,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2025-26.json",
+      "bytes": 105202,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2025-26.json",
+      "bytes": 91100,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2025-26.json",
+      "bytes": 85845,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2025-26.json",
+      "bytes": 57609,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2025-26.json",
+      "bytes": 85389,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2025-26.json",
+      "bytes": 86590,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2025-26.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2025-26.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2025-26.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2025-26.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2025-26/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2025-26.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/en.1.json",
+      "path": "data/history/raw/football/england-premier-league/2026-27.json",
+      "bytes": 55359,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/en.2.json",
+      "path": "data/history/raw/football/england-championship/2026-27.json",
+      "bytes": 77132,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/de.1.json",
+      "path": "data/history/raw/football/germany-bundesliga/2026-27.json",
+      "bytes": 40409,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/de.2.json",
+      "path": "data/history/raw/football/germany-2-bundesliga/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/es.1.json",
+      "path": "data/history/raw/football/spain-la-liga/2026-27.json",
+      "bytes": 50771,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/es.2.json",
+      "path": "data/history/raw/football/spain-segunda/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/it.1.json",
+      "path": "data/history/raw/football/italy-serie-a/2026-27.json",
+      "bytes": 47608,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/it.2.json",
+      "path": "data/history/raw/football/italy-serie-b/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/fr.1.json",
+      "path": "data/history/raw/football/france-ligue-1/2026-27.json",
+      "bytes": 39943,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/fr.2.json",
+      "path": "data/history/raw/football/france-ligue-2/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/nl.1.json",
+      "path": "data/history/raw/football/netherlands-eredivisie/2026-27.json",
+      "bytes": 41499,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/pt.1.json",
+      "path": "data/history/raw/football/portugal-primeira/2026-27.json",
+      "bytes": 41380,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/sc.1.json",
+      "path": "data/history/raw/football/scotland-premiership/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/us.1.json",
+      "path": "data/history/raw/football/usa-mls/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/br.1.json",
+      "path": "data/history/raw/football/brazil-serie-a/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/world.cup.json",
+      "path": "data/history/raw/football/world-cup/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/europe.euro.json",
+      "path": "data/history/raw/football/europe-euro/2026-27.json",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1968.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1968.csv",
+      "bytes": 673978,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1969.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1969.csv",
+      "bytes": 494788,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1970.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1970.csv",
+      "bytes": 512410,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1971.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1971.csv",
+      "bytes": 566131,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1972.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1972.csv",
+      "bytes": 563440,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1973.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1973.csv",
+      "bytes": 676606,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1974.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1974.csv",
+      "bytes": 671158,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1975.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1975.csv",
+      "bytes": 664790,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1976.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1976.csv",
+      "bytes": 623651,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1977.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1977.csv",
+      "bytes": 658101,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1978.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1978.csv",
+      "bytes": 614875,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1979.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1979.csv",
+      "bytes": 632805,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1980.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1980.csv",
+      "bytes": 640025,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1981.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1981.csv",
+      "bytes": 625944,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1982.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1982.csv",
+      "bytes": 655284,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1983.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1983.csv",
+      "bytes": 563037,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1984.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1984.csv",
+      "bytes": 531124,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1985.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1985.csv",
+      "bytes": 558319,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1986.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1986.csv",
+      "bytes": 534012,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1987.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1987.csv",
+      "bytes": 583360,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1988.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1988.csv",
+      "bytes": 615887,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1989.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1989.csv",
+      "bytes": 592902,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1990.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1990.csv",
+      "bytes": 630930,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1991.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1991.csv",
+      "bytes": 743040,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1992.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1992.csv",
+      "bytes": 760047,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1993.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1993.csv",
+      "bytes": 779735,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1994.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1994.csv",
+      "bytes": 787913,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1995.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1995.csv",
+      "bytes": 762360,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1996.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1996.csv",
+      "bytes": 757247,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1997.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1997.csv",
+      "bytes": 730300,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1998.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1998.csv",
+      "bytes": 725069,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_1999.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_1999.csv",
+      "bytes": 673043,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2000.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2000.csv",
+      "bytes": 680357,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2001.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2001.csv",
+      "bytes": 669112,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2002.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2002.csv",
+      "bytes": 649377,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2003.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2003.csv",
+      "bytes": 649296,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2004.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2004.csv",
+      "bytes": 662757,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2005.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2005.csv",
+      "bytes": 659963,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2006.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2006.csv",
+      "bytes": 660698,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2007.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2007.csv",
+      "bytes": 644456,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2008.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2008.csv",
+      "bytes": 631452,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2009.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2009.csv",
+      "bytes": 626700,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2010.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2010.csv",
+      "bytes": 614299,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2011.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2011.csv",
+      "bytes": 611939,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2012.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2012.csv",
+      "bytes": 610116,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2013.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2013.csv",
+      "bytes": 596714,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2014.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2014.csv",
+      "bytes": 589216,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2015.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2015.csv",
+      "bytes": 594438,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2016.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2016.csv",
+      "bytes": 617660,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2017.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2017.csv",
+      "bytes": 611380,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2018.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2018.csv",
+      "bytes": 608903,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2019.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2019.csv",
+      "bytes": 586071,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2020.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2020.csv",
+      "bytes": 307277,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2021.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2021.csv",
+      "bytes": 573056,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2022.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2022.csv",
+      "bytes": 608789,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2023.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2023.csv",
+      "bytes": 625341,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2024.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2024.csv",
+      "bytes": 650136,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2025.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2025.csv",
+      "bytes": 617154,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/atp/atp_matches_2026.csv",
+      "path": "data/history/raw/tennis/atp/atp_matches_2026.csv",
+      "bytes": 300795,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1968.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1968.csv",
+      "bytes": 467907,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1969.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1969.csv",
+      "bytes": 460327,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1970.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1970.csv",
+      "bytes": 466046,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1971.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1971.csv",
+      "bytes": 395834,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1972.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1972.csv",
+      "bytes": 461023,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1973.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1973.csv",
+      "bytes": 460296,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1974.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1974.csv",
+      "bytes": 435483,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1975.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1975.csv",
+      "bytes": 419181,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1976.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1976.csv",
+      "bytes": 352964,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1977.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1977.csv",
+      "bytes": 378808,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1978.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1978.csv",
+      "bytes": 443782,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1979.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1979.csv",
+      "bytes": 368780,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1980.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1980.csv",
+      "bytes": 637414,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1981.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1981.csv",
+      "bytes": 553889,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1982.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1982.csv",
+      "bytes": 485752,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1983.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1983.csv",
+      "bytes": 418849,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1984.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1984.csv",
+      "bytes": 409977,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1985.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1985.csv",
+      "bytes": 464027,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1986.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1986.csv",
+      "bytes": 445128,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1987.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1987.csv",
+      "bytes": 487449,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1988.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1988.csv",
+      "bytes": 513149,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1989.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1989.csv",
+      "bytes": 507699,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1990.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1990.csv",
+      "bytes": 492677,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1991.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1991.csv",
+      "bytes": 498509,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1992.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1992.csv",
+      "bytes": 487390,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1993.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1993.csv",
+      "bytes": 516676,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1994.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1994.csv",
+      "bytes": 474363,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1995.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1995.csv",
+      "bytes": 459106,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1996.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1996.csv",
+      "bytes": 496739,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1997.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1997.csv",
+      "bytes": 550528,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1998.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1998.csv",
+      "bytes": 527221,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_1999.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_1999.csv",
+      "bytes": 529749,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2000.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2000.csv",
+      "bytes": 535363,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2001.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2001.csv",
+      "bytes": 575056,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2002.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2002.csv",
+      "bytes": 583350,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2003.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2003.csv",
+      "bytes": 557663,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2004.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2004.csv",
+      "bytes": 531422,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2005.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2005.csv",
+      "bytes": 543401,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2006.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2006.csv",
+      "bytes": 549741,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2007.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2007.csv",
+      "bytes": 561248,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2008.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2008.csv",
+      "bytes": 567310,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2009.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2009.csv",
+      "bytes": 562514,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2010.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2010.csv",
+      "bytes": 572925,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2011.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2011.csv",
+      "bytes": 575703,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2012.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2012.csv",
+      "bytes": 584181,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2013.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2013.csv",
+      "bytes": 559834,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2014.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2014.csv",
+      "bytes": 574337,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2015.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2015.csv",
+      "bytes": 550360,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2016.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2016.csv",
+      "bytes": 602004,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2017.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2017.csv",
+      "bytes": 593130,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2018.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2018.csv",
+      "bytes": 572565,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2019.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2019.csv",
+      "bytes": 567137,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2020.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2020.csv",
+      "bytes": 266525,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2021.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2021.csv",
+      "bytes": 531828,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2022.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2022.csv",
+      "bytes": 530984,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2023.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2023.csv",
+      "bytes": 569610,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2024.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2024.csv",
+      "bytes": 542425,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2025.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2025.csv",
+      "bytes": 565244,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/Aneeshers/tennis-sackmann-archive/main/wta/wta_matches_2026.csv",
+      "path": "data/history/raw/tennis/wta/wta_matches_2026.csv",
+      "bytes": 255577,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_1996.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_1996.tar.xz",
+      "bytes": 7084828,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_1996.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_1996.tar.xz",
+      "bytes": 423076,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_1997.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_1997.tar.xz",
+      "bytes": 7227600,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_1997.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_1997.tar.xz",
+      "bytes": 416092,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_1998.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_1998.tar.xz",
+      "bytes": 4371604,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_1998.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_1998.tar.xz",
+      "bytes": 390676,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_1999.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_1999.tar.xz",
+      "bytes": 7337816,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_1999.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_1999.tar.xz",
+      "bytes": 438968,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2000.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2000.tar.xz",
+      "bytes": 7247744,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2000.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2000.tar.xz",
+      "bytes": 426972,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2001.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2001.tar.xz",
+      "bytes": 7177180,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2001.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2001.tar.xz",
+      "bytes": 431636,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2002.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2002.tar.xz",
+      "bytes": 7224056,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2002.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2002.tar.xz",
+      "bytes": 534232,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2003.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2003.tar.xz",
+      "bytes": 7199696,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2003.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2003.tar.xz",
+      "bytes": 486752,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2004.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2004.tar.xz",
+      "bytes": 7592256,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2004.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2004.tar.xz",
+      "bytes": 507832,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2005.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2005.tar.xz",
+      "bytes": 7721416,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2005.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2005.tar.xz",
+      "bytes": 537808,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2006.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2006.tar.xz",
+      "bytes": 7787008,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2006.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2006.tar.xz",
+      "bytes": 477520,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2007.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2007.tar.xz",
+      "bytes": 7728748,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2007.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2007.tar.xz",
+      "bytes": 515464,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2008.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2008.tar.xz",
+      "bytes": 7701548,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2008.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2008.tar.xz",
+      "bytes": 514048,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2009.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2009.tar.xz",
+      "bytes": 7770244,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2009.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2009.tar.xz",
+      "bytes": 499972,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2010.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2010.tar.xz",
+      "bytes": 7833200,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2010.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2010.tar.xz",
+      "bytes": 497200,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2011.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2011.tar.xz",
+      "bytes": 6244336,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2011.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2011.tar.xz",
+      "bytes": 512140,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2012.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2012.tar.xz",
+      "bytes": 7805676,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2012.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2012.tar.xz",
+      "bytes": 529880,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2013.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2013.tar.xz",
+      "bytes": 7977376,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2013.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2013.tar.xz",
+      "bytes": 556092,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2014.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2014.tar.xz",
+      "bytes": 8024656,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2014.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2014.tar.xz",
+      "bytes": 540792,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2015.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2015.tar.xz",
+      "bytes": 8307212,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2015.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2015.tar.xz",
+      "bytes": 568364,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2016.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2016.tar.xz",
+      "bytes": 8341720,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2016.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2016.tar.xz",
+      "bytes": 522764,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2017.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2017.tar.xz",
+      "bytes": 8361064,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2017.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2017.tar.xz",
+      "bytes": 544912,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2018.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2018.tar.xz",
+      "bytes": 8705484,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2018.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2018.tar.xz",
+      "bytes": 566480,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2019.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2019.tar.xz",
+      "bytes": 7504672,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2019.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2019.tar.xz",
+      "bytes": 558696,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2020.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2020.tar.xz",
+      "bytes": 7493576,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2020.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2020.tar.xz",
+      "bytes": 566280,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2021.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2021.tar.xz",
+      "bytes": 8575520,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2021.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2021.tar.xz",
+      "bytes": 580896,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2022.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2022.tar.xz",
+      "bytes": 8551312,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2022.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2022.tar.xz",
+      "bytes": 559312,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2023.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2023.tar.xz",
+      "bytes": 8480776,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2023.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2023.tar.xz",
+      "bytes": 536072,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2024.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2024.tar.xz",
+      "bytes": 8583784,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2024.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2024.tar.xz",
+      "bytes": 581156,
+      "status": "ok"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2025.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_2025.tar.xz",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2025.tar.xz",
+      "path": "data/history/raw/basketball/nbastats_po_2025.tar.xz",
+      "status": "unavailable",
+      "error": "HTTP Error 404: Not Found"
+    }
+  ],
+  "summary": {
+    "downloaded": 329,
+    "unavailable": 308,
+    "downloaded_bytes": 319934307
+  }
+}
