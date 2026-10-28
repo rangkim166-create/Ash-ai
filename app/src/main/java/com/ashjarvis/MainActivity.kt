@@ -94,7 +94,11 @@ class MainActivity : Activity() {
         window.statusBarColor = Color.rgb(10, 15, 28)
         window.navigationBarColor = Color.rgb(10, 15, 28)
         tts = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) tts?.language = Locale.getDefault()
+            if (status == TextToSpeech.SUCCESS) {
+                val engine = tts ?: return@TextToSpeech
+                engine.language = Locale.getDefault()
+                applySavedVoice()
+            }
         }
         buildUi()
         restoreHistory()
@@ -124,6 +128,7 @@ class MainActivity : Activity() {
         }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         top.addView(makeText("✦  ASH JARVIS", 23f, Color.rgb(125, 211, 252)), LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(Button(this).apply { text = "VOICE"; contentDescription = "Choose male or female voice"; setOnClickListener { showVoiceSettings() } })
         top.addView(Button(this).apply { text = "⚙"; contentDescription = "AI settings"; setOnClickListener { showAiSetup() } })
         header.addView(top)
         header.addView(makeText("YOUR AI. YOUR PHONE. YOUR RULES.", 10f, Color.rgb(164, 184, 216)).apply { setPadding(0, 5, 0, 8) })
@@ -581,6 +586,76 @@ class MainActivity : Activity() {
         } catch (e: Exception) {
             Toast.makeText(this, "Could not start download: " + (e.message ?: "unknown error"), Toast.LENGTH_LONG).show()
         }
+    }
+
+    private fun applySavedVoice() {
+        val engine = tts ?: return
+        val savedName = prefs.getString("tts_voice_name", null)
+        val voices = try { engine.voices?.toList().orEmpty() } catch (_: Exception) { emptyList() }
+        val selected = voices.firstOrNull { it.name == savedName }
+        if (selected != null) {
+            try { engine.voice = selected } catch (_: Exception) {}
+        } else {
+            engine.language = Locale.getDefault()
+        }
+    }
+
+    private fun showVoiceSettings() {
+        val engine = tts
+        if (engine == null) {
+            Toast.makeText(this, "Speech engine is still starting. Try again.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val voices = try {
+            engine.voices?.filter { it.locale.language == Locale.getDefault().language || it.locale.language == "en" }
+                ?.sortedWith(compareBy<android.speech.tts.Voice>({ it.locale.displayLanguage }, { it.name }))
+                .orEmpty()
+        } catch (_: Exception) { emptyList() }
+        if (voices.isEmpty()) {
+            AlertDialog.Builder(this)
+                .setTitle("Ash voice settings")
+                .setMessage("No selectable voices were found in the installed Android speech engine. Install or download additional voices in Android Text-to-speech settings, then reopen this menu.")
+                .setPositiveButton("TTS SETTINGS") { _, _ ->
+                    try { startActivity(Intent("com.android.settings.TTS_SETTINGS")) }
+                    catch (_: Exception) { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+                }
+                .setNegativeButton("CLOSE", null).show()
+            return
+        }
+        fun voiceLabel(voice: android.speech.tts.Voice): String {
+            val name = voice.name.replace("_", " ")
+            val genderHint = when {
+                Regex("(?i)female|woman|zira|samantha|victoria|karen|moira|tessa|ava|jenny").containsMatchIn(name) -> " • likely female"
+                Regex("(?i)male|man|david|mark|daniel|george|guy|ryan|aaron").containsMatchIn(name) -> " • likely male"
+                else -> ""
+            }
+            val quality = if (voice.quality >= android.speech.tts.Voice.QUALITY_HIGH) " • high quality" else ""
+            return "${voice.locale.displayName}: $name$genderHint$quality"
+        }
+        val labels = voices.map { voiceLabel(it) }.toTypedArray()
+        val savedName = prefs.getString("tts_voice_name", null)
+        val selectedIndex = voices.indexOfFirst { it.name == savedName }.coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle("Ash Jarvis • Voice")
+            .setMessage("Choose an installed voice. Male/female labels are best-effort because Android voice engines do not always identify gender. You can preview before saving.")
+            .setSingleChoiceItems(labels, selectedIndex) { dialog, which ->
+                val voice = voices[which]
+                try {
+                    engine.voice = voice
+                    prefs.edit().putString("tts_voice_name", voice.name).apply()
+                    engine.speak("Hello. I am Ash Jarvis. Voice system ready.", TextToSpeech.QUEUE_FLUSH, null, "ash-voice-preview")
+                    Toast.makeText(this, "Voice selected: ${voice.locale.displayLanguage}", Toast.LENGTH_SHORT).show()
+                } catch (_: Exception) {
+                    Toast.makeText(this, "That voice isn't available on this device.", Toast.LENGTH_LONG).show()
+                }
+                dialog.dismiss()
+            }
+            .setNeutralButton("ANDROID VOICE SETTINGS") { _, _ ->
+                try { startActivity(Intent("com.android.settings.TTS_SETTINGS")) }
+                catch (_: Exception) { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+            }
+            .setNegativeButton("CLOSE", null)
+            .show()
     }
 
     private fun showAiSetup() {
