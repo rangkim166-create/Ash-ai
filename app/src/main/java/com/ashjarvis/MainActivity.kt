@@ -463,7 +463,7 @@ class MainActivity : Activity() {
         }
         refreshModels()
 
-        AlertDialog.Builder(this)
+        val dialog = AlertDialog.Builder(this)
             .setTitle("Ash Jarvis • Offline models")
             .setView(panel)
             .setNegativeButton("CANCEL", null)
@@ -474,7 +474,64 @@ class MainActivity : Activity() {
                 prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).apply()
                 startOfflineModelDownload(chosen)
             }
-            .show()
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                checkOfflineModelDownload()
+            }
+        }
+        dialog.show()
+    }
+
+    private fun checkOfflineModelDownload() {
+        val fileName = prefs.getString("offline_model_file", null)
+        val downloadId = prefs.getLong("offline_model_download_id", -1L)
+        if (fileName.isNullOrBlank() || downloadId < 0L) {
+            AlertDialog.Builder(this)
+                .setTitle("No model download recorded")
+                .setMessage("Choose DOWNLOAD MODEL first. Ash will save the model under Downloads/AshJarvis.")
+                .setPositiveButton("OK", null)
+                .show()
+            return
+        }
+
+        val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        val query = DownloadManager.Query().setFilterById(downloadId)
+        manager.query(query).use { cursor ->
+            if (cursor == null || !cursor.moveToFirst()) {
+                Toast.makeText(this, "Download record not found. Start the model download again.", Toast.LENGTH_LONG).show()
+                return
+            }
+            val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+            val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+            when (status) {
+                DownloadManager.STATUS_PENDING, DownloadManager.STATUS_RUNNING, DownloadManager.STATUS_PAUSED ->
+                    Toast.makeText(this, "Model download is still in progress.", Toast.LENGTH_LONG).show()
+                DownloadManager.STATUS_FAILED ->
+                    AlertDialog.Builder(this)
+                        .setTitle("Model download failed")
+                        .setMessage("Android download error code: " + reason + ". Check Wi-Fi and free storage, then download again.")
+                        .setPositiveButton("OK", null)
+                        .show()
+                DownloadManager.STATUS_SUCCESSFUL -> {
+                    val file = java.io.File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        "AshJarvis/" + fileName
+                    )
+                    val size = if (file.exists()) file.length() else 0L
+                    AlertDialog.Builder(this)
+                        .setTitle(if (size > 0L) "Model downloaded" else "Download reported complete")
+                        .setMessage(
+                            if (size > 0L)
+                                "Found " + fileName + " (" + String.format(Locale.US, "%.2f", size / (1024.0 * 1024.0)) + " MB). The GGUF file is on this phone, but offline chat is not ready until Ash's local inference engine is integrated."
+                            else
+                                "Android marked the download complete, but the expected file was not found at Downloads/AshJarvis/" + fileName + "."
+                        )
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
+        }
     }
 
     private fun startOfflineModelDownload(model: OfflineModel) {
