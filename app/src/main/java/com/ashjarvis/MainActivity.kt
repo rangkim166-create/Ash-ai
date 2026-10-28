@@ -121,7 +121,7 @@ class MainActivity : Activity() {
         statusRow.addView(makeText("●", 12f, Color.rgb(74, 222, 128)))
         statusRow.addView(makeText("  Voice & phone tools", 12f, Color.rgb(222, 231, 245)), LinearLayout.LayoutParams(0, -2, 1f))
         statusRow.addView(Button(this).apply { text = "PHONE"; setOnClickListener { showPhoneTools() } })
-        statusRow.addView(Button(this).apply { text = "OFFLINE AI"; setOnClickListener { confirmDolphinDownload() } })
+        statusRow.addView(Button(this).apply { text = "OFFLINE AI"; setOnClickListener { showOfflineModelPicker() } })
         header.addView(statusRow)
         root.addView(header)
 
@@ -358,31 +358,142 @@ class MainActivity : Activity() {
         super.onDestroy()
     }
 
-    private fun confirmDolphinDownload() {
+    private data class OfflineModel(
+        val name: String,
+        val ramLabel: String,
+        val minRamGb: Int,
+        val sizeLabel: String,
+        val fileName: String,
+        val url: String,
+        val description: String
+    )
+
+    private val offlineModels = listOf(
+        OfflineModel(
+            "Qwen 2.5 0.5B Instruct (Q4_K_M)", "2–3 GB RAM", 2, "~400 MB",
+            "qwen2.5-0.5b-instruct-q4_k_m.gguf",
+            "https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf?download=true",
+            "Fastest and lightest; basic chat and simple tasks."
+        ),
+        OfflineModel(
+            "Qwen 2.5 1.5B Instruct (Q4_K_M)", "4 GB RAM", 4, "~1.0 GB",
+            "qwen2.5-1.5b-instruct-q4_k_m.gguf",
+            "https://huggingface.co/bartowski/Qwen2.5-1.5B-Instruct-GGUF/resolve/main/Qwen2.5-1.5B-Instruct-Q4_K_M.gguf?download=true",
+            "Balanced lightweight assistant for everyday questions."
+        ),
+        OfflineModel(
+            "Qwen 2.5 3B Instruct (Q4_K_M)", "6 GB RAM", 6, "~2.0 GB",
+            "qwen2.5-3b-instruct-q4_k_m.gguf",
+            "https://huggingface.co/bartowski/Qwen2.5-3B-Instruct-GGUF/resolve/main/Qwen2.5-3B-Instruct-Q4_K_M.gguf?download=true",
+            "More capable, but may slow down when Android uses much of the memory."
+        ),
+        OfflineModel(
+            "Dolphin 2.9 Llama 3 8B (Q4_K_M)", "8 GB+ RAM recommended", 8, "~4.9 GB",
+            "dolphin-2.9-llama3-8b-Q4_K_M.gguf",
+            "https://huggingface.co/bartowski/dolphin-2.9-llama3-8b-GGUF/resolve/main/dolphin-2.9-llama3-8b-Q4_K_M.gguf?download=true",
+            "Less restrictive style; too large for many 6 GB phones."
+        )
+    )
+
+    private fun showOfflineModelPicker() {
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(20, 8, 20, 4)
+        }
+        val ramLabel = TextView(this).apply {
+            text = "1. Choose your phone's total RAM"
+            textSize = 15f
+            setTextColor(Color.rgb(30, 41, 59))
+            setPadding(0, 4, 0, 8)
+        }
+        panel.addView(ramLabel)
+        val ramSpinner = android.widget.Spinner(this)
+        val ramOptions = listOf("2 GB", "3 GB", "4 GB", "6 GB", "8 GB", "12 GB", "16 GB or more")
+        ramSpinner.adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ramOptions)
+        val savedRam = prefs.getInt("offline_ram_gb", 6)
+        ramSpinner.setSelection(ramOptions.indexOfFirst { it.startsWith(savedRam.toString() + " ") }.takeIf { it >= 0 } ?: 3)
+        panel.addView(ramSpinner)
+        panel.addView(TextView(this).apply {
+            text = "2. Choose a model recommended for that RAM"
+            textSize = 15f
+            setTextColor(Color.rgb(30, 41, 59))
+            setPadding(0, 14, 0, 8)
+        })
+        val modelSpinner = android.widget.Spinner(this)
+        val modelAdapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, mutableListOf<String>())
+        modelSpinner.adapter = modelAdapter
+        val details = TextView(this).apply {
+            textSize = 13f
+            setTextColor(Color.rgb(51, 65, 85))
+            setPadding(0, 10, 0, 4)
+        }
+        panel.addView(modelSpinner)
+        panel.addView(details)
+
+        fun selectedRam(): Int = ramOptions[ramSpinner.selectedItemPosition].substringBefore(" ").toIntOrNull() ?: 16
+        fun compatibleModels(): List<OfflineModel> {
+            val ram = selectedRam()
+            return offlineModels.filter { it.minRamGb <= ram }.ifEmpty { listOf(offlineModels.first()) }
+        }
+        fun refreshModels(preferredName: String? = null) {
+            val choices = compatibleModels()
+            modelAdapter.clear()
+            modelAdapter.addAll(choices.map { it.name + " • " + it.sizeLabel })
+            modelAdapter.notifyDataSetChanged()
+            val chosen = choices.firstOrNull { it.name == preferredName }
+                ?: choices.lastOrNull { it.minRamGb <= selectedRam() }
+                ?: choices.first()
+            modelSpinner.setSelection(choices.indexOf(chosen).coerceAtLeast(0))
+            details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
+                "\nRecommended minimum RAM: " + chosen.ramLabel +
+                "\n\nNote: downloading a GGUF file alone does not enable chat. The local inference engine must be integrated."
+        }
+        ramSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = refreshModels()
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+        modelSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val chosen = compatibleModels().getOrNull(position) ?: return
+                details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
+                    "\nRecommended minimum RAM: " + chosen.ramLabel +
+                    "\n\nNote: downloading a GGUF file alone does not enable chat. The local inference engine must be integrated."
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
+        refreshModels()
+
         AlertDialog.Builder(this)
-            .setTitle("Download Dolphin 2.9 • Llama 3 8B")
-            .setMessage("This offline model file (Q4_K_M) is about 4.9 GB. It will be saved to Downloads/AshJarvis on your phone. This can use several GB of mobile data and storage. The app still needs its local inference engine integrated before this file can answer chats. Wi-Fi and at least 7 GB free space are strongly recommended. Continue?")
-            .setNegativeButton("NOT NOW", null)
-            .setPositiveButton("DOWNLOAD") { _, _ -> startDolphinDownload() }
+            .setTitle("Ash Jarvis • Offline models")
+            .setView(panel)
+            .setNegativeButton("CANCEL", null)
+            .setNeutralButton("CHECK DOWNLOADED", null)
+            .setPositiveButton("DOWNLOAD MODEL") { _, _ ->
+                val ram = selectedRam()
+                val chosen = compatibleModels().getOrNull(modelSpinner.selectedItemPosition) ?: offlineModels.first()
+                prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).apply()
+                startOfflineModelDownload(chosen)
+            }
             .show()
     }
 
-    private fun startDolphinDownload() {
+    private fun startOfflineModelDownload(model: OfflineModel) {
         try {
-            val fileName = "dolphin-2.9-llama3-8b-Q4_K_M.gguf"
             val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
-            val request = DownloadManager.Request(
-                Uri.parse("https://huggingface.co/bartowski/dolphin-2.9-llama3-8b-GGUF/resolve/main/dolphin-2.9-llama3-8b-Q4_K_M.gguf?download=true")
-            )
-                .setTitle("Ash Jarvis • Dolphin 2.9")
-                .setDescription("Downloading offline model (~4.9 GB) to Downloads/AshJarvis")
+            val request = DownloadManager.Request(Uri.parse(model.url))
+                .setTitle("Ash Jarvis • " + model.name)
+                .setDescription("Downloading " + model.sizeLabel + " model to Downloads/AshJarvis")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setAllowedOverMetered(false)
                 .setAllowedOverRoaming(false)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + fileName)
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + model.fileName)
             val id = manager.enqueue(request)
-            prefs.edit().putLong("dolphin_download_id", id).apply()
-            Toast.makeText(this, "Dolphin download queued. Wi-Fi is required; check the download notification.", Toast.LENGTH_LONG).show()
+            prefs.edit().putLong("offline_model_download_id", id).putString("offline_model_file", model.fileName).apply()
+            AlertDialog.Builder(this)
+                .setTitle("Download started")
+                .setMessage(model.name + " is downloading over Wi-Fi to Downloads/AshJarvis. When complete, the file is stored on your phone. Ash still needs its local inference engine integrated before it can answer with this model offline.")
+                .setPositiveButton("OK", null)
+                .show()
         } catch (e: Exception) {
             Toast.makeText(this, "Could not start download: " + (e.message ?: "unknown error"), Toast.LENGTH_LONG).show()
         }
