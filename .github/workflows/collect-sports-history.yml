@@ -2,6 +2,10 @@ name: Collect sports history
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "sports_ai/**"
+      - ".github/workflows/collect-sports-history.yml"
   schedule:
     - cron: "20 4 * * *"
 
@@ -19,6 +23,8 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Syntax-check collector and database scripts
+        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/build_database.py sports_ai/predict.py
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
       - name: Normalize results into SQLite
