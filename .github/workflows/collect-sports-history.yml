@@ -27,6 +27,8 @@ jobs:
         run: python -m py_compile sports_ai/collect_full_history.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
+      - name: Fetch additional Arab and African football source archive
+        run: python sports_ai/collect_arab_football.py
       - name: Normalize results into SQLite
         run: python sports_ai/build_database.py
       - name: Package downloaded data and database
