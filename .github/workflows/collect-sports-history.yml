@@ -30,7 +30,7 @@ jobs:
       - name: Install parquet reader for basketball history
         run: python -m pip install --upgrade pandas pyarrow
       - name: Syntax-check collector and database scripts
-        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/import_openfootball_txt.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_basketball_history.py sports_ai/import_basketball_history.py
+        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/import_openfootball_txt.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_basketball_history.py sports_ai/import_basketball_history.py sports_ai/audit_history.py
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
       - name: Download Saudi Pro League historical archive
@@ -49,10 +49,12 @@ jobs:
         run: python sports_ai/import_basketball_history.py
       - name: Publish compact Elo ratings for Ash
         run: python sports_ai/publish_ratings.py
+      - name: Audit per-sport and per-league history coverage
+        run: python sports_ai/audit_history.py
       - name: Package downloaded data and database
         run: |
           cd data/history
-          zip -qr ../../ash-sports-history.zip raw full-history-manifest.json ash_sports_history.sqlite
+          zip -qr ../../ash-sports-history.zip raw full-history-manifest.json ash_sports_history.sqlite ratings.json coverage-report.json
       - name: Upload collected historical datasets
         uses: actions/upload-artifact@v4
         with:
@@ -66,6 +68,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/history/full-history-manifest.json
           if [ -f data/history/ratings.json ]; then git add data/history/ratings.json; fi
+          if [ -f data/history/coverage-report.json ]; then git add data/history/coverage-report.json; fi
           if [ -f data/history/football-data-manifest.json ]; then git add data/history/football-data-manifest.json; fi
           if [ -f data/history/raw/football_world/manifest.json ]; then git add data/history/raw/football_world/manifest.json; fi
           if [ -f data/history/raw/arab_football/saudi/manifest.json ]; then git add data/history/raw/arab_football/saudi/manifest.json; fi
