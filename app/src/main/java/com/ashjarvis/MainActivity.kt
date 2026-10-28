@@ -416,6 +416,19 @@ class MainActivity : Activity() {
     private fun handlePhoneCommand(raw: String): Boolean {
         val command = raw.trim()
         val lower = command.lowercase(Locale.ROOT)
+        // Short control words must be handled locally, never sent to the chat model.
+        if (lower in listOf("stop", "stop talking", "be quiet", "quiet", "cancel speech", "stop explaining")) {
+            tts?.stop()
+            footer.text = "Speech stopped"
+            return true
+        }
+        if (lower in listOf("stop listening", "turn off listening", "disable listening")) {
+            stopService(Intent(this, AshListeningService::class.java))
+            prefs.edit().putBoolean("ash_listening_enabled", false).apply()
+            tts?.stop()
+            Toast.makeText(this, "Ash listening stopped", Toast.LENGTH_SHORT).show()
+            return true
+        }
         fun action(action: String, extra: String? = null): Boolean {
             val intent = Intent(action).setPackage(packageName)
             if (extra != null) intent.putExtra(AshAccessibilityService.EXTRA_TEXT, extra)
@@ -501,9 +514,18 @@ class MainActivity : Activity() {
             }
             return true
         }
-        if (lower.startsWith("tap ")) {
+        if (lower.startsWith("tap ") || lower.startsWith("click ")) {
             val target = command.substringAfter(" ", "").trim()
             if (target.isNotBlank()) return action(AshAccessibilityService.ACTION_TAP_TEXT, target)
+        }
+        if (lower.startsWith("type ") || lower.startsWith("enter text ")) {
+            val target = if (lower.startsWith("type ")) command.substringAfter("type ").trim()
+                else command.substringAfter("enter text ").trim()
+            if (target.isNotBlank()) return action(AshAccessibilityService.ACTION_TYPE_TEXT, target)
+        }
+        if (lower in listOf("stop reading", "stop speaking")) {
+            tts?.stop()
+            return true
         }
         if (lower.startsWith("open app ")) {
             val appName = command.substringAfter("open app ", "").trim()
@@ -577,7 +599,7 @@ class MainActivity : Activity() {
         connection.setRequestProperty("X-OpenRouter-Title", "Ash Jarvis")
         connection.doOutput = true
         val recent = JSONArray()
-        recent.put(JSONObject().put("role", "system").put("content", "You are Ash Jarvis, a helpful general-purpose AI assistant. Be honest, clear, and safety-conscious."))
+        recent.put(JSONObject().put("role", "system").put("content", "You are Ash Jarvis, the AI assistant created by the Ash Teach Team. If asked who created you, say: \"I was created by the Ash Teach Team.\" Be a capable, concise, practical assistant. The Android app can execute only supported local commands; never claim you opened, tapped, typed, sent, purchased, deleted, or changed anything unless the app confirms it. For phone actions, give the user the exact supported command when appropriate. Respect stop/stop talking commands immediately. Be honest, clear, and safety-conscious. Ask for confirmation before sending messages, deleting data, making purchases, or other consequential actions."))
         val start = (history.length() - 12).coerceAtLeast(0)
         for (i in start until history.length()) {
             val item = history.optJSONObject(i) ?: continue
