@@ -39,7 +39,7 @@ def main():
     with sqlite3.connect(DB) as db:
         by_sport=[{"sport":s,"matches":n} for s,n in db.execute("SELECT sport,COUNT(*) FROM matches GROUP BY sport ORDER BY sport")]
         by_comp=[{"sport":s,"competition":c,"matches":n,"first_date":lo,"last_date":hi} for s,c,n,lo,hi in db.execute(
-            "SELECT sport,COALESCE(competition,'unknown'),COUNT(*),MIN(NULLIF(match_date,'')),MAX(NULLIF(match_date,'')) FROM matches GROUP BY sport,competition ORDER BY sport,n DESC")]
+            "SELECT sport,COALESCE(competition,'unknown'),COUNT(*) AS n,MIN(NULLIF(match_date,'')),MAX(NULLIF(match_date,'')) FROM matches GROUP BY sport,competition ORDER BY sport,n DESC")]
         seasons=[{"sport":s,"season":str(y),"matches":n} for s,y,n in db.execute("SELECT sport,COALESCE(season,''),COUNT(*) FROM matches GROUP BY sport,season ORDER BY sport,season")]
         metadata=dict(db.execute("SELECT key,value FROM metadata").fetchall())
     comp_names=[str(x["competition"]).casefold() for x in by_comp]
