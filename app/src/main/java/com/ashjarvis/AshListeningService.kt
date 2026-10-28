@@ -27,6 +27,8 @@ class AshListeningService : Service() {
     private var listening = false
     private var restarting = false
     private var awaitingCommand = false
+    private var restartDelayMs = 700L
+    private val maxRestartDelayMs = 10_000L
     private val stopReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
             if (intent?.action == ACTION_STOP) stopSelf()
@@ -65,15 +67,23 @@ class AshListeningService : Service() {
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
             recognizer = SpeechRecognizer.createSpeechRecognizer(this).also { sr ->
                 sr.setRecognitionListener(object : RecognitionListener {
-                    override fun onReadyForSpeech(params: Bundle?) { listening = true; restarting = false }
+                    override fun onReadyForSpeech(params: Bundle?) {
+                        listening = true
+                        restarting = false
+                        restartDelayMs = 700L
+                    }
                     override fun onBeginningOfSpeech() {}
                     override fun onRmsChanged(rmsdB: Float) {}
                     override fun onBufferReceived(buffer: ByteArray?) {}
                     override fun onEndOfSpeech() { listening = false }
                     override fun onError(error: Int) {
                         listening = false
-                        if (error != SpeechRecognizer.ERROR_CLIENT && error != SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) scheduleRestart()
-                        else if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) stopSelf()
+                        // ERROR_CLIENT and NO_MATCH commonly occur when a recognition window ends.
+                        if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) {
+                            stopSelf()
+                        } else {
+                            scheduleRestart()
+                        }
                     }
                     override fun onResults(results: Bundle?) {
                         listening = false
@@ -150,8 +160,11 @@ class AshListeningService : Service() {
     private fun scheduleRestart() {
         if (restarting) return
         restarting = true
+        listening = false
         handler.removeCallbacks(restartRunnable)
-        handler.postDelayed(restartRunnable, 450)
+        val delay = restartDelayMs
+        restartDelayMs = (restartDelayMs * 2).coerceAtMost(maxRestartDelayMs)
+        handler.postDelayed(restartRunnable, delay)
     }
 
     private fun createChannel() {
