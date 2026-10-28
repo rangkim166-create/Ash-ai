@@ -9,6 +9,10 @@ on:
   schedule:
     - cron: "20 4 * * *"
 
+concurrency:
+  group: ash-sports-history-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
