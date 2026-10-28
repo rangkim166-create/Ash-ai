@@ -24,6 +24,7 @@ class AshListeningService : Service() {
     private var recognizer: SpeechRecognizer? = null
     private var listening = false
     private var restarting = false
+    private var awaitingCommand = false
     private val stopReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: android.content.Context?, intent: Intent?) {
             if (intent?.action == ACTION_STOP) stopSelf()
@@ -111,15 +112,37 @@ class AshListeningService : Service() {
             stopSelf()
             return
         }
-        val prefix = listOf("hey ash", "hi ash", "okay ash", "ok ash", "ash jarvis")
-            .firstOrNull { lower.startsWith(it) } ?: return
-        val command = raw.trim().drop(prefix.length).trim(' ', ',', '.', ':')
-        if (command.isBlank() || (partial && command.length < 4)) return
-        // The accessibility service receives the command through its app-scoped receiver.
-        sendBroadcast(Intent(AshAccessibilityService.ACTION_WAKE_COMMAND).setPackage(packageName).putExtra(AshAccessibilityService.EXTRA_TEXT, command))
+        val wakePhrases = listOf("hey ash", "hi ash", "okay ash", "ok ash", "ash jarvis", "ash")
+        val prefix = wakePhrases.firstOrNull { lower == it || lower.startsWith("$it ") || lower.startsWith("$it,") }
+        if (prefix != null) {
+            val command = raw.trim().drop(prefix.length).trim(' ', ',', '.', ':')
+            if (command.isBlank()) {
+                awaitingCommand = true
+                handler.removeCallbacks(commandTimeout)
+                handler.postDelayed(commandTimeout, 12_000)
+                sendBroadcast(Intent(MainActivity.ACTION_WAKE_ACK).setPackage(packageName))
+                return
+            }
+            awaitingCommand = false
+            handler.removeCallbacks(commandTimeout)
+            dispatchCommand(command)
+            return
+        }
+        if (awaitingCommand && lower.isNotBlank()) {
+            awaitingCommand = false
+            handler.removeCallbacks(commandTimeout)
+            dispatchCommand(raw.trim())
+        }
     }
 
     private val handler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val commandTimeout = Runnable { awaitingCommand = false }
+
+    private fun dispatchCommand(command: String) {
+        sendBroadcast(Intent(AshAccessibilityService.ACTION_WAKE_COMMAND)
+            .setPackage(packageName)
+            .putExtra(AshAccessibilityService.EXTRA_TEXT, command))
+    }
     private val restartRunnable = Runnable { startRecognition() }
     private fun scheduleRestart() {
         if (restarting) return
