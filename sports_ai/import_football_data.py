@@ -23,8 +23,9 @@ def main():
     if not DB.exists():
         raise SystemExit("Run build_database.py before importing Football-Data CSVs.")
     files = sorted(BASE.rglob("*.csv")) if BASE.exists() else []
-    imported = 0
+    imported = skipped = 0
     with sqlite3.connect(DB) as db:
+        existing = {(str(d or "").strip().casefold(), str(a or "").strip().casefold(), str(b or "").strip().casefold(), sa, sb) for d,a,b,sa,sb in db.execute("SELECT match_date,participant_a,participant_b,score_a,score_b FROM matches WHERE sport='football'")}
         for path in files:
             try:
                 with path.open(encoding="latin-1", newline="") as stream:
@@ -40,6 +41,11 @@ def main():
                             hg, ag = float(hg), float(ag)
                         except (TypeError, ValueError):
                             continue
+                        key = (str(date or "").strip().casefold(), str(home).strip().casefold(), str(away).strip().casefold(), hg, ag)
+                        if key in existing:
+                            skipped += 1
+                            continue
+                        existing.add(key)
                         winner = home if hg > ag else away if ag > hg else "draw"
                         comp = path.parent.name.replace("-", " ").title()
                         db.execute(
@@ -51,8 +57,9 @@ def main():
             except (OSError, UnicodeError, csv.Error):
                 continue
         db.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('football_data_imported',?)", (str(imported),))
+        db.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('football_data_duplicates_skipped',?)", (str(skipped),))
         db.commit()
-    print(json.dumps({"csv_files_seen": len(files), "football_matches_imported": imported}))
+    print(json.dumps({"csv_files_seen": len(files), "football_matches_imported": imported, "duplicates_skipped": skipped}))
     if imported == 0:
         print("No Football-Data CSV rows matched expected result columns; other historical sources remain available.")
 
