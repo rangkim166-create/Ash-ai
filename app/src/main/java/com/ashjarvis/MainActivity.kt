@@ -852,6 +852,7 @@ class MainActivity : Activity() {
             input.setText("")
             return
         }
+        if (handleSportsPredictionCommand(text)) return
         val offlineSelected = prefs.getBoolean("offline_ai_enabled", false)
         val offlineName = prefs.getString("offline_model_name", null)
         if (!offlineSelected && (getApiKey().isNullOrBlank() || (prefs.getString("model", "") ?: "").isBlank())) {
@@ -917,6 +918,119 @@ class MainActivity : Activity() {
                     updateStatus()
                 }
             }
+        }
+    }
+
+    private fun handleSportsPredictionCommand(text: String): Boolean {
+        val lower = text.lowercase(Locale.ROOT)
+        val historyIntent = lower.contains("sports history") || lower.startsWith("history football") ||
+            lower.startsWith("history tennis") || lower.startsWith("history basketball") ||
+            lower == "sports data" || lower == "sports status"
+        val predictionIntent = lower.startsWith("predict ") || lower.startsWith("prediction ") ||
+            lower.startsWith("sports predict") || lower.contains(" prediction for ")
+        if (!historyIntent && !predictionIntent) return false
+
+        input.setText("")
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(input.windowToken, 0)
+        addMessage("You", text)
+        footer.text = "Loading Ash sports history…"
+
+        thread {
+            try {
+                val connection = (URL("https://raw.githubusercontent.com/rangkim166-create/Ash-ai/main/data/history/ratings.json")
+                    .openConnection() as HttpURLConnection)
+                connection.connectTimeout = 15000
+                connection.readTimeout = 20000
+                connection.setRequestProperty("Cache-Control", "no-cache")
+                val payload = try {
+                    val code = connection.responseCode
+                    if (code !in 200..299) throw IllegalStateException("Sports ratings are not published yet (HTTP $code). Open the GitHub Actions tab and run Collect sports history.")
+                    connection.inputStream.bufferedReader(Charsets.UTF_8).use { it.readText() }
+                } finally {
+                    connection.disconnect()
+                }
+                val root = JSONObject(payload)
+                val tables = root.optJSONObject("ratings") ?: throw IllegalStateException("Sports ratings file is incomplete.")
+                val counts = root.optJSONObject("match_counts") ?: JSONObject()
+                val answer: String
+                if (historyIntent) {
+                    answer = "Ash sports history status\n" +
+                        "Football results used: " + counts.optInt("football") + "\n" +
+                        "Tennis matches used: " + counts.optInt("tennis") + "\n" +
+                        "Basketball games used: " + counts.optInt("basketball") + "\n\n" +
+                        "These are the records loaded into the Elo baseline, not every match ever played or historical betting odds."
+                } else {
+                    val sport = when {
+                        lower.contains("basketball") || lower.contains("nba") -> "basketball"
+                        lower.contains("tennis") -> "tennis"
+                        else -> "football"
+                    }
+                    val separator = Regex("\\s+(?:vs\\.?|versus|against)\\s+", RegexOption.IGNORE_CASE)
+                    val match = separator.find(text)
+                    if (match == null) {
+                        answer = "Use: predict football Arsenal vs Liverpool\n" +
+                            "Or: predict tennis player one vs player two\n" +
+                            "Or: predict basketball Boston Celtics vs Los Angeles Lakers"
+                    } else {
+                        val leftRaw = text.substring(0, match.range.first)
+                        val rightRaw = text.substring(match.range.last + 1)
+                        var firstQuery = leftRaw.replace(Regex("(?i)^\\s*(?:please\\s+)?(?:sports\\s+)?(?:predict|prediction)\\s*"), "").trim()
+                        firstQuery = firstQuery.replace(Regex("(?i)^(football|soccer|tennis|basketball|nba)\\s+"), "").trim()
+                        var secondQuery = rightRaw.replace(Regex("(?i)\\s+(?:prediction|please predict)$"), "").trim()
+                        val table = tables.optJSONObject(sport) ?: JSONObject()
+                        val first = findSportsRating(table, firstQuery)
+                        val second = findSportsRating(table, secondQuery)
+                        if (first == null || second == null) {
+                            answer = "I couldn't match both names in Ash's published $sport history. Check spelling or try the full team/player names.\n" +
+                                "Loaded matches: " + counts.optInt(sport) + ". A missing rating means the model uses a neutral baseline."
+                        } else {
+                            val probability = 1.0 / (1.0 + Math.pow(10.0, (second.second - first.second) / 400.0))
+                            answer = "Ash $sport Elo estimate\n" +
+                                first.first + ": Elo " + String.format(Locale.US, "%.0f", first.second) + "\n" +
+                                second.first + ": Elo " + String.format(Locale.US, "%.0f", second.second) + "\n\n" +
+                                first.first + " estimated win chance: " + String.format(Locale.US, "%.1f", probability * 100.0) + "%\n" +
+                                second.first + " estimated win chance: " + String.format(Locale.US, "%.1f", (1.0 - probability) * 100.0) + "%\n\n" +
+                                "Based on historical results only. It does not account for injuries, lineups, surface, venue or live odds. Not a guarantee."
+                        }
+                    }
+                }
+                runOnUiThread {
+                    addMessage("Ash Jarvis", answer)
+                    tts?.speak(answer.take(3000), TextToSpeech.QUEUE_FLUSH, null, "ash-sports-reply")
+                    footer.text = "Sports history • " + root.optString("generated_at_utc", "last published")
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    val message = e.message ?: "unknown connection error"
+                    addMessage("Ash Jarvis", "Ash sports history isn't available yet: $message")
+                    footer.text = "Sports history not connected yet"
+                }
+            }
+        }
+        return true
+    }
+
+    private fun findSportsRating(table: JSONObject, query: String): Pair<String, Double>? {
+        val normalizedQuery = query.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
+        if (normalizedQuery.length < 3) return null
+        val entries = mutableListOf<Pair<String, Double>>()
+        val keys = table.keys()
+        while (keys.hasNext()) {
+            val name = keys.next()
+            val rating = table.optDouble(name, Double.NaN)
+            if (!rating.isNaN()) entries.add(name to rating)
+        }
+        entries.firstOrNull {
+            it.first.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "") == normalizedQuery
+        }?.let { return it }
+        val matches = entries.filter {
+            val normalizedName = it.first.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
+            normalizedName.length >= 3 &&
+                (normalizedName.contains(normalizedQuery) || normalizedQuery.contains(normalizedName))
+        }
+        return matches.maxByOrNull {
+            it.first.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "").length
         }
     }
 
