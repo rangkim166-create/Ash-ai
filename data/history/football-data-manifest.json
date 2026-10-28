@@ -1,0 +1,4113 @@
+{
+  "generated_at_utc": "2026-10-28T21:01:12Z",
+  "provider": "Football-Data.co.uk",
+  "coverage_note": "Selected European divisions, 2000/01 through 2026/27 where files exist. Coverage and bookmaker odds vary by league and season.",
+  "terms_note": "Review provider terms before commercial use or redistribution.",
+  "summary": {
+    "requested": 513,
+    "downloaded": 508,
+    "unavailable": 5,
+    "downloaded_bytes": 52728099
+  },
+  "sources": [
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0001_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0001",
+      "bytes": 27698,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0102_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0102",
+      "bytes": 30209,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0203_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0203",
+      "bytes": 30070,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0304_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0304",
+      "bytes": 39485,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0405_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0405",
+      "bytes": 51227,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0506_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0506",
+      "bytes": 70631,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0607_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0607",
+      "bytes": 70829,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0708_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0708",
+      "bytes": 74256,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0809_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0809",
+      "bytes": 75010,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/0910_B1.csv",
+      "league": "belgium-first-division",
+      "season": "0910",
+      "bytes": 51513,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1011_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1011",
+      "bytes": 59347,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1112_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1112",
+      "bytes": 59963,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1213_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1213",
+      "bytes": 63496,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1314_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1314",
+      "bytes": 57445,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1415_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1415",
+      "bytes": 56065,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1516_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1516",
+      "bytes": 55172,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1617_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1617",
+      "bytes": 54442,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1718_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1718",
+      "bytes": 61341,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1819_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1819",
+      "bytes": 58925,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/1920_B1.csv",
+      "league": "belgium-first-division",
+      "season": "1920",
+      "bytes": 104897,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/2021_B1.csv",
+      "league": "belgium-first-division",
+      "season": "2021",
+      "bytes": 138909,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/2122_B1.csv",
+      "league": "belgium-first-division",
+      "season": "2122",
+      "bytes": 138528,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/2223_B1.csv",
+      "league": "belgium-first-division",
+      "season": "2223",
+      "bytes": 135378,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/2324_B1.csv",
+      "league": "belgium-first-division",
+      "season": "2324",
+      "bytes": 136827,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/2425_B1.csv",
+      "league": "belgium-first-division",
+      "season": "2425",
+      "bytes": 158659,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/2526_B1.csv",
+      "league": "belgium-first-division",
+      "season": "2526",
+      "bytes": 158888,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/B1.csv",
+      "path": "data/history/raw/football_data/belgium-first-division/2627_B1.csv",
+      "league": "belgium-first-division",
+      "season": "2627",
+      "bytes": 38543,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0001_E1.csv",
+      "league": "england-championship",
+      "season": "0001",
+      "bytes": 90009,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0102_E1.csv",
+      "league": "england-championship",
+      "season": "0102",
+      "bytes": 96950,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0203_E1.csv",
+      "league": "england-championship",
+      "season": "0203",
+      "bytes": 100443,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0304_E1.csv",
+      "league": "england-championship",
+      "season": "0304",
+      "bytes": 123238,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0405_E1.csv",
+      "league": "england-championship",
+      "season": "0405",
+      "bytes": 124323,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0506_E1.csv",
+      "league": "england-championship",
+      "season": "0506",
+      "bytes": 148522,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0607_E1.csv",
+      "league": "england-championship",
+      "season": "0607",
+      "bytes": 149034,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0708_E1.csv",
+      "league": "england-championship",
+      "season": "0708",
+      "bytes": 155608,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0809_E1.csv",
+      "league": "england-championship",
+      "season": "0809",
+      "bytes": 157327,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/0910_E1.csv",
+      "league": "england-championship",
+      "season": "0910",
+      "bytes": 156865,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1011_E1.csv",
+      "league": "england-championship",
+      "season": "1011",
+      "bytes": 156897,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1112_E1.csv",
+      "league": "england-championship",
+      "season": "1112",
+      "bytes": 157101,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1213_E1.csv",
+      "league": "england-championship",
+      "season": "1213",
+      "bytes": 160814,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1314_E1.csv",
+      "league": "england-championship",
+      "season": "1314",
+      "bytes": 151727,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1415_E1.csv",
+      "league": "england-championship",
+      "season": "1415",
+      "bytes": 147773,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1516_E1.csv",
+      "league": "england-championship",
+      "season": "1516",
+      "bytes": 145557,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1617_E1.csv",
+      "league": "england-championship",
+      "season": "1617",
+      "bytes": 146364,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1718_E1.csv",
+      "league": "england-championship",
+      "season": "1718",
+      "bytes": 146865,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1819_E1.csv",
+      "league": "england-championship",
+      "season": "1819",
+      "bytes": 140915,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/1920_E1.csv",
+      "league": "england-championship",
+      "season": "1920",
+      "bytes": 254740,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/2021_E1.csv",
+      "league": "england-championship",
+      "season": "2021",
+      "bytes": 255966,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/2122_E1.csv",
+      "league": "england-championship",
+      "season": "2122",
+      "bytes": 255881,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/2223_E1.csv",
+      "league": "england-championship",
+      "season": "2223",
+      "bytes": 255779,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/2324_E1.csv",
+      "league": "england-championship",
+      "season": "2324",
+      "bytes": 251182,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/2425_E1.csv",
+      "league": "england-championship",
+      "season": "2425",
+      "bytes": 286983,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/2526_E1.csv",
+      "league": "england-championship",
+      "season": "2526",
+      "bytes": 294390,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/E1.csv",
+      "path": "data/history/raw/football_data/england-championship/2627_E1.csv",
+      "league": "england-championship",
+      "season": "2627",
+      "bytes": 70528,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0001_E2.csv",
+      "league": "england-league-one",
+      "season": "0001",
+      "bytes": 88645,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0102_E2.csv",
+      "league": "england-league-one",
+      "season": "0102",
+      "bytes": 95949,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0203_E2.csv",
+      "league": "england-league-one",
+      "season": "0203",
+      "bytes": 93030,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0304_E2.csv",
+      "league": "england-league-one",
+      "season": "0304",
+      "bytes": 102312,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0405_E2.csv",
+      "league": "england-league-one",
+      "season": "0405",
+      "bytes": 121740,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0506_E2.csv",
+      "league": "england-league-one",
+      "season": "0506",
+      "bytes": 150556,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0607_E2.csv",
+      "league": "england-league-one",
+      "season": "0607",
+      "bytes": 150795,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0708_E2.csv",
+      "league": "england-league-one",
+      "season": "0708",
+      "bytes": 156110,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0809_E2.csv",
+      "league": "england-league-one",
+      "season": "0809",
+      "bytes": 157329,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/0910_E2.csv",
+      "league": "england-league-one",
+      "season": "0910",
+      "bytes": 156094,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1011_E2.csv",
+      "league": "england-league-one",
+      "season": "1011",
+      "bytes": 158132,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1112_E2.csv",
+      "league": "england-league-one",
+      "season": "1112",
+      "bytes": 158158,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1213_E2.csv",
+      "league": "england-league-one",
+      "season": "1213",
+      "bytes": 161290,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1314_E2.csv",
+      "league": "england-league-one",
+      "season": "1314",
+      "bytes": 153271,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1415_E2.csv",
+      "league": "england-league-one",
+      "season": "1415",
+      "bytes": 149432,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1516_E2.csv",
+      "league": "england-league-one",
+      "season": "1516",
+      "bytes": 145719,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1617_E2.csv",
+      "league": "england-league-one",
+      "season": "1617",
+      "bytes": 147752,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1718_E2.csv",
+      "league": "england-league-one",
+      "season": "1718",
+      "bytes": 147850,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1819_E2.csv",
+      "league": "england-league-one",
+      "season": "1819",
+      "bytes": 141425,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/1920_E2.csv",
+      "league": "england-league-one",
+      "season": "1920",
+      "bytes": 184870,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/2021_E2.csv",
+      "league": "england-league-one",
+      "season": "2021",
+      "bytes": 255775,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/2122_E2.csv",
+      "league": "england-league-one",
+      "season": "2122",
+      "bytes": 256198,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/2223_E2.csv",
+      "league": "england-league-one",
+      "season": "2223",
+      "bytes": 255895,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/2324_E2.csv",
+      "league": "england-league-one",
+      "season": "2324",
+      "bytes": 250001,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/2425_E2.csv",
+      "league": "england-league-one",
+      "season": "2425",
+      "bytes": 286638,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/2526_E2.csv",
+      "league": "england-league-one",
+      "season": "2526",
+      "bytes": 288636,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/E2.csv",
+      "path": "data/history/raw/football_data/england-league-one/2627_E2.csv",
+      "league": "england-league-one",
+      "season": "2627",
+      "bytes": 68021,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0001_E3.csv",
+      "league": "england-league-two",
+      "season": "0001",
+      "bytes": 86789,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0102_E3.csv",
+      "league": "england-league-two",
+      "season": "0102",
+      "bytes": 96211,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0203_E3.csv",
+      "league": "england-league-two",
+      "season": "0203",
+      "bytes": 93555,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0304_E3.csv",
+      "league": "england-league-two",
+      "season": "0304",
+      "bytes": 101966,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0405_E3.csv",
+      "league": "england-league-two",
+      "season": "0405",
+      "bytes": 120934,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0506_E3.csv",
+      "league": "england-league-two",
+      "season": "0506",
+      "bytes": 149734,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0607_E3.csv",
+      "league": "england-league-two",
+      "season": "0607",
+      "bytes": 150030,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0708_E3.csv",
+      "league": "england-league-two",
+      "season": "0708",
+      "bytes": 156334,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0809_E3.csv",
+      "league": "england-league-two",
+      "season": "0809",
+      "bytes": 157104,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/0910_E3.csv",
+      "league": "england-league-two",
+      "season": "0910",
+      "bytes": 156445,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1011_E3.csv",
+      "league": "england-league-two",
+      "season": "1011",
+      "bytes": 156834,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1112_E3.csv",
+      "league": "england-league-two",
+      "season": "1112",
+      "bytes": 157184,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1213_E3.csv",
+      "league": "england-league-two",
+      "season": "1213",
+      "bytes": 161039,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1314_E3.csv",
+      "league": "england-league-two",
+      "season": "1314",
+      "bytes": 152984,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1415_E3.csv",
+      "league": "england-league-two",
+      "season": "1415",
+      "bytes": 148228,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1516_E3.csv",
+      "league": "england-league-two",
+      "season": "1516",
+      "bytes": 146296,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1617_E3.csv",
+      "league": "england-league-two",
+      "season": "1617",
+      "bytes": 147163,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1718_E3.csv",
+      "league": "england-league-two",
+      "season": "1718",
+      "bytes": 148361,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1819_E3.csv",
+      "league": "england-league-two",
+      "season": "1819",
+      "bytes": 141832,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/1920_E3.csv",
+      "league": "england-league-two",
+      "season": "1920",
+      "bytes": 203254,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/2021_E3.csv",
+      "league": "england-league-two",
+      "season": "2021",
+      "bytes": 255961,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/2122_E3.csv",
+      "league": "england-league-two",
+      "season": "2122",
+      "bytes": 256169,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/2223_E3.csv",
+      "league": "england-league-two",
+      "season": "2223",
+      "bytes": 255530,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/2324_E3.csv",
+      "league": "england-league-two",
+      "season": "2324",
+      "bytes": 250842,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/2425_E3.csv",
+      "league": "england-league-two",
+      "season": "2425",
+      "bytes": 287557,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/2526_E3.csv",
+      "league": "england-league-two",
+      "season": "2526",
+      "bytes": 290077,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/E3.csv",
+      "path": "data/history/raw/football_data/england-league-two/2627_E3.csv",
+      "league": "england-league-two",
+      "season": "2627",
+      "bytes": 73886,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0001_E0.csv",
+      "league": "england-premier-league",
+      "season": "0001",
+      "bytes": 62076,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0102_E0.csv",
+      "league": "england-premier-league",
+      "season": "0102",
+      "bytes": 66230,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0203_E0.csv",
+      "league": "england-premier-league",
+      "season": "0203",
+      "bytes": 72322,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0304_E0.csv",
+      "league": "england-premier-league",
+      "season": "0304",
+      "bytes": 85438,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0405_E0.csv",
+      "league": "england-premier-league",
+      "season": "0405",
+      "bytes": 85894,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0506_E0.csv",
+      "league": "england-premier-league",
+      "season": "0506",
+      "bytes": 102129,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0607_E0.csv",
+      "league": "england-premier-league",
+      "season": "0607",
+      "bytes": 102043,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0708_E0.csv",
+      "league": "england-premier-league",
+      "season": "0708",
+      "bytes": 105683,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0809_E0.csv",
+      "league": "england-premier-league",
+      "season": "0809",
+      "bytes": 106205,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/0910_E0.csv",
+      "league": "england-premier-league",
+      "season": "0910",
+      "bytes": 105752,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1011_E0.csv",
+      "league": "england-premier-league",
+      "season": "1011",
+      "bytes": 106586,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1112_E0.csv",
+      "league": "england-premier-league",
+      "season": "1112",
+      "bytes": 106303,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1213_E0.csv",
+      "league": "england-premier-league",
+      "season": "1213",
+      "bytes": 113085,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1314_E0.csv",
+      "league": "england-premier-league",
+      "season": "1314",
+      "bytes": 103642,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1415_E0.csv",
+      "league": "england-premier-league",
+      "season": "1415",
+      "bytes": 100899,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1516_E0.csv",
+      "league": "england-premier-league",
+      "season": "1516",
+      "bytes": 100656,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1617_E0.csv",
+      "league": "england-premier-league",
+      "season": "1617",
+      "bytes": 99990,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1718_E0.csv",
+      "league": "england-premier-league",
+      "season": "1718",
+      "bytes": 100734,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1819_E0.csv",
+      "league": "england-premier-league",
+      "season": "1819",
+      "bytes": 96144,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/1920_E0.csv",
+      "league": "england-premier-league",
+      "season": "1920",
+      "bytes": 175475,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/2021_E0.csv",
+      "league": "england-premier-league",
+      "season": "2021",
+      "bytes": 175815,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/2122_E0.csv",
+      "league": "england-premier-league",
+      "season": "2122",
+      "bytes": 175363,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/2223_E0.csv",
+      "league": "england-premier-league",
+      "season": "2223",
+      "bytes": 176180,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/2324_E0.csv",
+      "league": "england-premier-league",
+      "season": "2324",
+      "bytes": 172196,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/2425_E0.csv",
+      "league": "england-premier-league",
+      "season": "2425",
+      "bytes": 197110,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/2526_E0.csv",
+      "league": "england-premier-league",
+      "season": "2526",
+      "bytes": 203438,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/E0.csv",
+      "path": "data/history/raw/football_data/england-premier-league/2627_E0.csv",
+      "league": "england-premier-league",
+      "season": "2627",
+      "bytes": 39368,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0001_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0001",
+      "bytes": 28638,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0102_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0102",
+      "bytes": 31999,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0203_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0203",
+      "bytes": 45768,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0304_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0304",
+      "bytes": 58843,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0405_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0405",
+      "bytes": 65249,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0506_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0506",
+      "bytes": 93075,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0607_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0607",
+      "bytes": 95042,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0708_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0708",
+      "bytes": 100311,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0809_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0809",
+      "bytes": 101205,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/0910_F1.csv",
+      "league": "france-ligue-1",
+      "season": "0910",
+      "bytes": 100639,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1011_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1011",
+      "bytes": 100690,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1112_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1112",
+      "bytes": 102658,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1213_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1213",
+      "bytes": 110075,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1314_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1314",
+      "bytes": 100451,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1415_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1415",
+      "bytes": 96761,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1516_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1516",
+      "bytes": 95146,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1617_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1617",
+      "bytes": 94928,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1718_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1718",
+      "bytes": 95353,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1819_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1819",
+      "bytes": 91888,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/1920_F1.csv",
+      "league": "france-ligue-1",
+      "season": "1920",
+      "bytes": 125011,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/2021_F1.csv",
+      "league": "france-ligue-1",
+      "season": "2021",
+      "bytes": 170539,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/2122_F1.csv",
+      "league": "france-ligue-1",
+      "season": "2122",
+      "bytes": 171274,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/2223_F1.csv",
+      "league": "france-ligue-1",
+      "season": "2223",
+      "bytes": 171165,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/2324_F1.csv",
+      "league": "france-ligue-1",
+      "season": "2324",
+      "bytes": 135000,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/2425_F1.csv",
+      "league": "france-ligue-1",
+      "season": "2425",
+      "bytes": 154703,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/2526_F1.csv",
+      "league": "france-ligue-1",
+      "season": "2526",
+      "bytes": 158471,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/F1.csv",
+      "path": "data/history/raw/football_data/france-ligue-1/2627_F1.csv",
+      "league": "france-ligue-1",
+      "season": "2627",
+      "bytes": 34596,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0001_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0001",
+      "bytes": 22145,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0102_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0102",
+      "bytes": 26757,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0203_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0203",
+      "bytes": 40267,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0304_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0304",
+      "bytes": 50206,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0405_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0405",
+      "bytes": 59453,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0506_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0506",
+      "bytes": 86575,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0607_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0607",
+      "bytes": 86867,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0708_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0708",
+      "bytes": 90458,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0809_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0809",
+      "bytes": 90755,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/0910_F2.csv",
+      "league": "france-ligue-2",
+      "season": "0910",
+      "bytes": 90294,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1011_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1011",
+      "bytes": 90379,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1112_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1112",
+      "bytes": 90233,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1213_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1213",
+      "bytes": 97015,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1314_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1314",
+      "bytes": 87895,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1415_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1415",
+      "bytes": 85476,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1516_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1516",
+      "bytes": 84878,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1617_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1617",
+      "bytes": 84654,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1718_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1718",
+      "bytes": 96821,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1819_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1819",
+      "bytes": 91815,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/1920_F2.csv",
+      "league": "france-ligue-2",
+      "season": "1920",
+      "bytes": 125737,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/2021_F2.csv",
+      "league": "france-ligue-2",
+      "season": "2021",
+      "bytes": 170365,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/2122_F2.csv",
+      "league": "france-ligue-2",
+      "season": "2122",
+      "bytes": 170624,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/2223_F2.csv",
+      "league": "france-ligue-2",
+      "season": "2223",
+      "bytes": 170203,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/2324_F2.csv",
+      "league": "france-ligue-2",
+      "season": "2324",
+      "bytes": 167269,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/2425_F2.csv",
+      "league": "france-ligue-2",
+      "season": "2425",
+      "bytes": 155252,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/2526_F2.csv",
+      "league": "france-ligue-2",
+      "season": "2526",
+      "bytes": 156238,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/F2.csv",
+      "path": "data/history/raw/football_data/france-ligue-2/2627_F2.csv",
+      "league": "france-ligue-2",
+      "season": "2627",
+      "bytes": 43076,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0001_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0001",
+      "bytes": 40690,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0102_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0102",
+      "bytes": 47951,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0203_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0203",
+      "bytes": 35871,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0304_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0304",
+      "bytes": 41966,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0405_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0405",
+      "bytes": 46025,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0506_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0506",
+      "bytes": 70036,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0607_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0607",
+      "bytes": 78734,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0708_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0708",
+      "bytes": 74257,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0809_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0809",
+      "bytes": 76463,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/0910_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "0910",
+      "bytes": 76222,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1011_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1011",
+      "bytes": 76806,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1112_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1112",
+      "bytes": 77873,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1213_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1213",
+      "bytes": 81639,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1314_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1314",
+      "bytes": 74306,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1415_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1415",
+      "bytes": 72300,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1516_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1516",
+      "bytes": 71042,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1617_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1617",
+      "bytes": 71481,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1718_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1718",
+      "bytes": 80130,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1819_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1819",
+      "bytes": 75832,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/1920_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "1920",
+      "bytes": 139025,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/2021_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "2021",
+      "bytes": 140043,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/2122_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "2122",
+      "bytes": 140192,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/2223_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "2223",
+      "bytes": 140871,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/2324_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "2324",
+      "bytes": 137285,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/2425_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "2425",
+      "bytes": 157178,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/2526_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "2526",
+      "bytes": 157989,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/D2.csv",
+      "path": "data/history/raw/football_data/germany-2-bundesliga/2627_D2.csv",
+      "league": "germany-2-bundesliga",
+      "season": "2627",
+      "bytes": 39392,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0001_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0001",
+      "bytes": 51613,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0102_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0102",
+      "bytes": 53961,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0203_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0203",
+      "bytes": 44858,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0304_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0304",
+      "bytes": 66831,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0405_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0405",
+      "bytes": 67857,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0506_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0506",
+      "bytes": 79148,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0607_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0607",
+      "bytes": 80296,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0708_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0708",
+      "bytes": 83700,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0809_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0809",
+      "bytes": 84127,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/0910_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "0910",
+      "bytes": 83642,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1011_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1011",
+      "bytes": 84990,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1112_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1112",
+      "bytes": 85125,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1213_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1213",
+      "bytes": 89983,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1314_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1314",
+      "bytes": 81743,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1415_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1415",
+      "bytes": 79194,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1516_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1516",
+      "bytes": 78179,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1617_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1617",
+      "bytes": 78466,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1718_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1718",
+      "bytes": 78641,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1819_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1819",
+      "bytes": 75587,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/1920_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "1920",
+      "bytes": 138965,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/2021_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "2021",
+      "bytes": 139075,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/2122_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "2122",
+      "bytes": 139177,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/2223_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "2223",
+      "bytes": 139302,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/2324_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "2324",
+      "bytes": 135825,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/2425_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "2425",
+      "bytes": 156414,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/2526_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "2526",
+      "bytes": 159944,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/D1.csv",
+      "path": "data/history/raw/football_data/germany-bundesliga/2627_D1.csv",
+      "league": "germany-bundesliga",
+      "season": "2627",
+      "bytes": 30516,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/G1.csv",
+      "league": "greece-super-league",
+      "season": "0001",
+      "status": "unavailable",
+      "error": "CSV header does not contain HomeTeam/AwayTeam"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/G1.csv",
+      "league": "greece-super-league",
+      "season": "0102",
+      "status": "unavailable",
+      "error": "CSV header does not contain HomeTeam/AwayTeam"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/G1.csv",
+      "league": "greece-super-league",
+      "season": "0203",
+      "status": "unavailable",
+      "error": "CSV header does not contain HomeTeam/AwayTeam"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/G1.csv",
+      "league": "greece-super-league",
+      "season": "0304",
+      "status": "unavailable",
+      "error": "CSV header does not contain HomeTeam/AwayTeam"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/G1.csv",
+      "league": "greece-super-league",
+      "season": "0405",
+      "status": "unavailable",
+      "error": "CSV header does not contain HomeTeam/AwayTeam"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/0506_G1.csv",
+      "league": "greece-super-league",
+      "season": "0506",
+      "bytes": 53333,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/0607_G1.csv",
+      "league": "greece-super-league",
+      "season": "0607",
+      "bytes": 53365,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/0708_G1.csv",
+      "league": "greece-super-league",
+      "season": "0708",
+      "bytes": 56791,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/0809_G1.csv",
+      "league": "greece-super-league",
+      "season": "0809",
+      "bytes": 57760,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/0910_G1.csv",
+      "league": "greece-super-league",
+      "season": "0910",
+      "bytes": 57324,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1011_G1.csv",
+      "league": "greece-super-league",
+      "season": "1011",
+      "bytes": 58487,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1112_G1.csv",
+      "league": "greece-super-league",
+      "season": "1112",
+      "bytes": 57783,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1213_G1.csv",
+      "league": "greece-super-league",
+      "season": "1213",
+      "bytes": 60735,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1314_G1.csv",
+      "league": "greece-super-league",
+      "season": "1314",
+      "bytes": 71347,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1415_G1.csv",
+      "league": "greece-super-league",
+      "season": "1415",
+      "bytes": 67908,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1516_G1.csv",
+      "league": "greece-super-league",
+      "season": "1516",
+      "bytes": 55025,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1617_G1.csv",
+      "league": "greece-super-league",
+      "season": "1617",
+      "bytes": 53266,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1718_G1.csv",
+      "league": "greece-super-league",
+      "season": "1718",
+      "bytes": 59522,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1819_G1.csv",
+      "league": "greece-super-league",
+      "season": "1819",
+      "bytes": 57786,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/1920_G1.csv",
+      "league": "greece-super-league",
+      "season": "1920",
+      "bytes": 107420,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/2021_G1.csv",
+      "league": "greece-super-league",
+      "season": "2021",
+      "bytes": 107072,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/2122_G1.csv",
+      "league": "greece-super-league",
+      "season": "2122",
+      "bytes": 107981,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/2223_G1.csv",
+      "league": "greece-super-league",
+      "season": "2223",
+      "bytes": 108399,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/2324_G1.csv",
+      "league": "greece-super-league",
+      "season": "2324",
+      "bytes": 105713,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/2425_G1.csv",
+      "league": "greece-super-league",
+      "season": "2425",
+      "bytes": 117759,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/2526_G1.csv",
+      "league": "greece-super-league",
+      "season": "2526",
+      "bytes": 117010,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/G1.csv",
+      "path": "data/history/raw/football_data/greece-super-league/2627_G1.csv",
+      "league": "greece-super-league",
+      "season": "2627",
+      "bytes": 26437,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0001_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0001",
+      "bytes": 29812,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0102_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0102",
+      "bytes": 31741,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0203_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0203",
+      "bytes": 41324,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0304_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0304",
+      "bytes": 53721,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0405_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0405",
+      "bytes": 69503,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0506_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0506",
+      "bytes": 99857,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0607_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0607",
+      "bytes": 100110,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0708_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0708",
+      "bytes": 99808,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0809_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0809",
+      "bytes": 100586,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/0910_I1.csv",
+      "league": "italy-serie-a",
+      "season": "0910",
+      "bytes": 100607,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1011_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1011",
+      "bytes": 102028,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1112_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1112",
+      "bytes": 102400,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1213_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1213",
+      "bytes": 109491,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1314_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1314",
+      "bytes": 99710,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1415_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1415",
+      "bytes": 96108,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1516_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1516",
+      "bytes": 95127,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1617_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1617",
+      "bytes": 95048,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1718_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1718",
+      "bytes": 95137,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1819_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1819",
+      "bytes": 91392,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/1920_I1.csv",
+      "league": "italy-serie-a",
+      "season": "1920",
+      "bytes": 170130,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/2021_I1.csv",
+      "league": "italy-serie-a",
+      "season": "2021",
+      "bytes": 170667,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/2122_I1.csv",
+      "league": "italy-serie-a",
+      "season": "2122",
+      "bytes": 171204,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/2223_I1.csv",
+      "league": "italy-serie-a",
+      "season": "2223",
+      "bytes": 171573,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/2324_I1.csv",
+      "league": "italy-serie-a",
+      "season": "2324",
+      "bytes": 167015,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/2425_I1.csv",
+      "league": "italy-serie-a",
+      "season": "2425",
+      "bytes": 191722,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/2526_I1.csv",
+      "league": "italy-serie-a",
+      "season": "2526",
+      "bytes": 196217,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/I1.csv",
+      "path": "data/history/raw/football_data/italy-serie-a/2627_I1.csv",
+      "league": "italy-serie-a",
+      "season": "2627",
+      "bytes": 38144,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0001_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0001",
+      "bytes": 27106,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0102_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0102",
+      "bytes": 28455,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0203_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0203",
+      "bytes": 43224,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0304_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0304",
+      "bytes": 74222,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0405_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0405",
+      "bytes": 70874,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0506_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0506",
+      "bytes": 104590,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0607_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0607",
+      "bytes": 104385,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0708_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0708",
+      "bytes": 109009,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0809_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0809",
+      "bytes": 110576,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/0910_I2.csv",
+      "league": "italy-serie-b",
+      "season": "0910",
+      "bytes": 108299,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1011_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1011",
+      "bytes": 109688,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1112_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1112",
+      "bytes": 111169,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1213_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1213",
+      "bytes": 119566,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1314_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1314",
+      "bytes": 107351,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1415_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1415",
+      "bytes": 104774,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1516_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1516",
+      "bytes": 102691,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1617_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1617",
+      "bytes": 102631,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1718_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1718",
+      "bytes": 117079,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1819_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1819",
+      "bytes": 82327,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/1920_I2.csv",
+      "league": "italy-serie-b",
+      "season": "1920",
+      "bytes": 169422,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/2021_I2.csv",
+      "league": "italy-serie-b",
+      "season": "2021",
+      "bytes": 170381,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/2122_I2.csv",
+      "league": "italy-serie-b",
+      "season": "2122",
+      "bytes": 171409,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/2223_I2.csv",
+      "league": "italy-serie-b",
+      "season": "2223",
+      "bytes": 169009,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/2324_I2.csv",
+      "league": "italy-serie-b",
+      "season": "2324",
+      "bytes": 166710,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/2425_I2.csv",
+      "league": "italy-serie-b",
+      "season": "2425",
+      "bytes": 192674,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/2526_I2.csv",
+      "league": "italy-serie-b",
+      "season": "2526",
+      "bytes": 190966,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/I2.csv",
+      "path": "data/history/raw/football_data/italy-serie-b/2627_I2.csv",
+      "league": "italy-serie-b",
+      "season": "2627",
+      "bytes": 38462,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0001_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0001",
+      "bytes": 28216,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0102_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0102",
+      "bytes": 29789,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0203_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0203",
+      "bytes": 34944,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0304_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0304",
+      "bytes": 41191,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0405_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0405",
+      "bytes": 53467,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0506_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0506",
+      "bytes": 70890,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0607_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0607",
+      "bytes": 70620,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0708_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0708",
+      "bytes": 73924,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0809_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0809",
+      "bytes": 75137,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/0910_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "0910",
+      "bytes": 74586,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1011_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1011",
+      "bytes": 75711,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1112_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1112",
+      "bytes": 75217,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1213_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1213",
+      "bytes": 79618,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1314_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1314",
+      "bytes": 72686,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1415_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1415",
+      "bytes": 70441,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1516_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1516",
+      "bytes": 69113,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1617_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1617",
+      "bytes": 69567,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1718_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1718",
+      "bytes": 77802,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1819_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1819",
+      "bytes": 75168,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/1920_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "1920",
+      "bytes": 105545,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/2021_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "2021",
+      "bytes": 138587,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/2122_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "2122",
+      "bytes": 138801,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/2223_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "2223",
+      "bytes": 139065,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/2324_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "2324",
+      "bytes": 135643,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/2425_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "2425",
+      "bytes": 155460,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/2526_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "2526",
+      "bytes": 158364,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/N1.csv",
+      "path": "data/history/raw/football_data/netherlands-eredivisie/2627_N1.csv",
+      "league": "netherlands-eredivisie",
+      "season": "2627",
+      "bytes": 42856,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0001_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0001",
+      "bytes": 28058,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0102_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0102",
+      "bytes": 30054,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0203_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0203",
+      "bytes": 35469,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0304_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0304",
+      "bytes": 40908,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0405_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0405",
+      "bytes": 50154,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0506_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0506",
+      "bytes": 71068,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0607_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0607",
+      "bytes": 54981,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0708_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0708",
+      "bytes": 57131,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0809_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0809",
+      "bytes": 57727,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/0910_P1.csv",
+      "league": "portugal-primeira",
+      "season": "0910",
+      "bytes": 57214,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1011_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1011",
+      "bytes": 58916,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1112_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1112",
+      "bytes": 58646,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1213_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1213",
+      "bytes": 62627,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1314_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1314",
+      "bytes": 56795,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1415_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1415",
+      "bytes": 70174,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1516_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1516",
+      "bytes": 68971,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1617_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1617",
+      "bytes": 68735,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1718_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1718",
+      "bytes": 77337,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1819_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1819",
+      "bytes": 74751,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/1920_P1.csv",
+      "league": "portugal-primeira",
+      "season": "1920",
+      "bytes": 138631,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/2021_P1.csv",
+      "league": "portugal-primeira",
+      "season": "2021",
+      "bytes": 139013,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/2122_P1.csv",
+      "league": "portugal-primeira",
+      "season": "2122",
+      "bytes": 139055,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/2223_P1.csv",
+      "league": "portugal-primeira",
+      "season": "2223",
+      "bytes": 139035,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/2324_P1.csv",
+      "league": "portugal-primeira",
+      "season": "2324",
+      "bytes": 135008,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/2425_P1.csv",
+      "league": "portugal-primeira",
+      "season": "2425",
+      "bytes": 153596,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/2526_P1.csv",
+      "league": "portugal-primeira",
+      "season": "2526",
+      "bytes": 157715,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/P1.csv",
+      "path": "data/history/raw/football_data/portugal-primeira/2627_P1.csv",
+      "league": "portugal-primeira",
+      "season": "2627",
+      "bytes": 38665,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0001_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0001",
+      "bytes": 27348,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0102_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0102",
+      "bytes": 30303,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0203_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0203",
+      "bytes": 22046,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0304_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0304",
+      "bytes": 25614,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0405_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0405",
+      "bytes": 28759,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0506_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0506",
+      "bytes": 42205,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0607_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0607",
+      "bytes": 42303,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0708_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0708",
+      "bytes": 44118,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0809_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0809",
+      "bytes": 45153,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/0910_SC1.csv",
+      "league": "scotland-championship",
+      "season": "0910",
+      "bytes": 44567,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1011_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1011",
+      "bytes": 45100,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1112_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1112",
+      "bytes": 44663,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1213_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1213",
+      "bytes": 47964,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1314_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1314",
+      "bytes": 43079,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1415_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1415",
+      "bytes": 41777,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1516_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1516",
+      "bytes": 40642,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1617_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1617",
+      "bytes": 41620,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1718_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1718",
+      "bytes": 49059,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1819_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1819",
+      "bytes": 45984,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/1920_SC1.csv",
+      "league": "scotland-championship",
+      "season": "1920",
+      "bytes": 63667,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/2021_SC1.csv",
+      "league": "scotland-championship",
+      "season": "2021",
+      "bytes": 62528,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/2122_SC1.csv",
+      "league": "scotland-championship",
+      "season": "2122",
+      "bytes": 83674,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/2223_SC1.csv",
+      "league": "scotland-championship",
+      "season": "2223",
+      "bytes": 83969,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/2324_SC1.csv",
+      "league": "scotland-championship",
+      "season": "2324",
+      "bytes": 81995,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/2425_SC1.csv",
+      "league": "scotland-championship",
+      "season": "2425",
+      "bytes": 93788,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/2526_SC1.csv",
+      "league": "scotland-championship",
+      "season": "2526",
+      "bytes": 94837,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/SC1.csv",
+      "path": "data/history/raw/football_data/scotland-championship/2627_SC1.csv",
+      "league": "scotland-championship",
+      "season": "2627",
+      "bytes": 28380,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0001_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0001",
+      "bytes": 37610,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0102_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0102",
+      "bytes": 39490,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0203_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0203",
+      "bytes": 40343,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0304_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0304",
+      "bytes": 42883,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0405_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0405",
+      "bytes": 49306,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0506_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0506",
+      "bytes": 61746,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0607_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0607",
+      "bytes": 61800,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0708_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0708",
+      "bytes": 63791,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0809_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0809",
+      "bytes": 64042,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/0910_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "0910",
+      "bytes": 64377,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1011_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1011",
+      "bytes": 64409,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1112_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1112",
+      "bytes": 65019,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1213_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1213",
+      "bytes": 66786,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1314_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1314",
+      "bytes": 63259,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1415_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1415",
+      "bytes": 61399,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1516_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1516",
+      "bytes": 60523,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1617_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1617",
+      "bytes": 60431,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1718_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1718",
+      "bytes": 60384,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1819_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1819",
+      "bytes": 58288,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/1920_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "1920",
+      "bytes": 82811,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/2021_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "2021",
+      "bytes": 105286,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/2122_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "2122",
+      "bytes": 105588,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/2223_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "2223",
+      "bytes": 105939,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/2324_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "2324",
+      "bytes": 103688,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/2425_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "2425",
+      "bytes": 118635,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/2526_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "2526",
+      "bytes": 118594,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/SC0.csv",
+      "path": "data/history/raw/football_data/scotland-premiership/2627_SC0.csv",
+      "league": "scotland-premiership",
+      "season": "2627",
+      "bytes": 29714,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0001_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0001",
+      "bytes": 38966,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0102_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0102",
+      "bytes": 42369,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0203_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0203",
+      "bytes": 54790,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0304_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0304",
+      "bytes": 72830,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0405_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0405",
+      "bytes": 73451,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0506_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0506",
+      "bytes": 98942,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0607_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0607",
+      "bytes": 98966,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0708_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0708",
+      "bytes": 102708,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0809_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0809",
+      "bytes": 103886,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/0910_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "0910",
+      "bytes": 103451,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1011_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1011",
+      "bytes": 103698,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1112_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1112",
+      "bytes": 103977,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1213_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1213",
+      "bytes": 110545,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1314_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1314",
+      "bytes": 100249,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1415_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1415",
+      "bytes": 97119,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1516_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1516",
+      "bytes": 96045,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1617_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1617",
+      "bytes": 96226,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1718_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1718",
+      "bytes": 96801,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1819_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1819",
+      "bytes": 92914,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/1920_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "1920",
+      "bytes": 171484,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/2021_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "2021",
+      "bytes": 171721,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/2122_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "2122",
+      "bytes": 172174,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/2223_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "2223",
+      "bytes": 172199,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/2324_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "2324",
+      "bytes": 168164,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/2425_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "2425",
+      "bytes": 192863,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/2526_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "2526",
+      "bytes": 197653,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/SP1.csv",
+      "path": "data/history/raw/football_data/spain-la-liga/2627_SP1.csv",
+      "league": "spain-la-liga",
+      "season": "2627",
+      "bytes": 47448,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0001_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0001",
+      "bytes": 29254,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0102_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0102",
+      "bytes": 39298,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0203_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0203",
+      "bytes": 50761,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0304_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0304",
+      "bytes": 59844,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0405_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0405",
+      "bytes": 83053,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0506_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0506",
+      "bytes": 106881,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0607_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0607",
+      "bytes": 106952,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0708_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0708",
+      "bytes": 109202,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0809_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0809",
+      "bytes": 109890,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/0910_SP2.csv",
+      "league": "spain-segunda",
+      "season": "0910",
+      "bytes": 110544,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1011_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1011",
+      "bytes": 112527,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1112_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1112",
+      "bytes": 115054,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1213_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1213",
+      "bytes": 122149,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1314_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1314",
+      "bytes": 110653,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1415_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1415",
+      "bytes": 106268,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1516_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1516",
+      "bytes": 104203,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1617_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1617",
+      "bytes": 103750,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1718_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1718",
+      "bytes": 117387,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1819_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1819",
+      "bytes": 110019,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/1920_SP2.csv",
+      "league": "spain-segunda",
+      "season": "1920",
+      "bytes": 208074,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/2021_SP2.csv",
+      "league": "spain-segunda",
+      "season": "2021",
+      "bytes": 207328,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/2122_SP2.csv",
+      "league": "spain-segunda",
+      "season": "2122",
+      "bytes": 207787,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/2223_SP2.csv",
+      "league": "spain-segunda",
+      "season": "2223",
+      "bytes": 202621,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/2324_SP2.csv",
+      "league": "spain-segunda",
+      "season": "2324",
+      "bytes": 199754,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/2425_SP2.csv",
+      "league": "spain-segunda",
+      "season": "2425",
+      "bytes": 230032,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/2526_SP2.csv",
+      "league": "spain-segunda",
+      "season": "2526",
+      "bytes": 237701,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/SP2.csv",
+      "path": "data/history/raw/football_data/spain-segunda/2627_SP2.csv",
+      "league": "spain-segunda",
+      "season": "2627",
+      "bytes": 57528,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0001/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0001_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0001",
+      "bytes": 27704,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0102/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0102_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0102",
+      "bytes": 31003,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0203/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0203_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0203",
+      "bytes": 38613,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0304/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0304_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0304",
+      "bytes": 42224,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0405/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0405_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0405",
+      "bytes": 50251,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0506/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0506_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0506",
+      "bytes": 71898,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0607/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0607_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0607",
+      "bytes": 73061,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0708/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0708_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0708",
+      "bytes": 74803,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0809/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0809_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0809",
+      "bytes": 75624,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/0910/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/0910_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "0910",
+      "bytes": 67999,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1011/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1011_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1011",
+      "bytes": 76872,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1112/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1112_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1112",
+      "bytes": 77236,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1213/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1213_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1213",
+      "bytes": 82692,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1314/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1314_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1314",
+      "bytes": 74698,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1415/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1415_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1415",
+      "bytes": 72285,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1516/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1516_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1516",
+      "bytes": 71621,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1617/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1617_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1617",
+      "bytes": 70825,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1718/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1718_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1718",
+      "bytes": 79062,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1819/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1819_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1819",
+      "bytes": 76515,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/1920/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/1920_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "1920",
+      "bytes": 139935,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2021/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/2021_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "2021",
+      "bytes": 191916,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2122/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/2122_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "2122",
+      "bytes": 173920,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2223/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/2223_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "2223",
+      "bytes": 147535,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2324/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/2324_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "2324",
+      "bytes": 169459,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2425/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/2425_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "2425",
+      "bytes": 173297,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2526/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/2526_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "2526",
+      "bytes": 158392,
+      "status": "ok"
+    },
+    {
+      "url": "https://www.football-data.co.uk/mmz4281/2627/T1.csv",
+      "path": "data/history/raw/football_data/turkey-super-lig/2627_T1.csv",
+      "league": "turkey-super-lig",
+      "season": "2627",
+      "bytes": 38772,
+      "status": "ok"
+    }
+  ]
+}

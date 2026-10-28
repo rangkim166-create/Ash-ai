@@ -1,19 +1,19 @@
 {
-  "generated_at_utc": "2026-10-28T17:13:36.688929+00:00",
+  "generated_at_utc": "2026-10-28T21:04:18.036893+00:00",
   "completeness": "best_effort_not_exhaustive",
   "summary": {
-    "total_matches": 461355,
+    "total_matches": 639281,
     "by_sport": [
       {
         "sport": "football",
-        "matches": 99784
+        "matches": 277710
       },
       {
         "sport": "tennis",
         "matches": 361571
       }
     ],
-    "competitions_with_matches": 10086
+    "competitions_with_matches": 10105
   },
   "target_coverage": {
     "arab_football": [
@@ -74,6 +74,10 @@
         "target": "English Premier League",
         "detected": true,
         "matched_competitions": [
+          "England Championship",
+          "England League Two",
+          "England League One",
+          "England Premier League",
           "English Premier League 2025/26",
           "English Premier League 2024/25",
           "English Premier League 2023/24",
@@ -94,12 +98,14 @@
           "Southport England",
           "Chestnut Hill New England"
         ],
-        "matches_found": 6162
+        "matches_found": 59317
       },
       {
         "target": "English Championship",
         "detected": true,
         "matched_competitions": [
+          "England Championship",
+          "Scotland Championship",
           "English Championship 2025/26",
           "English Championship 2024/25",
           "English Championship 2023/24",
@@ -126,12 +132,14 @@
           "Ginny Championships",
           "Soviet Championships"
         ],
-        "matches_found": 8567
+        "matches_found": 27695
       },
       {
         "target": "German Bundesliga",
         "detected": true,
         "matched_competitions": [
+          "Germany 2 Bundesliga",
+          "Germany Bundesliga",
           "Deutsche Bundesliga 2025/26",
           "Deutsche Bundesliga 2024/25",
           "Deutsche Bundesliga 2023/24",
@@ -164,24 +172,28 @@
           "Deutsche 2. Bundesliga 2025/26",
           "Deutsche Bundesliga 2026/27"
         ],
-        "matches_found": 9009
+        "matches_found": 25029
       },
       {
         "target": "Spanish La Liga",
         "detected": true,
         "matched_competitions": [
+          "Spain Segunda",
+          "Spain La Liga",
           "Spain Segunda División 2024/25",
           "Spain Primera División 2025/26",
           "Spain Primera División 2024/25",
           "Spain Segunda División 2025/26",
           "Spain Primera División 2026/27"
         ],
-        "matches_found": 1403
+        "matches_found": 23506
       },
       {
         "target": "Italian Serie A",
         "detected": true,
         "matched_competitions": [
+          "Italy Serie B",
+          "Italy Serie A",
           "Italian Serie A 2025/26",
           "Italian Serie A 2023/24",
           "Italian Serie A 2022/23",
@@ -197,12 +209,14 @@
           "Italian Serie A 2024/25",
           "Italian Serie A 2026/27"
         ],
-        "matches_found": 4980
+        "matches_found": 25776
       },
       {
         "target": "French Ligue 1",
         "detected": true,
         "matched_competitions": [
+          "France Ligue 2",
+          "France Ligue 1",
           "French Ligue 1 2022/23",
           "French Ligue 1 2021/22",
           "French Ligue 1 2020/21",
@@ -217,12 +231,13 @@
           "French Ligue 1 2019/20",
           "French Ligue 1 2026/27"
         ],
-        "matches_found": 4281
+        "matches_found": 23478
       },
       {
         "target": "Dutch Eredivisie",
         "detected": true,
         "matched_competitions": [
+          "Netherlands Eredivisie",
           "Netherlands Eredivisie 2024/25",
           "Netherlands Eredivisie 2023/24",
           "Netherlands Eredivisie 2022/23",
@@ -233,12 +248,13 @@
           "Netherlands Eredivisie 2019/20",
           "Netherlands Eredivisie 2026/27"
         ],
-        "matches_found": 2436
+        "matches_found": 10195
       },
       {
         "target": "Portuguese Primeira Liga",
         "detected": true,
         "matched_competitions": [
+          "Portugal Primeira",
           "Portuguese Primeira Liga 2025/26",
           "Portuguese Primeira Liga 2024/25",
           "Portuguese Primeira Liga 2023/24",
@@ -249,26 +265,140 @@
           "Portuguese Primeira Liga 2018/19",
           "Portuguese Primeira Liga 2026/27"
         ],
-        "matches_found": 2510
+        "matches_found": 10011
       },
       {
         "target": "Scottish Premiership",
         "detected": true,
         "matched_competitions": [
+          "Scotland Premiership",
+          "Scotland Championship",
           "Perth Scotland",
           "West of Scotland"
         ],
-        "matches_found": 51
+        "matches_found": 10640
       }
     ]
   },
   "competition_counts": [
     {
       "sport": "football",
+      "competition": "England Championship",
+      "matches": 14478,
+      "first_date": "2000-08-12",
+      "last_date": "2026-10-24"
+    },
+    {
+      "sport": "football",
+      "competition": "England League Two",
+      "matches": 14390,
+      "first_date": "2000-08-12",
+      "last_date": "2026-10-26"
+    },
+    {
+      "sport": "football",
+      "competition": "England League One",
+      "matches": 14338,
+      "first_date": "2000-08-12",
+      "last_date": "2026-10-24"
+    },
+    {
+      "sport": "football",
+      "competition": "Spain Segunda",
+      "matches": 12124,
+      "first_date": "2000-09-02",
+      "last_date": "2026-10-26"
+    },
+    {
+      "sport": "football",
+      "competition": "Italy Serie B",
+      "matches": 11216,
+      "first_date": "2000-09-01",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "Spain La Liga",
+      "matches": 9979,
+      "first_date": "2000-09-09",
+      "last_date": "2026-10-26"
+    },
+    {
+      "sport": "football",
+      "competition": "England Premier League",
+      "matches": 9949,
+      "first_date": "2000-08-19",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "France Ligue 2",
+      "matches": 9716,
+      "first_date": "2000-07-28",
+      "last_date": "2026-10-26"
+    },
+    {
+      "sport": "football",
+      "competition": "Italy Serie A",
+      "matches": 9580,
+      "first_date": "2000-09-30",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "France Ligue 1",
+      "matches": 9481,
+      "first_date": "2000-07-28",
+      "last_date": "2026-10-26"
+    },
+    {
+      "sport": "football",
       "competition": "Mexico",
       "matches": 8824,
       "first_date": "Fri Apr 1",
       "last_date": "Wed Sep 9"
+    },
+    {
+      "sport": "football",
+      "competition": "Turkey Super Lig",
+      "matches": 8337,
+      "first_date": "2000-08-11",
+      "last_date": "2026-10-26"
+    },
+    {
+      "sport": "football",
+      "competition": "Germany 2 Bundesliga",
+      "matches": 8011,
+      "first_date": "2000-08-11",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "Germany Bundesliga",
+      "matches": 8009,
+      "first_date": "2000-08-11",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "Netherlands Eredivisie",
+      "matches": 7759,
+      "first_date": "2000-08-18",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "Portugal Primeira",
+      "matches": 7501,
+      "first_date": "2000-08-18",
+      "last_date": "2026-10-26"
+    },
+    {
+      "sport": "football",
+      "competition": "Belgium First Division",
+      "matches": 7255,
+      "first_date": "2000-08-12",
+      "last_date": "2026-10-25"
     },
     {
       "sport": "football",
@@ -283,6 +413,27 @@
       "matches": 7004,
       "first_date": "Fri Apr 1",
       "last_date": "Wed Sep 9"
+    },
+    {
+      "sport": "football",
+      "competition": "Scotland Premiership",
+      "matches": 5939,
+      "first_date": "2000-07-29",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "Greece Super League",
+      "matches": 5214,
+      "first_date": "2005-08-27",
+      "last_date": "2026-10-25"
+    },
+    {
+      "sport": "football",
+      "competition": "Scotland Championship",
+      "matches": 4650,
+      "first_date": "2000-08-05",
+      "last_date": "2026-10-24"
     },
     {
       "sport": "football",
@@ -70874,6 +71025,106 @@
     },
     {
       "sport": "football",
+      "season": "0001",
+      "matches": 6494
+    },
+    {
+      "sport": "football",
+      "season": "0102",
+      "matches": 6494
+    },
+    {
+      "sport": "football",
+      "season": "0203",
+      "matches": 6534
+    },
+    {
+      "sport": "football",
+      "season": "0304",
+      "matches": 6740
+    },
+    {
+      "sport": "football",
+      "season": "0405",
+      "matches": 6724
+    },
+    {
+      "sport": "football",
+      "season": "0506",
+      "matches": 6964
+    },
+    {
+      "sport": "football",
+      "season": "0607",
+      "matches": 6898
+    },
+    {
+      "sport": "football",
+      "season": "0708",
+      "matches": 6898
+    },
+    {
+      "sport": "football",
+      "season": "0809",
+      "matches": 6898
+    },
+    {
+      "sport": "football",
+      "season": "0910",
+      "matches": 6768
+    },
+    {
+      "sport": "football",
+      "season": "1011",
+      "matches": 6826
+    },
+    {
+      "sport": "football",
+      "season": "1112",
+      "matches": 6830
+    },
+    {
+      "sport": "football",
+      "season": "1213",
+      "matches": 6830
+    },
+    {
+      "sport": "football",
+      "season": "1314",
+      "matches": 6882
+    },
+    {
+      "sport": "football",
+      "season": "1415",
+      "matches": 6941
+    },
+    {
+      "sport": "football",
+      "season": "1516",
+      "matches": 6876
+    },
+    {
+      "sport": "football",
+      "season": "1617",
+      "matches": 6882
+    },
+    {
+      "sport": "football",
+      "season": "1718",
+      "matches": 6880
+    },
+    {
+      "sport": "football",
+      "season": "1819",
+      "matches": 6707
+    },
+    {
+      "sport": "football",
+      "season": "1920",
+      "matches": 6119
+    },
+    {
+      "sport": "football",
       "season": "2000-2001",
       "matches": 137
     },
@@ -71019,6 +71270,11 @@
     },
     {
       "sport": "football",
+      "season": "2021",
+      "matches": 6903
+    },
+    {
+      "sport": "football",
       "season": "2021-22",
       "matches": 3301
     },
@@ -71046,6 +71302,36 @@
       "sport": "football",
       "season": "2026-27",
       "matches": 470
+    },
+    {
+      "sport": "football",
+      "season": "2122",
+      "matches": 6900
+    },
+    {
+      "sport": "football",
+      "season": "2223",
+      "matches": 6872
+    },
+    {
+      "sport": "football",
+      "season": "2324",
+      "matches": 6883
+    },
+    {
+      "sport": "football",
+      "season": "2425",
+      "matches": 6757
+    },
+    {
+      "sport": "football",
+      "season": "2526",
+      "matches": 6723
+    },
+    {
+      "sport": "football",
+      "season": "2627",
+      "matches": 1703
     },
     {
       "sport": "tennis",
@@ -71344,10 +71630,12 @@
     }
   ],
   "pipeline_metadata": {
-    "built_at_utc": "2026-10-28T17:13:27.717051+00:00",
+    "built_at_utc": "2026-10-28T21:03:51.335040+00:00",
     "total_matches": "416052",
     "counts_by_sport": "{\"football\": 54481, \"tennis\": 361571}",
     "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
+    "football_data_imported": "177926",
+    "football_data_duplicates_skipped": "409",
     "world_archive_imported": "42494",
     "saudi_matches_imported": "2809",
     "saudi_duplicates_skipped": "0",
