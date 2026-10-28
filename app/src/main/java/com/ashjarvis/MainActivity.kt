@@ -143,7 +143,7 @@ class MainActivity : Activity() {
     }
 
     private fun showPhoneTools() {
-        val options = arrayOf("Enable screen reading / tapping", "Read last captured screen aloud", "Tap a visible item by its text", "Type a reply into focused field")
+        val options = arrayOf("Enable screen reading / tapping", "Read last captured screen aloud", "Tap a visible item by its text", "Type a reply into focused field", "Open phone dialer", "Open notifications", "Open quick settings", "Call-answering help")
         AlertDialog.Builder(this)
             .setTitle("Ash phone tools")
             .setItems(options) { _, which ->
@@ -179,13 +179,19 @@ class MainActivity : Activity() {
                     3 -> {
                         val field = EditText(this).apply { hint = "Text to insert"; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }
                         AlertDialog.Builder(this).setTitle("Type into focused field")
-                            .setMessage("First switch to the target app and focus its message box. Then return to Ash and use this tool. This inserts text only; it does not send the message.")
+                            .setMessage("First focus the message box in the target app. This inserts text only; it does not send the message.")
                             .setView(field).setNegativeButton("CANCEL", null)
                             .setPositiveButton("INSERT") { _, _ ->
                                 val value = field.text.toString()
                                 if (value.isNotBlank()) sendBroadcast(Intent(AshAccessibilityService.ACTION_TYPE_TEXT).setPackage(packageName).putExtra(AshAccessibilityService.EXTRA_TEXT, value))
                             }.show()
                     }
+                    4 -> startActivity(Intent(Intent.ACTION_DIAL))
+                    5 -> sendBroadcast(Intent(AshAccessibilityService.ACTION_NOTIFICATIONS).setPackage(packageName))
+                    6 -> sendBroadcast(Intent(AshAccessibilityService.ACTION_QUICK_SETTINGS).setPackage(packageName))
+                    7 -> AlertDialog.Builder(this).setTitle("Call controls")
+                        .setMessage("Say \"call 07XXXXXXXX\" to open the dialer with a number. Say \"answer call\" or \"reject call\" to try tapping the matching control on a visible call screen. Android may block automatic answering/rejection on some phones. Ash does not secretly listen to calls.")
+                        .setPositiveButton("OK", null).show()
                 }
             }.show()
     }
@@ -303,6 +309,25 @@ class MainActivity : Activity() {
         if (lower in listOf("swipe right", "move right")) return action(AshAccessibilityService.ACTION_SWIPE_RIGHT)
         if (lower in listOf("go back", "back", "press back")) return action(AshAccessibilityService.ACTION_BACK)
         if (lower in listOf("go home", "home screen", "press home")) return action(AshAccessibilityService.ACTION_HOME)
+        if (lower in listOf("show notifications", "open notifications", "notification shade")) return action(AshAccessibilityService.ACTION_NOTIFICATIONS)
+        if (lower in listOf("open quick settings", "show quick settings")) return action(AshAccessibilityService.ACTION_QUICK_SETTINGS)
+        if (lower in listOf("lock phone", "lock screen")) return action(AshAccessibilityService.ACTION_LOCK_SCREEN)
+        if (lower in listOf("answer call", "pick up call", "pick the call", "accept call")) return action(AshAccessibilityService.ACTION_TAP_TEXT, "Answer")
+        if (lower in listOf("reject call", "decline call", "hang up call")) return action(AshAccessibilityService.ACTION_TAP_TEXT, "Decline")
+        if (lower.startsWith("call ") || lower.startsWith("dial ")) {
+            val number = command.substringAfter(" ").trim()
+            val cleaned = number.filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
+            if (cleaned.length >= 3) {
+                return try {
+                    startActivity(Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", cleaned, null)))
+                    Toast.makeText(this, "Dialer opened. Review the number and press call.", Toast.LENGTH_LONG).show()
+                    true
+                } catch (_: Exception) {
+                    Toast.makeText(this, "Couldn't open the phone dialer", Toast.LENGTH_LONG).show()
+                    true
+                }
+            }
+        }
         if (lower in listOf("what is on my screen", "read my screen", "read screen", "describe my screen")) {
             val screen = prefs.getString(AshAccessibilityService.KEY_SCREEN, null)
             if (screen.isNullOrBlank()) addMessage("Ash Jarvis", "I can't see screen text yet. Enable Ash Screen Control in Android Accessibility settings, then try again.")
