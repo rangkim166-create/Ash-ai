@@ -30,4 +30,5 @@ android {
 
 dependencies {
     implementation("io.github.aatricks:llmedge:0.3.9")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 }
