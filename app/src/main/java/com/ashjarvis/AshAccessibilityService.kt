@@ -1,17 +1,24 @@
 package com.ashjarvis
 
 import android.accessibilityservice.AccessibilityService
-import android.content.Intent
+import android.accessibilityservice.GestureDescription
 import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.content.IntentFilter
+import android.graphics.Path
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import android.widget.Toast
 
 class AshAccessibilityService : AccessibilityService() {
+    private val mainHandler = Handler(Looper.getMainLooper())
+
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        // Keep a lightweight snapshot of visible text for the user-requested screen reader.
         saveVisibleScreen()
     }
 
@@ -21,7 +28,11 @@ class AshAccessibilityService : AccessibilityService() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val target = intent?.getStringExtra(EXTRA_TEXT).orEmpty()
             when (intent?.action) {
-                ACTION_TAP_TEXT -> if (target.isNotBlank()) findNode(rootInActiveWindow, target)?.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+                ACTION_TAP_TEXT -> if (target.isNotBlank()) {
+                    val node = findNode(rootInActiveWindow, target)
+                    val success = node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
+                    announce(if (success) "Tapped $target" else "Couldn't find a clickable item named $target")
+                }
                 ACTION_TYPE_TEXT -> {
                     val focused = findFocusedEditable(rootInActiveWindow)
                     if (focused != null) {
@@ -29,8 +40,15 @@ class AshAccessibilityService : AccessibilityService() {
                         focused.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, Bundle().apply {
                             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, target)
                         })
-                    }
+                    } else announce("No focused text field found")
                 }
+                ACTION_SCROLL_DOWN -> scrollWindow(forward = true)
+                ACTION_SCROLL_UP -> scrollWindow(forward = false)
+                ACTION_SWIPE_LEFT -> swipe(0.82f, 0.5f, 0.18f, 0.5f)
+                ACTION_SWIPE_RIGHT -> swipe(0.18f, 0.5f, 0.82f, 0.5f)
+                ACTION_BACK -> performGlobalAction(GLOBAL_ACTION_BACK)
+                ACTION_HOME -> performGlobalAction(GLOBAL_ACTION_HOME)
+                ACTION_OPEN_APP -> if (target.isNotBlank()) openApp(target)
             }
             saveVisibleScreen()
         }
@@ -41,14 +59,72 @@ class AshAccessibilityService : AccessibilityService() {
         val filter = IntentFilter().apply {
             addAction(ACTION_TAP_TEXT)
             addAction(ACTION_TYPE_TEXT)
+            addAction(ACTION_SCROLL_DOWN)
+            addAction(ACTION_SCROLL_UP)
+            addAction(ACTION_SWIPE_LEFT)
+            addAction(ACTION_SWIPE_RIGHT)
+            addAction(ACTION_BACK)
+            addAction(ACTION_HOME)
+            addAction(ACTION_OPEN_APP)
         }
-        if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(commandReceiver, filter, Context.RECEIVER_NOT_EXPORTED) else @Suppress("DEPRECATION") run { registerReceiver(commandReceiver, filter) }
+        if (Build.VERSION.SDK_INT >= 33) registerReceiver(commandReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        else @Suppress("DEPRECATION") run { registerReceiver(commandReceiver, filter) }
         saveVisibleScreen()
+        announce("Ash screen control is ready")
     }
 
     override fun onDestroy() {
         try { unregisterReceiver(commandReceiver) } catch (_: Exception) {}
         super.onDestroy()
+    }
+
+    private fun announce(message: String) {
+        mainHandler.post { Toast.makeText(this, message, Toast.LENGTH_SHORT).show() }
+    }
+
+    private fun scrollWindow(forward: Boolean) {
+        val root = rootInActiveWindow
+        val node = findScrollable(root)
+        val action = if (forward) AccessibilityNodeInfo.ACTION_SCROLL_FORWARD else AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
+        val success = node?.performAction(action) == true
+        if (!success) {
+            val startY = if (forward) 0.78f else 0.28f
+            val endY = if (forward) 0.28f else 0.78f
+            swipe(0.5f, startY, 0.5f, endY)
+        }
+    }
+
+    private fun swipe(startX: Float, startY: Float, endX: Float, endY: Float) {
+        val dm = resources.displayMetrics
+        val path = Path().apply {
+            moveTo(dm.widthPixels * startX, dm.heightPixels * startY)
+            lineTo(dm.widthPixels * endX, dm.heightPixels * endY)
+        }
+        val gesture = GestureDescription.Builder()
+            .addStroke(GestureDescription.StrokeDescription(path, 0, 350))
+            .build()
+        val accepted = dispatchGesture(gesture, null, null)
+        if (!accepted) announce("Swipe wasn't accepted. Check that Ash Screen Control is enabled.")
+    }
+
+    private fun openApp(requestedName: String) {
+        val pm = packageManager
+        val candidates = try {
+            @Suppress("DEPRECATION")
+            pm.getInstalledApplications(0)
+        } catch (_: Exception) { emptyList() }
+        val match = candidates.firstOrNull { app ->
+            val label = pm.getApplicationLabel(app).toString()
+            label.equals(requestedName, ignoreCase = true) ||
+                label.contains(requestedName, ignoreCase = true)
+        }
+        val launch = match?.let { pm.getLaunchIntentForPackage(it.packageName) }
+        if (launch == null) {
+            announce("Couldn't find an app named $requestedName")
+            return
+        }
+        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try { startActivity(launch) } catch (_: Exception) { announce("Couldn't open $requestedName") }
     }
 
     private fun saveVisibleScreen() {
@@ -75,7 +151,8 @@ class AshAccessibilityService : AccessibilityService() {
         val desc = node.contentDescription?.toString().orEmpty()
         if (text.contains(target, true) || desc.contains(target, true)) {
             if (node.isClickable) return node
-            node.parent?.let { if (it.isClickable) return it }
+            val parent = node.parent
+            if (parent?.isClickable == true) return parent
         }
         for (i in 0 until node.childCount) {
             val found = findNode(node.getChild(i), target)
@@ -94,12 +171,29 @@ class AshAccessibilityService : AccessibilityService() {
         return null
     }
 
+    private fun findScrollable(node: AccessibilityNodeInfo?): AccessibilityNodeInfo? {
+        if (node == null) return null
+        if (node.isScrollable) return node
+        for (i in 0 until node.childCount) {
+            val found = findScrollable(node.getChild(i))
+            if (found != null) return found
+        }
+        return null
+    }
+
     companion object {
         const val PREFS = "ash_jarvis"
         const val KEY_SCREEN = "visible_screen_text"
         const val KEY_SCREEN_TIME = "visible_screen_time"
         const val ACTION_TAP_TEXT = "com.ashjarvis.ACTION_TAP_TEXT"
         const val ACTION_TYPE_TEXT = "com.ashjarvis.ACTION_TYPE_TEXT"
+        const val ACTION_SCROLL_DOWN = "com.ashjarvis.ACTION_SCROLL_DOWN"
+        const val ACTION_SCROLL_UP = "com.ashjarvis.ACTION_SCROLL_UP"
+        const val ACTION_SWIPE_LEFT = "com.ashjarvis.ACTION_SWIPE_LEFT"
+        const val ACTION_SWIPE_RIGHT = "com.ashjarvis.ACTION_SWIPE_RIGHT"
+        const val ACTION_BACK = "com.ashjarvis.ACTION_BACK"
+        const val ACTION_HOME = "com.ashjarvis.ACTION_HOME"
+        const val ACTION_OPEN_APP = "com.ashjarvis.ACTION_OPEN_APP"
         const val EXTRA_TEXT = "text"
     }
 }
