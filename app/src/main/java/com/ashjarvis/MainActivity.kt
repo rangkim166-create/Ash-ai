@@ -25,6 +25,14 @@ import android.widget.Toast
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import java.util.Locale
+import io.aatricks.llmedge.LLMEdge
+import io.aatricks.llmedge.model.ModelSpec
+import io.aatricks.llmedge.text.TextModelOptions
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.provider.Settings
 import android.text.InputType
 import android.app.AlertDialog
@@ -49,6 +57,8 @@ class MainActivity : Activity() {
     private val history = JSONArray()
     private val keyAlias = "ash_jarvis_api_key"
     private var tts: TextToSpeech? = null
+    private val aiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    @Volatile private var offlineEdge: LLMEdge? = null
     private val speechRequestCode = 7124
     companion object { const val ACTION_STOP_SPEAKING = "com.ashjarvis.ACTION_STOP_SPEAKING" }
     private val stopSpeechReceiver = object : android.content.BroadcastReceiver() {
@@ -345,6 +355,10 @@ class MainActivity : Activity() {
     }
 
     private fun updateStatus() {
+        if (prefs.getBoolean("offline_ai_enabled", false)) {
+            footer.text = "Offline AI selected • " + (prefs.getString("offline_model_name", "model not selected") ?: "model not selected")
+            return
+        }
         footer.text = if (getApiKey().isNullOrBlank()) {
             "AI engine: not configured • Tap AI SETUP"
         } else {
@@ -353,6 +367,8 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
+        try { offlineEdge?.close() } catch (_: Exception) {}
+        offlineEdge = null
         tts?.stop()
         tts?.shutdown()
         super.onDestroy()
@@ -468,11 +484,15 @@ class MainActivity : Activity() {
             .setView(panel)
             .setNegativeButton("CANCEL", null)
             .setNeutralButton("CHECK DOWNLOADED", null)
-            .setPositiveButton("DOWNLOAD MODEL") { _, _ ->
+            .setPositiveButton(if (prefs.getBoolean("offline_ai_enabled", false)) "USE OFFLINE AI" else "DOWNLOAD MODEL") { _, _ ->
                 val ram = selectedRam()
                 val chosen = compatibleModels().getOrNull(modelSpinner.selectedItemPosition) ?: offlineModels.first()
-                prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).apply()
-                startOfflineModelDownload(chosen)
+                prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).putString("offline_model_file", chosen.fileName).apply()
+                if (prefs.getBoolean("offline_model_downloaded", false)) {
+                    setOfflineAiEnabled(true)
+                } else {
+                    startOfflineModelDownload(chosen)
+                }
             }
             .create()
         dialog.setOnShowListener {
@@ -750,14 +770,57 @@ class MainActivity : Activity() {
             input.setText("")
             return
         }
-        if (getApiKey().isNullOrBlank() || (prefs.getString("model", "") ?: "").isBlank()) {
+        val offlineSelected = prefs.getBoolean("offline_ai_enabled", false)
+        val offlineName = prefs.getString("offline_model_name", null)
+        if (!offlineSelected && (getApiKey().isNullOrBlank() || (prefs.getString("model", "") ?: "").isBlank())) {
             showAiSetup()
             return
         }
         input.setText("")
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(input.windowToken, 0)
-        footer.text = "Ash is thinking…"
+        footer.text = if (offlineSelected) "Loading local AI… first reply may take time" else "Ash is thinking…"
         addMessage("You", text)
+        if (offlineSelected) {
+            aiScope.launch {
+                try {
+                    val modelFile = getOfflineModelFile()
+                    if (!modelFile.isFile || modelFile.length() < 1024 * 1024) {
+                        throw IllegalStateException("Offline model file is missing. Open OFFLINE AI, download a model, then tap CHECK DOWNLOADED.")
+                    }
+                    val edge = offlineEdge ?: LLMEdge.create(this@MainActivity, aiScope).also { offlineEdge = it }
+                    val prompt = buildString {
+                        append("You are Ash Jarvis, a helpful private Android assistant. Reply clearly and concisely. ")
+                        append("You were created by the Ash Teach Team. Never claim phone actions succeeded unless confirmed.\n")
+                        val start = (history.length() - 10).coerceAtLeast(0)
+                        for (i in start until history.length()) {
+                            val item = history.optJSONObject(i) ?: continue
+                            val sender = item.optString("sender")
+                            val body = item.optString("text")
+                            if (body.isBlank() || body.startsWith("Welcome.")) continue
+                            append(if (sender == "You") "User: " else "Ash: ")
+                            append(body.take(1200))
+                            append("\n")
+                        }
+                        append("Ash:")
+                    }
+                    val answer = withContext(Dispatchers.IO) {
+                        edge.text.generate(
+                            prompt = prompt,
+                            model = ModelSpec.localFile(modelFile),
+                            options = TextModelOptions(contextSize = 2048, numThreads = 4, generationThreads = 4, temperature = 0.7f),
+                            maxTokens = 256
+                        )
+                    }
+                    addMessage("Ash Jarvis", answer.trim().ifBlank { "I couldn't generate a reply. Try again." })
+                    tts?.speak(answer.take(3500), TextToSpeech.QUEUE_FLUSH, null, "ash-offline-reply")
+                    footer.text = "Offline AI • replies run on this phone"
+                } catch (e: Exception) {
+                    addMessage("Ash Jarvis", "Offline AI couldn't start: " + (e.message ?: "unknown error"))
+                    footer.text = "Offline AI needs a valid downloaded model"
+                }
+            }
+            return
+        }
         thread {
             try {
                 val answer = callOpenRouter(text)
@@ -773,6 +836,30 @@ class MainActivity : Activity() {
                 }
             }
         }
+    }
+
+    private fun getOfflineModelFile(): java.io.File {
+        val fileName = prefs.getString("offline_model_file", null)
+            ?: throw IllegalStateException("No offline model selected. Open OFFLINE AI and download one.")
+        val internal = java.io.File(filesDir, fileName)
+        if (internal.exists() && internal.length() > 1024 * 1024) return internal
+        val publicFile = java.io.File(
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+            "AshJarvis/" + fileName
+        )
+        if (!publicFile.exists() || publicFile.length() <= 1024 * 1024) {
+            throw IllegalStateException("Model download isn't complete yet. Check Wi-Fi and download status.")
+        }
+        publicFile.inputStream().use { input ->
+            internal.outputStream().use { output -> input.copyTo(output) }
+        }
+        return internal
+    }
+
+    private fun setOfflineAiEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean("offline_ai_enabled", enabled).apply()
+        Toast.makeText(this, if (enabled) "Offline AI selected. Replies will run on-device." else "Online AI selected.", Toast.LENGTH_LONG).show()
+        updateStatus()
     }
 
     private fun testConnection() {
