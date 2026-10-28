@@ -1,0 +1,147 @@
+{
+  "purpose": "Prioritize competitions with consistent historical results and broad fixture coverage. This is a data-quality ranking, not a claim that games are easy wins.",
+  "priority_europe": [
+    {
+      "name": "English Premier League",
+      "key": "england-premier-league",
+      "priority": "A",
+      "reason": "strong historical coverage and broad market attention"
+    },
+    {
+      "name": "English Championship",
+      "key": "england-championship",
+      "priority": "A",
+      "reason": "high match volume; results can be volatile"
+    },
+    {
+      "name": "German Bundesliga",
+      "key": "germany-bundesliga",
+      "priority": "A",
+      "reason": "strong historical coverage"
+    },
+    {
+      "name": "Spanish La Liga",
+      "key": "spain-la-liga",
+      "priority": "A",
+      "reason": "strong historical coverage"
+    },
+    {
+      "name": "Italian Serie A",
+      "key": "italy-serie-a",
+      "priority": "A",
+      "reason": "strong historical coverage"
+    },
+    {
+      "name": "French Ligue 1",
+      "key": "france-ligue-1",
+      "priority": "A",
+      "reason": "strong historical coverage"
+    },
+    {
+      "name": "Dutch Eredivisie",
+      "key": "netherlands-eredivisie",
+      "priority": "B",
+      "reason": "useful results coverage; verify season completeness"
+    },
+    {
+      "name": "Portuguese Primeira Liga",
+      "key": "portugal-primeira",
+      "priority": "B",
+      "reason": "useful results coverage; verify season completeness"
+    },
+    {
+      "name": "Scottish Premiership",
+      "key": "scotland-premiership",
+      "priority": "B",
+      "reason": "useful results coverage"
+    }
+  ],
+  "priority_arab_and_african": [
+    {
+      "name": "Saudi Pro League",
+      "key": "saudi-pro-league",
+      "priority": "target",
+      "source_status": "needs_verified_source",
+      "reason": "requested Arab competition; do not report historical coverage until a valid source is confirmed"
+    },
+    {
+      "name": "Egyptian Premier League",
+      "key": "egypt-premier-league",
+      "priority": "target",
+      "source_status": "openfootball-world-archive-target",
+      "reason": "targeted via public-domain OpenFootball world data"
+    },
+    {
+      "name": "Moroccan Botola Pro",
+      "key": "morocco-botola",
+      "priority": "target",
+      "source_status": "openfootball-world-archive-target",
+      "reason": "targeted via public-domain OpenFootball world data"
+    },
+    {
+      "name": "Algerian Ligue 1",
+      "key": "algeria-ligue-1",
+      "priority": "target",
+      "source_status": "openfootball-world-archive-target",
+      "reason": "targeted via public-domain OpenFootball world data"
+    },
+    {
+      "name": "Qatar Stars League",
+      "key": "qatar-stars-league",
+      "priority": "target",
+      "source_status": "needs_verified_source",
+      "reason": "requested Arab competition; do not report historical coverage until a valid source is confirmed"
+    },
+    {
+      "name": "UAE Pro League",
+      "key": "uae-pro-league",
+      "priority": "target",
+      "source_status": "needs_verified_source",
+      "reason": "requested Arab competition; do not report historical coverage until a valid source is confirmed"
+    },
+    {
+      "name": "Tunisian Ligue Professionnelle 1",
+      "key": "tunisia-ligue-1",
+      "priority": "target",
+      "source_status": "needs_verified_source",
+      "reason": "requested-region expansion; verify source before counting coverage"
+    }
+  ],
+  "other_worldwide": [
+    {
+      "name": "MLS",
+      "key": "usa-mls",
+      "priority": "B"
+    },
+    {
+      "name": "Brazil Serie A",
+      "key": "brazil-serie-a",
+      "priority": "B"
+    }
+  ],
+  "recommendation_rules": {
+    "only_recommend_when": [
+      "historical sample count is sufficient",
+      "recent form is available",
+      "probability is calibrated on out-of-sample historical matches",
+      "current team news and fixture are verified when possible"
+    ],
+    "display": [
+      "estimated probabilities",
+      "data coverage",
+      "model confidence label",
+      "major missing information"
+    ],
+    "never_display_as_fact": [
+      "sure win",
+      "guaranteed win",
+      "easy money",
+      "risk-free bet"
+    ],
+    "confidence_labels": {
+      "high": "well-covered data and calibrated validation",
+      "medium": "partial evidence or modest validation",
+      "low": "sparse data, new team, or uncertain lineups"
+    }
+  }
+}
