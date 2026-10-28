@@ -43,6 +43,8 @@ jobs:
         run: python sports_ai/build_database.py
       - name: Import regional OpenFootball text results
         run: python sports_ai/import_openfootball_txt.py
+      - name: Publish compact ratings for Ash
+        run: python sports_ai/publish_ratings.py
       - name: Import Saudi Pro League history
         run: python sports_ai/import_saudi_history.py
       - name: Import NBA and international basketball history
