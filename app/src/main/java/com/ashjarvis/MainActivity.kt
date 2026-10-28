@@ -444,13 +444,25 @@ class MainActivity : Activity() {
     private fun handlePhoneCommand(raw: String): Boolean {
         val command = raw.trim()
         val lower = command.lowercase(Locale.ROOT)
+        // Small multilingual phrasebook for common phone controls. Match locally for speed and reliability.
+        val multilingual = when {
+            lower in listOf("nyamaza", "acha kuongea", "nyamaza ash", "kaa kimya", "leka okwogera", "sirikira", "yimiriza okwogera") -> "stop talking"
+            lower in listOf("funga app", "fungua app? hapana", "toka kwenye app", "ondoka kwenye app", "ggala app", "fulumya app", "close app", "exit app", "quit app") -> "close app"
+            lower in listOf("rudi nyuma", "nyuma", "dda emabega", "komawo emabega") -> "go back"
+            lower in listOf("nenda nyumbani", "fungua home", "enda ewaka", "genda awaka") -> "go home"
+            lower in listOf("fungua whatsapp", "fungua youtube", "fungua facebook", "ggulawo whatsapp", "ggulawo youtube", "ggulawo facebook") -> "open " + lower.substringAfterLast(" ").trim()
+            lower in listOf("sogeza chini", "shuka chini", "serengeta wansi") -> "scroll down"
+            lower in listOf("sogeza juu", "panda juu", "serengeta waggulu") -> "scroll up"
+            lower in listOf("simama kusikiliza", "acha kusikiliza", "leka okuwuliriza", "yimiriza okuwuliriza") -> "stop listening"
+            else -> lower
+        }
         // Short control words must be handled locally, never sent to the chat model.
-        if (lower in listOf("stop", "stop talking", "be quiet", "quiet", "cancel speech", "stop explaining")) {
+        if (multilingual in listOf("stop", "stop talking", "be quiet", "quiet", "cancel speech", "stop explaining")) {
             tts?.stop()
             footer.text = "Speech stopped"
             return true
         }
-        if (lower in listOf("stop listening", "turn off listening", "disable listening")) {
+        if (multilingual in listOf("stop listening", "turn off listening", "disable listening")) {
             stopService(Intent(this, AshListeningService::class.java))
             prefs.edit().putBoolean("ash_listening_enabled", false).apply()
             tts?.stop()
@@ -466,7 +478,7 @@ class MainActivity : Activity() {
         }
         // Handle common natural-language app-launch requests locally, before sending anything to the AI.
         // WhatsApp launch does not require the Accessibility service to be enabled.
-        val simplified = lower
+        val simplified = multilingual
             .replace(Regex("\\b(just|please|can you|could you|for me)\\b"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
@@ -508,14 +520,15 @@ class MainActivity : Activity() {
             val appName = simplified.substringAfter("open ").removePrefix("my ").trim()
             if (appName.isNotBlank()) return action(AshAccessibilityService.ACTION_OPEN_APP, appName)
         }
-        if (lower in listOf("scroll down", "scroll down please", "go down", "page down")) return action(AshAccessibilityService.ACTION_SCROLL_DOWN)
-        if (lower in listOf("scroll up", "scroll up please", "go up", "page up")) return action(AshAccessibilityService.ACTION_SCROLL_UP)
-        if (lower in listOf("swipe left", "move left")) return action(AshAccessibilityService.ACTION_SWIPE_LEFT)
-        if (lower in listOf("swipe right", "move right")) return action(AshAccessibilityService.ACTION_SWIPE_RIGHT)
-        if (lower in listOf("go back", "back", "press back")) return action(AshAccessibilityService.ACTION_BACK)
-        if (lower in listOf("go home", "home screen", "press home")) return action(AshAccessibilityService.ACTION_HOME)
+        if (multilingual in listOf("scroll down", "scroll down please", "go down", "page down")) return action(AshAccessibilityService.ACTION_SCROLL_DOWN)
+        if (multilingual in listOf("scroll up", "scroll up please", "go up", "page up")) return action(AshAccessibilityService.ACTION_SCROLL_UP)
+        if (multilingual in listOf("swipe left", "move left")) return action(AshAccessibilityService.ACTION_SWIPE_LEFT)
+        if (multilingual in listOf("swipe right", "move right")) return action(AshAccessibilityService.ACTION_SWIPE_RIGHT)
+        if (multilingual in listOf("close app", "exit app", "quit app")) return action(AshAccessibilityService.ACTION_HOME)
+        if (multilingual in listOf("go back", "back", "press back")) return action(AshAccessibilityService.ACTION_BACK)
+        if (multilingual in listOf("go home", "home screen", "press home")) return action(AshAccessibilityService.ACTION_HOME)
         if (lower in listOf("show notifications", "open notifications", "notification shade")) return action(AshAccessibilityService.ACTION_NOTIFICATIONS)
-        if (lower in listOf("open quick settings", "show quick settings")) return action(AshAccessibilityService.ACTION_QUICK_SETTINGS)
+        if (multilingual in listOf("open quick settings", "show quick settings")) return action(AshAccessibilityService.ACTION_QUICK_SETTINGS)
         if (lower in listOf("lock phone", "lock screen")) return action(AshAccessibilityService.ACTION_LOCK_SCREEN)
         if (lower in listOf("answer call", "pick up call", "pick the call", "accept call")) return action(AshAccessibilityService.ACTION_TAP_TEXT, "Answer")
         if (lower in listOf("reject call", "decline call", "hang up call")) return action(AshAccessibilityService.ACTION_TAP_TEXT, "Decline")
