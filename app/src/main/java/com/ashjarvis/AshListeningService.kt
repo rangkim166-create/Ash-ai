@@ -102,6 +102,15 @@ class AshListeningService : Service() {
 
     private fun handleSpeech(raw: String, partial: Boolean = false) {
         val lower = raw.trim().lowercase(Locale.ROOT)
+        // Emergency conversational controls work without the wake phrase.
+        if (lower in listOf("stop", "stop talking", "be quiet", "stop explaining", "stop speaking")) {
+            sendBroadcast(Intent(MainActivity.ACTION_STOP_SPEAKING).setPackage(packageName))
+            return
+        }
+        if (lower in listOf("stop listening", "turn off listening", "disable listening")) {
+            stopSelf()
+            return
+        }
         val prefix = listOf("hey ash", "hi ash", "okay ash", "ok ash", "ash jarvis")
             .firstOrNull { lower.startsWith(it) } ?: return
         val command = raw.trim().drop(prefix.length).trim(' ', ',', '.', ':')
