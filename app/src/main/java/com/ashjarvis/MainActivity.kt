@@ -430,7 +430,7 @@ class MainActivity : Activity() {
             .replace(Regex("\\s+"), " ")
             .trim()
         if (simplified.startsWith("open ") || simplified.startsWith("launch ") || simplified.startsWith("start ")) {
-            val requested = simplified.removePrefix("open ").removePrefix("launch ").removePrefix("start ").trim()
+            val requested = simplified.removePrefix("open ").removePrefix("launch ").removePrefix("start ").removePrefix("app ").removePrefix("my ").trim()
             if (requested.isNotBlank()) {
                 val match = getLaunchableApps().firstOrNull { info ->
                     val label = info.loadLabel(packageManager).toString().lowercase(Locale.ROOT)
