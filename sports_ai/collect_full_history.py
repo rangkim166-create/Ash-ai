@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "history" / "raw"
 MANIFEST = ROOT / "data" / "history" / "full-history-manifest.json"
 UA = "AshSportsAI historical data collector/0.3"
-TIMEOUT = 25
+TIMEOUT = 6
 
 
 def fetch(url: str, target: Path) -> dict:
