@@ -34,10 +34,13 @@ jobs:
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
       - name: Download Saudi Pro League historical archive
+        continue-on-error: true
         run: python sports_ai/collect_saudi_history.py
       - name: Download basketball results for NBA and international leagues
+        continue-on-error: true
         run: python sports_ai/collect_basketball_history.py
       - name: Fetch additional Arab and African football source archive
+        continue-on-error: true
         run: python sports_ai/collect_arab_football.py
       - name: Normalize results into SQLite
         run: python sports_ai/build_database.py
