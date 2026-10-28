@@ -101,6 +101,35 @@ class AshAccessibilityService : AccessibilityService() {
             command in listOf("swipe right", "move right", "swipe to the right") -> swipe(0.18f, 0.5f, 0.82f, 0.5f)
             command in listOf("go back", "back", "press back", "go backwards") -> performGlobalAction(GLOBAL_ACTION_BACK)
             command in listOf("go home", "home screen", "press home", "go to home screen") -> performGlobalAction(GLOBAL_ACTION_HOME)
+            command in listOf("what time is it", "tell me the time", "current time", "time now") -> {
+                val now = java.text.SimpleDateFormat("h:mm a", java.util.Locale.getDefault()).format(java.util.Date())
+                announce("It is $now")
+            }
+            command in listOf("what is the date", "what's the date", "tell me the date", "today's date", "date today") -> {
+                val today = java.text.SimpleDateFormat("EEEE, d MMMM yyyy", java.util.Locale.getDefault()).format(java.util.Date())
+                announce("Today is $today")
+            }
+            command in listOf("open settings", "phone settings", "system settings") -> openSystemSettings(android.provider.Settings.ACTION_SETTINGS, "Settings")
+            command in listOf("open wifi settings", "wifi settings", "open wi-fi settings") -> openSystemSettings(android.provider.Settings.ACTION_WIFI_SETTINGS, "Wi-Fi settings")
+            command in listOf("open bluetooth settings", "bluetooth settings") -> openSystemSettings(android.provider.Settings.ACTION_BLUETOOTH_SETTINGS, "Bluetooth settings")
+            command in listOf("battery status", "how much battery", "what is my battery", "battery level") -> {
+                val battery = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+                val level = battery?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                val scale = battery?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+                if (level >= 0 && scale > 0) announce("Battery is ${(level * 100) / scale} percent")
+                else announce("I couldn't read the battery level")
+            }
+            command.startsWith("search web for ") || command.startsWith("search for ") || command.startsWith("google ") -> {
+                val query = command.removePrefix("search web for ").removePrefix("search for ").removePrefix("google ").trim()
+                if (query.isNotBlank()) {
+                    try {
+                        val search = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com/search?q=" + android.net.Uri.encode(query)))
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        startActivity(search)
+                        announce("Searching the web for $query")
+                    } catch (_: Exception) { announce("Couldn't open web search") }
+                } else announce("Tell me what to search for")
+            }
             command in listOf("show notifications", "open notifications", "notification shade") -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
             command in listOf("open quick settings", "show quick settings") -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
             command in listOf("lock phone", "lock screen") -> {
@@ -143,8 +172,17 @@ class AshAccessibilityService : AccessibilityService() {
         saveVisibleScreen()
     }
 
+    private fun openSystemSettings(action: String, label: String) {
+        try {
+            startActivity(Intent(action).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            announce("Opening $label")
+        } catch (_: Exception) {
+            announce("Couldn't open $label")
+        }
+    }
+
     private fun announce(message: String) {
-        mainHandler.post { Toast.makeText(this, message, Toast.LENGTH_SHORT).show() }
+        mainHandler.post { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
     }
 
     private fun scrollWindow(forward: Boolean) {
