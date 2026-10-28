@@ -658,19 +658,39 @@ class MainActivity : Activity() {
     }
 
     private fun addMessage(sender: String, text: String) {
+        val isUser = sender == "You"
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(14, 10, 14, 10)
-            setBackgroundColor(if (sender == "You") Color.rgb(28, 48, 72) else Color.rgb(23, 31, 49))
+            setPadding(15, 12, 15, 12)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(if (isUser) Color.rgb(26, 74, 111) else Color.rgb(22, 31, 49))
+                cornerRadius = 22f
+                setStroke(1, if (isUser) Color.rgb(54, 125, 177) else Color.rgb(44, 58, 82))
+            }
         }
         val label = TextView(this).apply {
-            this.text = sender.uppercase()
+            this.text = if (isUser) "YOU" else "✦  ASH JARVIS"
             textSize = 10f
-            setTextColor(if (sender == "You") Color.rgb(121, 210, 255) else Color.rgb(129, 230, 177))
+            setLetterSpacing(0.08f)
+            setTextColor(if (isUser) Color.rgb(160, 220, 255) else Color.rgb(129, 230, 177))
         }
-        val body = TextView(this).apply { this.text = text; textSize = 14f; setTextColor(Color.WHITE); setPadding(0, 5, 0, 0) }
-        card.addView(label); card.addView(body)
-        messages.addView(card, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 10 })
+        val body = TextView(this).apply {
+            this.text = text
+            textSize = 15f
+            setTextColor(Color.rgb(241, 245, 252))
+            setLineSpacing(2f, 1.02f)
+            setPadding(0, 6, 0, 0)
+        }
+        card.addView(label)
+        card.addView(body)
+        val outer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = if (isUser) Gravity.END else Gravity.START
+            addView(card, LinearLayout.LayoutParams(-1, -2).apply {
+                width = (resources.displayMetrics.widthPixels * if (isUser) 0.86f else 0.96f).toInt()
+            })
+        }
+        messages.addView(outer, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = 10 })
         history.put(JSONObject().put("sender", sender).put("text", text))
         prefs.edit().putString("history", history.toString()).apply()
         scroll.post { scroll.fullScroll(View.FOCUS_DOWN) }
