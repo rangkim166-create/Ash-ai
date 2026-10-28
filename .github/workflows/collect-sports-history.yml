@@ -21,10 +21,12 @@ jobs:
           python-version: "3.12"
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
-      - name: Package downloaded data
+      - name: Normalize results into SQLite
+        run: python sports_ai/build_database.py
+      - name: Package downloaded data and database
         run: |
           cd data/history
-          zip -qr ../../ash-sports-history.zip raw full-history-manifest.json
+          zip -qr ../../ash-sports-history.zip raw full-history-manifest.json ash_sports_history.sqlite
       - name: Upload collected historical datasets
         uses: actions/upload-artifact@v4
         with:
