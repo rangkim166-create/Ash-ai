@@ -18,8 +18,10 @@ DATE = re.compile(r"^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+)?(?:\w{3,9}\s+\d{1,2}
 
 
 def clean_team(value: str) -> str:
-    value = re.sub(r"\([^)]*\)", "", value)
-    value = re.sub(r"^\(\d+\)\s*", "", value)
+    value = re.sub(r"\\([^)]*\\)", "", value)
+    value = re.sub(r"^\\(\\d+\\)\\s*", "", value)
+    # Some upstream fixtures prefix team names with kickoff time; never treat it as part of the name.
+    value = re.sub(r"^\\d{1,2}:\\d{2}\\s+", "", value.strip())
     return " ".join(value.split()).strip(" -|")
 
 
