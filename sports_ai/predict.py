@@ -31,7 +31,8 @@ def football_ratings():
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             for m in data.get("matches", []):
-                score = (m.get("score") or {}).get("ft")
+                score_data = m.get("score")
+                score = score_data.get("ft") if isinstance(score_data, dict) else score_data if isinstance(score_data, list) else None
                 a, b = m.get("team1"), m.get("team2")
                 if a and b and score and len(score) >= 2 and score[0] is not None and score[1] is not None:
                     matches.append((str(m.get("date") or ""), a, b, float(score[0]), float(score[1])))
