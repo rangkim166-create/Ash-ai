@@ -47,3 +47,19 @@ The data pipeline must never describe itself as literally complete: no public so
 - The Saudi league and multi-league basketball archives do not clearly state a reuse license in their README. Keep attribution and do not redistribute or use commercially until permission is confirmed.
 - Football-Data.co.uk explicitly limits its free datasets to private use and excludes commercial or AI/data-training products; it is intentionally **not** part of the automated collection workflow.
 - Results datasets are not a substitute for live fixtures, injuries, lineups or licensed historical bookmaker odds. No match is guaranteed.
+
+## Expanded coverage pipeline
+
+The daily GitHub Actions job now attempts these additional imports:
+
+- Football-Data CSV results and bookmaker odds for selected European divisions from 2000/01 onward where source files exist. The original CSV rows, including available odds columns, are retained in `raw_json`; odds coverage varies by league and season.
+- OpenFootball's world archive for regional football text files. The parser imports only score lines it can recognize; the audit report lists target leagues that were not detected.
+- Saudi Pro League CSV archive where available. Its upstream reuse licence is unclear, so treat it as research-only until permission is confirmed.
+- NBA, EuroLeague, EuroCup, ABA League and Slovenian league parquet tables where available. Their upstream reuse licence is also unclear; do not redistribute commercially without permission.
+- A coverage audit in `data/history/coverage-report.json` records imported match counts, competitions/seasons and Arab league targets not found.
+
+The workflow builds the SQLite database, imports additional sources, rebuilds `ratings.json`, packages the raw archive/database/report as the `ash-sports-history` Actions artifact, and commits small manifests/ratings to the repository. The artifact has a 90-day retention limit; it is not permanent storage.
+
+## Current limitations
+
+This is the broadest best-effort collection configured in the repository, not literally every historical match worldwide. Some sources may disappear, change schemas, have incomplete seasons or impose non-commercial terms. The coverage audit is the source of truth after a successful workflow run; do not claim a league is covered until its match count is non-zero and the season range has been reviewed. Historical odds are available only for the CSV rows that actually include them. Current fixtures, injuries, confirmed lineups and live odds still require separate feeds.
