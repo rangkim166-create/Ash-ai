@@ -23,6 +23,7 @@ import java.util.Locale
  */
 class AshListeningService : Service() {
     private var recognizer: SpeechRecognizer? = null
+    private var cpuWakeLock: android.os.PowerManager.WakeLock? = null
     private var speech: TextToSpeech? = null
     private var listening = false
     private var restarting = false
@@ -64,6 +65,15 @@ class AshListeningService : Service() {
                 .build()
         }
         startForeground(NOTIFICATION_ID, notification)
+        // Keep the CPU awake while the user has explicitly enabled the microphone listener.
+        // This improves screen-off reliability; Android/OEM policies may still stop the service.
+        try {
+            val powerManager = getSystemService(POWER_SERVICE) as android.os.PowerManager
+            cpuWakeLock = powerManager.newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "$packageName:AshVoiceListener").apply {
+                setReferenceCounted(false)
+                acquire()
+            }
+        } catch (_: Exception) { }
         if (SpeechRecognizer.isRecognitionAvailable(this)) {
             recognizer = SpeechRecognizer.createSpeechRecognizer(this).also { sr ->
                 sr.setRecognitionListener(object : RecognitionListener {
