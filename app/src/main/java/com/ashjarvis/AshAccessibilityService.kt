@@ -28,6 +28,7 @@ class AshAccessibilityService : AccessibilityService() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val target = intent?.getStringExtra(EXTRA_TEXT).orEmpty()
             when (intent?.action) {
+                ACTION_WAKE_COMMAND -> runVoiceCommand(target)
                 ACTION_TAP_TEXT -> if (target.isNotBlank()) {
                     val node = findNode(rootInActiveWindow, target)
                     val success = node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) == true
@@ -64,6 +65,7 @@ class AshAccessibilityService : AccessibilityService() {
     override fun onServiceConnected() {
         super.onServiceConnected()
         val filter = IntentFilter().apply {
+            addAction(ACTION_WAKE_COMMAND)
             addAction(ACTION_TAP_TEXT)
             addAction(ACTION_TYPE_TEXT)
             addAction(ACTION_SCROLL_DOWN)
@@ -86,6 +88,45 @@ class AshAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         try { unregisterReceiver(commandReceiver) } catch (_: Exception) {}
         super.onDestroy()
+    }
+
+    private fun runVoiceCommand(raw: String) {
+        val command = raw.trim().lowercase(java.util.Locale.ROOT)
+        when {
+            command in listOf("scroll down", "go down", "page down") -> scrollWindow(true)
+            command in listOf("scroll up", "go up", "page up") -> scrollWindow(false)
+            command in listOf("swipe left", "move left") -> swipe(0.82f, 0.5f, 0.18f, 0.5f)
+            command in listOf("swipe right", "move right") -> swipe(0.18f, 0.5f, 0.82f, 0.5f)
+            command in listOf("go back", "back", "press back") -> performGlobalAction(GLOBAL_ACTION_BACK)
+            command in listOf("go home", "home screen", "press home") -> performGlobalAction(GLOBAL_ACTION_HOME)
+            command in listOf("show notifications", "open notifications") -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
+            command in listOf("open quick settings", "show quick settings") -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
+            command in listOf("lock phone", "lock screen") -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+            command.startsWith("tap ") -> {
+                val node = findNode(rootInActiveWindow, command.substringAfter("tap ").trim())
+                if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) != true) announce("Couldn't tap that item")
+            }
+            command.startsWith("open app ") -> openApp(raw.trim().substringAfter("open app ", ""))
+            command.startsWith("call ") || command.startsWith("dial ") -> {
+                val number = raw.trim().substringAfter(" ").filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
+                if (number.length >= 3) {
+                    try {
+                        startActivity(Intent(Intent.ACTION_DIAL, android.net.Uri.fromParts("tel", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                    } catch (_: Exception) { announce("Couldn't open the phone dialer") }
+                } else announce("Say call followed by a phone number")
+            }
+            command in listOf("answer call", "pick up call", "accept call") -> {
+                val node = findNode(rootInActiveWindow, "Answer") ?: findNode(rootInActiveWindow, "Accept")
+                if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) != true) announce("Answer control not found. Try the phone's call screen.")
+            }
+            command in listOf("reject call", "decline call", "hang up call") -> {
+                val node = findNode(rootInActiveWindow, "Decline") ?: findNode(rootInActiveWindow, "Reject")
+                if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) != true) announce("Decline control not found")
+            }
+            command in listOf("stop listening", "ash stop listening") -> sendBroadcast(Intent(AshListeningService.ACTION_STOP).setPackage(packageName))
+            else -> announce("I heard: $raw. Try scroll down, go back, open app WhatsApp, or call followed by a number.")
+        }
+        saveVisibleScreen()
     }
 
     private fun announce(message: String) {
@@ -195,6 +236,7 @@ class AshAccessibilityService : AccessibilityService() {
         const val PREFS = "ash_jarvis"
         const val KEY_SCREEN = "visible_screen_text"
         const val KEY_SCREEN_TIME = "visible_screen_time"
+        const val ACTION_WAKE_COMMAND = "com.ashjarvis.ACTION_WAKE_COMMAND"
         const val ACTION_TAP_TEXT = "com.ashjarvis.ACTION_TAP_TEXT"
         const val ACTION_TYPE_TEXT = "com.ashjarvis.ACTION_TYPE_TEXT"
         const val ACTION_SCROLL_DOWN = "com.ashjarvis.ACTION_SCROLL_DOWN"
