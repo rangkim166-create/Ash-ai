@@ -534,21 +534,28 @@ class MainActivity : Activity() {
                         .setPositiveButton("OK", null)
                         .show()
                 DownloadManager.STATUS_SUCCESSFUL -> {
-                    val file = java.io.File(
-                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                        "AshJarvis/" + fileName
-                    )
-                    val size = if (file.exists()) file.length() else 0L
-                    AlertDialog.Builder(this)
-                        .setTitle(if (size > 0L) "Model downloaded" else "Download reported complete")
-                        .setMessage(
-                            if (size > 0L)
-                                "Found " + fileName + " (" + String.format(Locale.US, "%.2f", size / (1024.0 * 1024.0)) + " MB). The GGUF file is on this phone, but offline chat is not ready until Ash's local inference engine is integrated."
-                            else
-                                "Android marked the download complete, but the expected file was not found at Downloads/AshJarvis/" + fileName + "."
-                        )
-                        .setPositiveButton("OK", null)
-                        .show()
+                    try {
+                        val localUri = cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI))
+                        val internal = java.io.File(filesDir, fileName)
+                        if (!internal.exists() || internal.length() < 1024 * 1024) {
+                            contentResolver.openInputStream(Uri.parse(localUri)).use { source ->
+                                if (source == null) throw IllegalStateException("Android couldn't open the downloaded model.")
+                                internal.outputStream().use { target -> source.copyTo(target) }
+                            }
+                        }
+                        val size = if (internal.exists()) internal.length() else 0L
+                        if (size > 1024 * 1024) {
+                            prefs.edit().putBoolean("offline_model_downloaded", true).apply()
+                            AlertDialog.Builder(this)
+                                .setTitle("Model ready")
+                                .setMessage("Verified " + fileName + " (" + String.format(Locale.US, "%.2f", size / (1024.0 * 1024.0)) + " MB) in Ash's private app storage. Tap OFFLINE AI again and choose USE OFFLINE AI to start local replies.")
+                                .setPositiveButton("OK", null).show()
+                        } else throw IllegalStateException("The downloaded model file is unexpectedly small.")
+                    } catch (e: Exception) {
+                        AlertDialog.Builder(this).setTitle("Couldn't prepare model")
+                            .setMessage((e.message ?: "Unknown file error") + "\nTry the download again and ensure enough storage is available.")
+                            .setPositiveButton("OK", null).show()
+                    }
                 }
             }
         }
