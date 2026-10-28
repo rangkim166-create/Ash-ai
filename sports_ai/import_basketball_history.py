@@ -11,10 +11,10 @@ DB=ROOT/"data"/"history"/"ash_sports_history.sqlite"
 
 ALIASES={
  "date":["date","game_date","match_date","start_date","game_datetime","datetime"],
- "home":["home_team","home_team_name","hometeam","home","team_home","local_team","home_name"],
- "away":["away_team","away_team_name","awayteam","away","team_away","visitor_team","away_name"],
- "home_score":["home_score","home_points","home_pts","score_home","home_team_score","local_score","score1"],
- "away_score":["away_score","away_points","away_pts","score_away","away_team_score","visitor_score","score2"],
+ "home":["home_team","home_team_name","hometeam","home","team_home","local_team","home_name","h_team"],
+ "away":["away_team","away_team_name","awayteam","away","team_away","visitor_team","away_name","a_team"],
+ "home_score":["home_score","home_points","home_pts","score_home","home_team_score","local_score","score1","h_score"],
+ "away_score":["away_score","away_points","away_pts","score_away","away_team_score","visitor_score","score2","a_score"],
  "competition":["league","competition","tournament","league_name"],
  "season":["season","season_name","year"]
 }
