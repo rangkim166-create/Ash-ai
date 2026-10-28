@@ -67,71 +67,145 @@ class MainActivity : Activity() {
     private fun buildUi() {
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(20, 18, 20, 14)
-            setBackgroundColor(Color.rgb(10, 15, 28))
+            setPadding(16, 14, 16, 12)
+            setBackgroundColor(Color.rgb(8, 12, 24))
         }
-        val titleRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
-        val title = TextView(this).apply {
-            text = "ASH JARVIS"
-            textSize = 23f
-            setTextColor(Color.rgb(121, 210, 255))
-            gravity = Gravity.CENTER_VERTICAL
+        fun makeText(value: String, size: Float, color: Int) = TextView(this).apply {
+            text = value
+            textSize = size
+            setTextColor(color)
         }
-        titleRow.addView(title, LinearLayout.LayoutParams(0, -2, 1f))
-        titleRow.addView(Button(this).apply { text = "AI SETUP"; setOnClickListener { showAiSetup() } })
-        titleRow.addView(Button(this).apply { text = "DOLPHIN"; setOnClickListener { confirmDolphinDownload() } })
-        titleRow.addView(Button(this).apply { text = "PHONE"; setOnClickListener { showPhoneTools() } })
-        val subtitle = TextView(this).apply {
-            text = "UNIVERSAL ANDROID AI  •  PRIVATE LOCAL CHAT HISTORY"
-            textSize = 10f
-            setTextColor(Color.rgb(153, 166, 190))
-            setPadding(0, 4, 0, 14)
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(18, 16, 18, 16)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.rgb(20, 31, 54))
+                cornerRadius = 28f
+                setStroke(1, Color.rgb(48, 82, 125))
+            }
         }
-        scroll = ScrollView(this)
+        val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        top.addView(makeText("✦  ASH JARVIS", 23f, Color.rgb(125, 211, 252)), LinearLayout.LayoutParams(0, -2, 1f))
+        top.addView(Button(this).apply { text = "⚙"; contentDescription = "AI settings"; setOnClickListener { showAiSetup() } })
+        header.addView(top)
+        header.addView(makeText("YOUR AI. YOUR PHONE. YOUR RULES.", 10f, Color.rgb(164, 184, 216)).apply { setPadding(0, 5, 0, 8) })
+        val statusRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        statusRow.addView(makeText("●", 12f, Color.rgb(74, 222, 128)))
+        statusRow.addView(makeText("  Voice & phone tools", 12f, Color.rgb(222, 231, 245)), LinearLayout.LayoutParams(0, -2, 1f))
+        statusRow.addView(Button(this).apply { text = "PHONE"; setOnClickListener { showPhoneTools() } })
+        statusRow.addView(Button(this).apply { text = "OFFLINE AI"; setOnClickListener { confirmDolphinDownload() } })
+        header.addView(statusRow)
+        root.addView(header)
+
+        root.addView(makeText("QUICK LAUNCH", 11f, Color.rgb(147, 169, 201)).apply { setPadding(2, 14, 0, 6) })
+        val appStrip = android.widget.HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false }
+        val appRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        appStrip.addView(appRow)
+        val apps = getLaunchableApps().take(12)
+        if (apps.isEmpty()) {
+            appRow.addView(makeText("No launchable apps found", 12f, Color.LTGRAY).apply { setPadding(8, 12, 8, 12) })
+        } else {
+            apps.forEach { info ->
+                val appLabel = info.loadLabel(packageManager).toString()
+                val tile = LinearLayout(this).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = Gravity.CENTER
+                    setPadding(12, 10, 12, 10)
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(Color.rgb(22, 32, 52))
+                        cornerRadius = 20f
+                        setStroke(1, Color.rgb(43, 60, 88))
+                    }
+                    setOnClickListener { launchInstalledApp(info.activityInfo.packageName, appLabel) }
+                }
+                val icon = android.widget.ImageView(this).apply {
+                    setImageDrawable(info.loadIcon(packageManager))
+                    layoutParams = LinearLayout.LayoutParams(42, 42)
+                    contentDescription = appLabel
+                }
+                tile.addView(icon)
+                tile.addView(makeText(appLabel.take(13), 11f, Color.rgb(226, 235, 249)).apply {
+                    gravity = Gravity.CENTER
+                    setPadding(0, 6, 0, 0)
+                })
+                appRow.addView(tile, LinearLayout.LayoutParams(-2, -2).apply { rightMargin = 8 })
+            }
+        }
+        root.addView(appStrip)
+
+        val listenButton = Button(this).apply {
+            text = if (prefs.getBoolean("ash_listening_enabled", false)) "■  STOP LISTENING" else "🎙  HEY ASH · START LISTENING"
+            setOnClickListener { toggleBackgroundListening(this) }
+        }
+        root.addView(listenButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 10; bottomMargin = 8 })
+
+        scroll = ScrollView(this).apply { clipToPadding = false; setPadding(0, 4, 0, 8) }
         messages = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         scroll.addView(messages)
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
+        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
+
+        val composer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(8, 4, 4, 4)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.rgb(20, 29, 47))
+                cornerRadius = 24f
+                setStroke(1, Color.rgb(54, 87, 126))
+            }
+        }
         input = EditText(this).apply {
-            hint = "Message Ash..."
-            setHintTextColor(Color.GRAY)
+            hint = "Ask Ash or say “open YouTube”"
+            setHintTextColor(Color.rgb(133, 151, 179))
             setTextColor(Color.WHITE)
             textSize = 15f
             setSingleLine(false)
-            maxLines = 4
-            setPadding(12, 10, 12, 10)
-            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.rgb(65, 140, 190))
+            maxLines = 3
+            setPadding(12, 10, 8, 10)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(Color.TRANSPARENT)
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEND
+            setOnEditorActionListener { _, actionId, _ ->
+                if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEND) { sendMessage(); true } else false
+            }
         }
-        row.addView(input, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        row.addView(Button(this).apply { text = "🎙"; contentDescription = "Speak to Ash"; setOnClickListener { startVoiceInput() } })
-        row.addView(Button(this).apply { text = "SEND"; setOnClickListener { sendMessage() } })
-        footer = TextView(this).apply {
-            textSize = 11f
-            setTextColor(Color.rgb(255, 195, 105))
-            setPadding(0, 12, 0, 0)
-        }
-        root.addView(titleRow)
-        root.addView(subtitle)
-        root.addView(LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(Button(this@MainActivity).apply {
-                text = if (prefs.getBoolean("ash_listening_enabled", false)) "STOP LISTENING" else "HEY ASH: LISTEN"
-                setOnClickListener { toggleBackgroundListening(this) }
-            }, LinearLayout.LayoutParams(0, -2, 1f))
-            addView(TextView(this@MainActivity).apply {
-                text = "Optional mic • visible notification"
-                textSize = 11f
-                setTextColor(Color.rgb(153, 166, 190))
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(8, 0, 0, 0)
-            })
-        })
-        root.addView(scroll, LinearLayout.LayoutParams(-1, 0, 1f))
-        root.addView(row)
+        composer.addView(input, LinearLayout.LayoutParams(0, -2, 1f))
+        composer.addView(Button(this).apply { text = "🎙"; contentDescription = "Speak to Ash"; setOnClickListener { startVoiceInput() } })
+        composer.addView(Button(this).apply { text = "➤"; contentDescription = "Send message"; setOnClickListener { sendMessage() } })
+        root.addView(composer)
+        footer = makeText("", 10f, Color.rgb(255, 195, 105)).apply { setPadding(3, 8, 3, 0) }
         root.addView(footer)
         setContentView(root)
     }
 
-    private fun toggleBackgroundListening(button: Button) {
+    private fun getLaunchableApps(): List<android.content.pm.ResolveInfo> {
+        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        return try {
+            @Suppress("DEPRECATION")
+            packageManager.queryIntentActivities(intent, 0)
+                .filter { it.activityInfo.packageName != packageName }
+                .distinctBy { it.activityInfo.packageName }
+                .sortedBy { it.loadLabel(packageManager).toString().lowercase(Locale.ROOT) }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    private fun launchInstalledApp(packageNameToOpen: String, label: String): Boolean {
+        return try {
+            val intent = packageManager.getLaunchIntentForPackage(packageNameToOpen)
+            if (intent == null) {
+                Toast.makeText(this, "$label can't be opened from the launcher", Toast.LENGTH_SHORT).show()
+                false
+            } else {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                true
+            }
+        } catch (_: Exception) {
+            Toast.makeText(this, "Couldn't open $label", Toast.LENGTH_SHORT).show()
+            false
+        }
+    }
+
+        private fun toggleBackgroundListening(button: Button) {
         if (prefs.getBoolean("ash_listening_enabled", false)) {
             stopService(Intent(this, AshListeningService::class.java))
             prefs.edit().putBoolean("ash_listening_enabled", false).apply()
@@ -355,6 +429,16 @@ class MainActivity : Activity() {
             .replace(Regex("\\b(just|please|can you|could you|for me)\\b"), " ")
             .replace(Regex("\\s+"), " ")
             .trim()
+        if (simplified.startsWith("open ") || simplified.startsWith("launch ") || simplified.startsWith("start ")) {
+            val requested = simplified.removePrefix("open ").removePrefix("launch ").removePrefix("start ").trim()
+            if (requested.isNotBlank()) {
+                val match = getLaunchableApps().firstOrNull { info ->
+                    val label = info.loadLabel(packageManager).toString().lowercase(Locale.ROOT)
+                    label == requested || label.contains(requested) || requested.contains(label)
+                }
+                if (match != null) return launchInstalledApp(match.activityInfo.packageName, match.loadLabel(packageManager).toString())
+            }
+        }
         if ((simplified.startsWith("open ") || simplified.startsWith("launch ") || simplified.startsWith("start ")) &&
             simplified.contains("whatsapp")) {
             val packages = listOf("com.whatsapp", "com.whatsapp.w4b")
