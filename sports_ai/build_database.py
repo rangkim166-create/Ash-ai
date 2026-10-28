@@ -43,7 +43,8 @@ def main():
             obj = json.loads(p.read_text(encoding="utf-8"))
             competition = obj.get("name", p.parent.name)
             for m in obj.get("matches", []):
-                sc = (m.get("score") or {}).get("ft")
+                score_data = m.get("score")
+                sc = score_data.get("ft") if isinstance(score_data, dict) else score_data if isinstance(score_data, list) else None
                 if not sc or len(sc) < 2 or sc[0] is None or sc[1] is None:
                     continue
                 a, b = m.get("team1"), m.get("team2")
