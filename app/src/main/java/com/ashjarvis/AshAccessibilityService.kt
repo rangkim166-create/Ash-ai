@@ -92,26 +92,40 @@ class AshAccessibilityService : AccessibilityService() {
 
     private fun runVoiceCommand(raw: String) {
         val command = raw.trim().lowercase(java.util.Locale.ROOT)
+            .replace(Regex("\\b(please|for me|could you|can you|would you)\\b"), " ")
+            .replace(Regex("\\s+"), " ").trim()
         when {
-            command in listOf("scroll down", "go down", "page down") -> scrollWindow(true)
-            command in listOf("scroll up", "go up", "page up") -> scrollWindow(false)
-            command in listOf("swipe left", "move left") -> swipe(0.82f, 0.5f, 0.18f, 0.5f)
-            command in listOf("swipe right", "move right") -> swipe(0.18f, 0.5f, 0.82f, 0.5f)
-            command in listOf("go back", "back", "press back") -> performGlobalAction(GLOBAL_ACTION_BACK)
-            command in listOf("go home", "home screen", "press home") -> performGlobalAction(GLOBAL_ACTION_HOME)
-            command in listOf("show notifications", "open notifications") -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
+            command in listOf("scroll down", "go down", "page down", "scroll down now") -> scrollWindow(true)
+            command in listOf("scroll up", "go up", "page up", "scroll up now") -> scrollWindow(false)
+            command in listOf("swipe left", "move left", "swipe to the left") -> swipe(0.82f, 0.5f, 0.18f, 0.5f)
+            command in listOf("swipe right", "move right", "swipe to the right") -> swipe(0.18f, 0.5f, 0.82f, 0.5f)
+            command in listOf("go back", "back", "press back", "go backwards") -> performGlobalAction(GLOBAL_ACTION_BACK)
+            command in listOf("go home", "home screen", "press home", "go to home screen") -> performGlobalAction(GLOBAL_ACTION_HOME)
+            command in listOf("show notifications", "open notifications", "notification shade") -> performGlobalAction(GLOBAL_ACTION_NOTIFICATIONS)
             command in listOf("open quick settings", "show quick settings") -> performGlobalAction(GLOBAL_ACTION_QUICK_SETTINGS)
-            command in listOf("lock phone", "lock screen") -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
-            command.startsWith("tap ") -> {
-                val node = findNode(rootInActiveWindow, command.substringAfter("tap ").trim())
-                if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) != true) announce("Couldn't tap that item")
+            command in listOf("lock phone", "lock screen") -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) performGlobalAction(GLOBAL_ACTION_LOCK_SCREEN)
+                else announce("Lock screen action needs Android 9 or newer")
             }
-            command.startsWith("open app ") -> openApp(raw.trim().substringAfter("open app ", ""))
+            command.startsWith("tap ") || command.startsWith("click ") -> {
+                val target = command.substringAfter(" ").trim()
+                val node = findNode(rootInActiveWindow, target)
+                if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) != true) announce("Couldn't tap '$target'. Make sure the item is visible.")
+                else announce("Tapped $target")
+            }
+            command.startsWith("open app ") || command.startsWith("launch app ") || command.startsWith("start app ") ->
+                openApp(raw.trim().substringAfter("app ", ""))
+            command.startsWith("open ") || command.startsWith("launch ") || command.startsWith("start ") -> {
+                val app = command.removePrefix("open ").removePrefix("launch ").removePrefix("start ").removePrefix("app ").trim()
+                if (app.isNotBlank()) openApp(app)
+                else announce("Say open app followed by the app name")
+            }
             command.startsWith("call ") || command.startsWith("dial ") -> {
                 val number = raw.trim().substringAfter(" ").filter { it.isDigit() || it == '+' || it == '*' || it == '#' }
                 if (number.length >= 3) {
                     try {
                         startActivity(Intent(Intent.ACTION_DIAL, android.net.Uri.fromParts("tel", number, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+                        announce("Opening dialer for $number")
                     } catch (_: Exception) { announce("Couldn't open the phone dialer") }
                 } else announce("Say call followed by a phone number")
             }
@@ -124,7 +138,7 @@ class AshAccessibilityService : AccessibilityService() {
                 if (node?.performAction(AccessibilityNodeInfo.ACTION_CLICK) != true) announce("Decline control not found")
             }
             command in listOf("stop listening", "ash stop listening") -> sendBroadcast(Intent(AshListeningService.ACTION_STOP).setPackage(packageName))
-            else -> announce("I heard: $raw. Try scroll down, go back, open app WhatsApp, or call followed by a number.")
+            else -> announce("I heard: $raw, but that isn't a supported phone action yet. Try 'open WhatsApp', 'go back', 'scroll down', or 'call 0771234567'.")
         }
         saveVisibleScreen()
     }
