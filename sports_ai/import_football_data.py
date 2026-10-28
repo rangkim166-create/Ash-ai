@@ -3,6 +3,7 @@
 import csv
 import json
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +18,16 @@ def value(row, *names):
         if item not in (None, ""):
             return item
     return None
+
+
+def normalize_date(raw):
+    raw = str(raw or "").strip()
+    for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(raw, fmt).date().isoformat()
+        except ValueError:
+            pass
+    return raw
 
 
 def main():
@@ -34,7 +45,7 @@ def main():
                         away = value(row, "AwayTeam", "Away Team", "Away")
                         hg = value(row, "FTHG", "HG", "HomeGoals")
                         ag = value(row, "FTAG", "AG", "AwayGoals")
-                        date = value(row, "Date", "MatchDate")
+                        date = normalize_date(value(row, "Date", "MatchDate"))
                         if not home or not away or hg is None or ag is None:
                             continue
                         try:
