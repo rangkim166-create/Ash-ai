@@ -17,3 +17,8 @@ This repository is the starting point. The APK and offline Dolphin model integra
 ## Development
 
 The Android project will use Kotlin and Jetpack Compose. Build it with a compatible Android SDK and Gradle installation, or use the repository's CI workflow once added.
+
+
+## Sports Intelligence (new foundation)
+
+A free-first historical data collector and Elo prediction baseline for football and tennis, plus NBA historical team-game data collection, lives in [sports_ai/README.md](sports_ai/README.md). A scheduled GitHub Actions workflow refreshes available source data daily. Data availability depends on upstream sources; this is an early baseline, not a verified profitable prediction system.
