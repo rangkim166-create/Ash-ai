@@ -1,19 +1,23 @@
 {
-  "generated_at_utc": "2026-10-28T21:04:18.036893+00:00",
+  "generated_at_utc": "2026-10-28T21:27:07.386183+00:00",
   "completeness": "best_effort_not_exhaustive",
   "summary": {
-    "total_matches": 639281,
+    "total_matches": 682419,
     "by_sport": [
       {
+        "sport": "basketball",
+        "matches": 43471
+      },
+      {
         "sport": "football",
-        "matches": 277710
+        "matches": 277377
       },
       {
         "sport": "tennis",
         "matches": 361571
       }
     ],
-    "competitions_with_matches": 10105
+    "competitions_with_matches": 10110
   },
   "target_coverage": {
     "arab_football": [
@@ -282,6 +286,41 @@
   },
   "competition_counts": [
     {
+      "sport": "basketball",
+      "competition": "Nba",
+      "matches": 29469,
+      "first_date": "2000-10-31",
+      "last_date": "2023-06-12"
+    },
+    {
+      "sport": "basketball",
+      "competition": "Euroleague",
+      "matches": 3977,
+      "first_date": "01/02/2012",
+      "last_date": "31/10/2019"
+    },
+    {
+      "sport": "basketball",
+      "competition": "Aba",
+      "matches": 3963,
+      "first_date": "01/02/2003",
+      "last_date": "31/10/2022"
+    },
+    {
+      "sport": "basketball",
+      "competition": "Eurocup",
+      "matches": 3320,
+      "first_date": "01/02/2011",
+      "last_date": "31/10/2018"
+    },
+    {
+      "sport": "basketball",
+      "competition": "Slovenian League",
+      "matches": 2742,
+      "first_date": "01/02/2008",
+      "last_date": "31/10/2020"
+    },
+    {
       "sport": "football",
       "competition": "England Championship",
       "matches": 14478,
@@ -354,7 +393,7 @@
     {
       "sport": "football",
       "competition": "Mexico",
-      "matches": 8824,
+      "matches": 8820,
       "first_date": "Fri Apr 1",
       "last_date": "Wed Sep 9"
     },
@@ -402,17 +441,17 @@
     },
     {
       "sport": "football",
-      "competition": "Nigeria",
-      "matches": 7158,
-      "first_date": "Fri Aug 22 2025",
-      "last_date": "Wed Oct 8 2025"
+      "competition": "Major League Soccer",
+      "matches": 7001,
+      "first_date": "Fri Apr 1",
+      "last_date": "Wed Sep 9"
     },
     {
       "sport": "football",
-      "competition": "Major League Soccer",
-      "matches": 7004,
-      "first_date": "Fri Apr 1",
-      "last_date": "Wed Sep 9"
+      "competition": "Nigeria",
+      "matches": 6833,
+      "first_date": "Fri Aug 22 2025",
+      "last_date": "Wed Oct 8 2025"
     },
     {
       "sport": "football",
@@ -501,7 +540,7 @@
     {
       "sport": "football",
       "competition": "Australia",
-      "matches": 1104,
+      "matches": 1103,
       "first_date": "Fri Apr 11",
       "last_date": "Wed May 5"
     },
@@ -71019,9 +71058,314 @@
   ],
   "season_counts": [
     {
+      "sport": "basketball",
+      "season": "2000-01",
+      "matches": 1260
+    },
+    {
+      "sport": "basketball",
+      "season": "2001-02",
+      "matches": 1260
+    },
+    {
+      "sport": "basketball",
+      "season": "2001/02",
+      "matches": 135
+    },
+    {
+      "sport": "basketball",
+      "season": "2002-03",
+      "matches": 1277
+    },
+    {
+      "sport": "basketball",
+      "season": "2002/03",
+      "matches": 135
+    },
+    {
+      "sport": "basketball",
+      "season": "2003-04",
+      "matches": 1271
+    },
+    {
+      "sport": "basketball",
+      "season": "2003/04",
+      "matches": 185
+    },
+    {
+      "sport": "basketball",
+      "season": "2004-05",
+      "matches": 1314
+    },
+    {
+      "sport": "basketball",
+      "season": "2004/05",
+      "matches": 247
+    },
+    {
+      "sport": "basketball",
+      "season": "2005-06",
+      "matches": 1319
+    },
+    {
+      "sport": "basketball",
+      "season": "2005/06",
+      "matches": 189
+    },
+    {
+      "sport": "basketball",
+      "season": "2006-07",
+      "matches": 1309
+    },
+    {
+      "sport": "basketball",
+      "season": "2006/07",
+      "matches": 189
+    },
+    {
+      "sport": "basketball",
+      "season": "2007-08",
+      "matches": 1316
+    },
+    {
+      "sport": "basketball",
+      "season": "2007/08",
+      "matches": 196
+    },
+    {
+      "sport": "basketball",
+      "season": "2007/2008",
+      "matches": 771
+    },
+    {
+      "sport": "basketball",
+      "season": "2008-09",
+      "matches": 1315
+    },
+    {
+      "sport": "basketball",
+      "season": "2008/09",
+      "matches": 185
+    },
+    {
+      "sport": "basketball",
+      "season": "2008/2009",
+      "matches": 560
+    },
+    {
+      "sport": "basketball",
+      "season": "2009-10",
+      "matches": 1312
+    },
+    {
+      "sport": "basketball",
+      "season": "2009/10",
+      "matches": 185
+    },
+    {
+      "sport": "basketball",
+      "season": "2009/2010",
+      "matches": 562
+    },
+    {
+      "sport": "basketball",
+      "season": "2010-11",
+      "matches": 1311
+    },
+    {
+      "sport": "basketball",
+      "season": "2010/11",
+      "matches": 185
+    },
+    {
+      "sport": "basketball",
+      "season": "2010/2011",
+      "matches": 487
+    },
+    {
+      "sport": "basketball",
+      "season": "2011-12",
+      "matches": 1074
+    },
+    {
+      "sport": "basketball",
+      "season": "2011/12",
+      "matches": 185
+    },
+    {
+      "sport": "basketball",
+      "season": "2011/2012",
+      "matches": 502
+    },
+    {
+      "sport": "basketball",
+      "season": "2012-13",
+      "matches": 1314
+    },
+    {
+      "sport": "basketball",
+      "season": "2012/13",
+      "matches": 185
+    },
+    {
+      "sport": "basketball",
+      "season": "2012/2013",
+      "matches": 567
+    },
+    {
+      "sport": "basketball",
+      "season": "2013-14",
+      "matches": 1319
+    },
+    {
+      "sport": "basketball",
+      "season": "2013/14",
+      "matches": 185
+    },
+    {
+      "sport": "basketball",
+      "season": "2013/2014",
+      "matches": 794
+    },
+    {
+      "sport": "basketball",
+      "season": "2014-15",
+      "matches": 1311
+    },
+    {
+      "sport": "basketball",
+      "season": "2014/15",
+      "matches": 195
+    },
+    {
+      "sport": "basketball",
+      "season": "2014/2015",
+      "matches": 752
+    },
+    {
+      "sport": "basketball",
+      "season": "2015-16",
+      "matches": 1316
+    },
+    {
+      "sport": "basketball",
+      "season": "2015/16",
+      "matches": 189
+    },
+    {
+      "sport": "basketball",
+      "season": "2015/2016",
+      "matches": 714
+    },
+    {
+      "sport": "basketball",
+      "season": "2016-17",
+      "matches": 1309
+    },
+    {
+      "sport": "basketball",
+      "season": "2016/17",
+      "matches": 191
+    },
+    {
+      "sport": "basketball",
+      "season": "2016/2017",
+      "matches": 606
+    },
+    {
+      "sport": "basketball",
+      "season": "2017-18",
+      "matches": 1312
+    },
+    {
+      "sport": "basketball",
+      "season": "2017/18",
+      "matches": 142
+    },
+    {
+      "sport": "basketball",
+      "season": "2017/2018",
+      "matches": 630
+    },
+    {
+      "sport": "basketball",
+      "season": "2018-19",
+      "matches": 1312
+    },
+    {
+      "sport": "basketball",
+      "season": "2018/19",
+      "matches": 143
+    },
+    {
+      "sport": "basketball",
+      "season": "2018/2019",
+      "matches": 600
+    },
+    {
+      "sport": "basketball",
+      "season": "2019-20",
+      "matches": 1142
+    },
+    {
+      "sport": "basketball",
+      "season": "2019/20",
+      "matches": 126
+    },
+    {
+      "sport": "basketball",
+      "season": "2019/2020",
+      "matches": 503
+    },
+    {
+      "sport": "basketball",
+      "season": "2020-21",
+      "matches": 1165
+    },
+    {
+      "sport": "basketball",
+      "season": "2020/2021",
+      "matches": 669
+    },
+    {
+      "sport": "basketball",
+      "season": "2020/21",
+      "matches": 192
+    },
+    {
+      "sport": "basketball",
+      "season": "2021-22",
+      "matches": 1317
+    },
+    {
+      "sport": "basketball",
+      "season": "2021/2022",
+      "matches": 646
+    },
+    {
+      "sport": "basketball",
+      "season": "2021/22",
+      "matches": 197
+    },
+    {
+      "sport": "basketball",
+      "season": "2022-23",
+      "matches": 1314
+    },
+    {
+      "sport": "basketball",
+      "season": "2022/2023",
+      "matches": 676
+    },
+    {
+      "sport": "basketball",
+      "season": "2022/23",
+      "matches": 202
+    },
+    {
       "sport": "football",
       "season": "",
-      "matches": 42494
+      "matches": 42161
     },
     {
       "sport": "football",
@@ -71630,17 +71974,17 @@
     }
   ],
   "pipeline_metadata": {
-    "built_at_utc": "2026-10-28T21:03:51.335040+00:00",
+    "built_at_utc": "2026-10-28T21:26:10.041069+00:00",
     "total_matches": "416052",
     "counts_by_sport": "{\"football\": 54481, \"tennis\": 361571}",
     "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
     "football_data_imported": "177926",
     "football_data_duplicates_skipped": "409",
-    "world_archive_imported": "42494",
+    "world_archive_imported": "42161",
     "saudi_matches_imported": "2809",
     "saudi_duplicates_skipped": "0",
-    "basketball_parquet_imported": "0",
-    "basketball_parquet_schema": "[{\"file\": \"aba-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"Round\", \"ID\", \"Played\", \"Date\", \"Time\", \"H_Team\", \"A_Team\", \"H_Score\", \"A_Score\", \"Href\"], \"mapped\": {\"date\": \"Date\", \"home\": null, \"away\": null, \"home_score\": null, \"away_score\": null, \"competition\": null, \"season\": \"Season\"}}, {\"file\": \"eurocup-games.parquet\", \"columns\": [\"SEASON\", \"GAME_ID\", \"GAME_ID_IN_SEASON\", \"STAGE\", \"ROUND\", \"PLAYED\", \"DATE\", \"TIME\", \"H_TEAM\", \"A_TEAM\", \"H_SCORE\", \"A_SCORE\", \"HREF\"], \"mapped\": {\"date\": \"DATE\", \"home\": null, \"away\": null, \"home_score\": null, \"away_score\": null, \"competition\": null, \"season\": \"SEASON\"}}, {\"file\": \"euroleague-games.parquet\", \"columns\": [\"SEASON\", \"GAME_ID\", \"GAME_ID_IN_SEASON\", \"STAGE\", \"ROUND\", \"PLAYED\", \"DATE\", \"TIME\", \"H_TEAM\", \"A_TEAM\", \"H_SCORE\", \"A_SCORE\", \"HREF\"], \"mapped\": {\"date\": \"DATE\", \"home\": null, \"away\": null, \"home_score\": null, \"away_score\": null, \"competition\": null, \"season\": \"SEASON\"}}, {\"file\": \"nba-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"ID\", \"Date\", \"H_Team\", \"A_Team\", \"H_Team_ID\", \"A_Team_ID\", \"H_Score\", \"A_Score\"], \"mapped\": {\"date\": \"Date\", \"home\": null, \"away\": null, \"home_score\": null, \"away_score\": null, \"competition\": null, \"season\": \"Season\"}}, {\"file\": \"slovenian-league-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"Round\", \"ID\", \"Played\", \"Date\", \"Time\", \"H_Team\", \"A_Team\", \"H_Score\", \"A_Score\", \"Href\"], \"mapped\": {\"date\": \"Date\", \"home\": null, \"away\": null, \"home_score\": null, \"away_score\": null, \"competition\": null, \"season\": \"Season\"}}]"
+    "basketball_parquet_imported": "43471",
+    "basketball_parquet_schema": "[{\"file\": \"aba-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"Round\", \"ID\", \"Played\", \"Date\", \"Time\", \"H_Team\", \"A_Team\", \"H_Score\", \"A_Score\", \"Href\"], \"mapped\": {\"date\": \"Date\", \"home\": \"H_Team\", \"away\": \"A_Team\", \"home_score\": \"H_Score\", \"away_score\": \"A_Score\", \"competition\": null, \"season\": \"Season\"}}, {\"file\": \"eurocup-games.parquet\", \"columns\": [\"SEASON\", \"GAME_ID\", \"GAME_ID_IN_SEASON\", \"STAGE\", \"ROUND\", \"PLAYED\", \"DATE\", \"TIME\", \"H_TEAM\", \"A_TEAM\", \"H_SCORE\", \"A_SCORE\", \"HREF\"], \"mapped\": {\"date\": \"DATE\", \"home\": \"H_TEAM\", \"away\": \"A_TEAM\", \"home_score\": \"H_SCORE\", \"away_score\": \"A_SCORE\", \"competition\": null, \"season\": \"SEASON\"}}, {\"file\": \"euroleague-games.parquet\", \"columns\": [\"SEASON\", \"GAME_ID\", \"GAME_ID_IN_SEASON\", \"STAGE\", \"ROUND\", \"PLAYED\", \"DATE\", \"TIME\", \"H_TEAM\", \"A_TEAM\", \"H_SCORE\", \"A_SCORE\", \"HREF\"], \"mapped\": {\"date\": \"DATE\", \"home\": \"H_TEAM\", \"away\": \"A_TEAM\", \"home_score\": \"H_SCORE\", \"away_score\": \"A_SCORE\", \"competition\": null, \"season\": \"SEASON\"}}, {\"file\": \"nba-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"ID\", \"Date\", \"H_Team\", \"A_Team\", \"H_Team_ID\", \"A_Team_ID\", \"H_Score\", \"A_Score\"], \"mapped\": {\"date\": \"Date\", \"home\": \"H_Team\", \"away\": \"A_Team\", \"home_score\": \"H_Score\", \"away_score\": \"A_Score\", \"competition\": null, \"season\": \"Season\"}}, {\"file\": \"slovenian-league-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"Round\", \"ID\", \"Played\", \"Date\", \"Time\", \"H_Team\", \"A_Team\", \"H_Score\", \"A_Score\", \"Href\"], \"mapped\": {\"date\": \"Date\", \"home\": \"H_Team\", \"away\": \"A_Team\", \"home_score\": \"H_Score\", \"away_score\": \"A_Score\", \"competition\": null, \"season\": \"Season\"}}]"
   },
   "warnings": [
     "A detected competition name does not prove every season is complete.",
