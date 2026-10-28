@@ -30,11 +30,9 @@ jobs:
       - name: Install parquet reader for basketball history
         run: python -m pip install --upgrade pandas pyarrow
       - name: Syntax-check collector and database scripts
-        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/import_openfootball_txt.py sports_ai/collect_football_data.py sports_ai/import_football_data.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_basketball_history.py sports_ai/import_basketball_history.py
+        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/import_openfootball_txt.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_basketball_history.py sports_ai/import_basketball_history.py
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
-      - name: Download historical results and odds for popular European leagues
-        run: python sports_ai/collect_football_data.py
       - name: Download Saudi Pro League historical archive
         run: python sports_ai/collect_saudi_history.py
       - name: Download basketball results for NBA and international leagues
@@ -45,8 +43,6 @@ jobs:
         run: python sports_ai/build_database.py
       - name: Import regional OpenFootball text results
         run: python sports_ai/import_openfootball_txt.py
-      - name: Import historical results and odds rows
-        run: python sports_ai/import_football_data.py
       - name: Import Saudi Pro League history
         run: python sports_ai/import_saudi_history.py
       - name: Import NBA and international basketball history
