@@ -33,3 +33,17 @@ Ash now keeps a prioritized league profile in `sports_ai/league_profiles.json`. 
 The workflow also downloads the public-domain OpenFootball world archive using `sports_ai/collect_arab_football.py`. It targets African/Asian league data including Egypt, Morocco and Algeria where present. The archive is currently preserved and inventoried separately; its text files are **not yet normalized into the match database**, so Ash must not claim those matches are already included in its ratings. Saudi Pro League, Qatar Stars League and UAE Pro League still need a verified, legally usable source before their history can be advertised as available.
 
 For recommendations, Ash should prefer leagues with a large recent sample, verified fixtures, stable data coverage and probabilities validated on held-out past seasons. It must show low/medium/high confidence and missing-data warnings rather than call any match a sure win. A popular league is not necessarily easier to predict, and odds can already reflect public information.
+
+## Expanded coverage and audit status
+
+The collector now attempts the OpenFootball world archive, Saudi Pro League CSV archive, NBA play-by-play source archives, and compact basketball game tables for NBA, EuroLeague, EuroCup, ABA League and the Slovenian league. The SQLite build then imports source formats that have verified parsers. Missing source files are recorded instead of being silently treated as zero-history competitions.
+
+The data pipeline must never describe itself as literally complete: no public source contains every football match in every Arab league, every ATP/WTA match and every basketball competition. Coverage depends on season/source availability. The workflow should publish source manifests, normalized counts by sport/competition and parser warnings with every archive.
+
+### Reuse/licensing guardrails
+
+- OpenFootball's football JSON results are public domain; regional text files are imported only where the score line is unambiguous.
+- The ATP/WTA archive used here is marked CC BY-NC-SA 4.0 upstream. It is non-commercial unless a separate permission/license is obtained.
+- The Saudi league and multi-league basketball archives do not clearly state a reuse license in their README. Keep attribution and do not redistribute or use commercially until permission is confirmed.
+- Football-Data.co.uk explicitly limits its free datasets to private use and excludes commercial or AI/data-training products; it is intentionally **not** part of the automated collection workflow.
+- Results datasets are not a substitute for live fixtures, injuries, lineups or licensed historical bookmaker odds. No match is guaranteed.
