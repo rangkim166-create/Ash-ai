@@ -198,7 +198,13 @@ class MainActivity : Activity() {
         }
     }
 
-    override fun onDestroy() {\n        tts?.stop()\n        tts?.shutdown()\n        super.onDestroy()\n    }\n\n    private fun confirmDolphinDownload() {
+    override fun onDestroy() {
+        tts?.stop()
+        tts?.shutdown()
+        super.onDestroy()
+    }
+
+    private fun confirmDolphinDownload() {
         AlertDialog.Builder(this)
             .setTitle("Download Dolphin 2.9 • Llama 3 8B")
             .setMessage("This offline model file (Q4_K_M) is about 4.9 GB. It will be saved to Downloads/AshJarvis on your phone. This can use several GB of mobile data and storage. The app still needs its local inference engine integrated before this file can answer chats. Wi-Fi and at least 7 GB free space are strongly recommended. Continue?")
@@ -280,9 +286,50 @@ class MainActivity : Activity() {
             .show()
     }
 
+
+    private fun handlePhoneCommand(raw: String): Boolean {
+        val command = raw.trim()
+        val lower = command.lowercase(Locale.ROOT)
+        fun action(action: String, extra: String? = null): Boolean {
+            val intent = Intent(action).setPackage(packageName)
+            if (extra != null) intent.putExtra(AshAccessibilityService.EXTRA_TEXT, extra)
+            sendBroadcast(intent)
+            Toast.makeText(this, "Ash: $command", Toast.LENGTH_SHORT).show()
+            return true
+        }
+        if (lower in listOf("scroll down", "scroll down please", "go down", "page down")) return action(AshAccessibilityService.ACTION_SCROLL_DOWN)
+        if (lower in listOf("scroll up", "scroll up please", "go up", "page up")) return action(AshAccessibilityService.ACTION_SCROLL_UP)
+        if (lower in listOf("swipe left", "move left")) return action(AshAccessibilityService.ACTION_SWIPE_LEFT)
+        if (lower in listOf("swipe right", "move right")) return action(AshAccessibilityService.ACTION_SWIPE_RIGHT)
+        if (lower in listOf("go back", "back", "press back")) return action(AshAccessibilityService.ACTION_BACK)
+        if (lower in listOf("go home", "home screen", "press home")) return action(AshAccessibilityService.ACTION_HOME)
+        if (lower in listOf("what is on my screen", "read my screen", "read screen", "describe my screen")) {
+            val screen = prefs.getString(AshAccessibilityService.KEY_SCREEN, null)
+            if (screen.isNullOrBlank()) addMessage("Ash Jarvis", "I can't see screen text yet. Enable Ash Screen Control in Android Accessibility settings, then try again.")
+            else {
+                addMessage("Ash Jarvis", screen.take(5000))
+                tts?.speak(screen.take(3000), TextToSpeech.QUEUE_FLUSH, null, "ash-screen-command")
+            }
+            return true
+        }
+        if (lower.startsWith("tap ")) {
+            val target = command.substringAfter(" ", "").trim()
+            if (target.isNotBlank()) return action(AshAccessibilityService.ACTION_TAP_TEXT, target)
+        }
+        if (lower.startsWith("open app ")) {
+            val appName = command.substringAfter("open app ", "").trim()
+            if (appName.isNotBlank()) return action(AshAccessibilityService.ACTION_OPEN_APP, appName)
+        }
+        return false
+    }
+
     private fun sendMessage() {
         val text = input.text.toString().trim()
         if (text.isEmpty()) return
+        if (handlePhoneCommand(text)) {
+            input.setText("")
+            return
+        }
         if (getApiKey().isNullOrBlank() || (prefs.getString("model", "") ?: "").isBlank()) {
             showAiSetup()
             return
