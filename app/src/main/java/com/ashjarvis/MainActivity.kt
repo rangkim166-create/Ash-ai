@@ -447,7 +447,7 @@ class MainActivity : Activity() {
         // Small multilingual phrasebook for common phone controls. Match locally for speed and reliability.
         val multilingual = when {
             lower in listOf("nyamaza", "acha kuongea", "nyamaza ash", "kaa kimya", "leka okwogera", "sirikira", "yimiriza okwogera") -> "stop talking"
-            lower in listOf("funga app", "fungua app? hapana", "toka kwenye app", "ondoka kwenye app", "ggala app", "fulumya app", "close app", "exit app", "quit app") -> "close app"
+            lower in listOf("funga app", "toka kwenye app", "ondoka kwenye app", "ggala app", "fulumya app", "close app", "exit app", "quit app") -> "close app"
             lower in listOf("rudi nyuma", "nyuma", "dda emabega", "komawo emabega") -> "go back"
             lower in listOf("nenda nyumbani", "fungua home", "enda ewaka", "genda awaka") -> "go home"
             lower in listOf("fungua whatsapp", "fungua youtube", "fungua facebook", "ggulawo whatsapp", "ggulawo youtube", "ggulawo facebook") -> "open " + lower.substringAfterLast(" ").trim()
@@ -640,7 +640,7 @@ class MainActivity : Activity() {
         connection.setRequestProperty("X-OpenRouter-Title", "Ash Jarvis")
         connection.doOutput = true
         val recent = JSONArray()
-        recent.put(JSONObject().put("role", "system").put("content", "You are Ash Jarvis, the AI assistant created by the Ash Teach Team. If asked who created you, say: \"I was created by the Ash Teach Team.\" Be a capable, concise, practical assistant. The Android app can execute only supported local commands; never claim you opened, tapped, typed, sent, purchased, deleted, or changed anything unless the app confirms it. For phone actions, give the user the exact supported command when appropriate. Respect stop/stop talking commands immediately. Be honest, clear, and safety-conscious. Ask for confirmation before sending messages, deleting data, making purchases, or other consequential actions."))
+        recent.put(JSONObject().put("role", "system").put("content", "You are Ash Jarvis, the AI assistant created by the Ash Teach Team. If asked who created you, say: \"I was created by the Ash Teach Team.\" Understand and reply in the user's language when possible, including English, Luganda, and Kiswahili/Swahili. For Lumasaba or another language, respond only when confident; if uncertain, ask for clarification rather than pretending. Be a capable, concise, practical assistant. The Android app can execute only supported local commands; never claim you opened, tapped, typed, sent, purchased, deleted, or changed anything unless the app confirms it. For phone actions, give the user the exact supported command when appropriate. Respect stop/stop talking commands immediately. Be honest, clear, and safety-conscious. Ask for confirmation before sending messages, deleting data, making purchases, or other consequential actions."))
         val start = (history.length() - 12).coerceAtLeast(0)
         for (i in start until history.length()) {
             val item = history.optJSONObject(i) ?: continue
