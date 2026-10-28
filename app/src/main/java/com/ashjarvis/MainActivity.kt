@@ -50,6 +50,34 @@ class MainActivity : Activity() {
     private val keyAlias = "ash_jarvis_api_key"
     private var tts: TextToSpeech? = null
     private val speechRequestCode = 7124
+    companion object { const val ACTION_STOP_SPEAKING = "com.ashjarvis.ACTION_STOP_SPEAKING" }
+    private val stopSpeechReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == ACTION_STOP_SPEAKING) {
+                tts?.stop()
+                footer.text = "Speech stopped"
+            }
+        }
+    }
+    private var stopReceiverRegistered = false
+
+    override fun onResume() {
+        super.onResume()
+        if (!stopReceiverRegistered) {
+            val filter = android.content.IntentFilter(ACTION_STOP_SPEAKING)
+            if (android.os.Build.VERSION.SDK_INT >= 33) registerReceiver(stopSpeechReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            else @Suppress("DEPRECATION") run { registerReceiver(stopSpeechReceiver, filter) }
+            stopReceiverRegistered = true
+        }
+    }
+
+    override fun onPause() {
+        if (stopReceiverRegistered) {
+            try { unregisterReceiver(stopSpeechReceiver) } catch (_: Exception) {}
+            stopReceiverRegistered = false
+        }
+        super.onPause()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
