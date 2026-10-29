@@ -404,15 +404,18 @@ object OddsEngine {
                 val ascore = e.optString("intAwayScore")
                 val h = hs.toIntOrNull()
                 val a = ascore.toIntOrNull()
-                val scoreAvailable = h != null && a != null
                 val teamIsHome = e.optString("idHomeTeam") == id ||
-                    norm(home) == norm(team.optString("strTeam", teamName))
-                val teamScore = if (teamIsHome) h else a
-                val opponentScore = if (teamIsHome) a else h
-                val outcome = if (!scoreAvailable) "result unavailable" else when {
-                    teamScore!! > opponentScore!! -> "W"
-                    teamScore < opponentScore -> "L"
-                    else -> "D"
+                    norm(home) == norm(team?.optString("strTeam", teamName) ?: teamName)
+                val outcome = if (h == null || a == null) {
+                    "result unavailable"
+                } else {
+                    val teamScore = if (teamIsHome) h else a
+                    val opponentScore = if (teamIsHome) a else h
+                    when {
+                        teamScore > opponentScore -> "W"
+                        teamScore < opponentScore -> "L"
+                        else -> "D"
+                    }
                 }
                 destination.put(JSONObject()
                     .put("date", e.optString("dateEvent"))
