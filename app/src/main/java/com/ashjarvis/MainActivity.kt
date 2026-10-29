@@ -117,6 +117,19 @@ class MainActivity : Activity() {
             textSize = size
             setTextColor(color)
         }
+        fun makeAction(label: String, action: () -> Unit) = Button(this).apply {
+            text = label
+            isAllCaps = false
+            textSize = 10f
+            setTextColor(Color.rgb(215, 238, 255))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.rgb(28, 45, 72))
+                cornerRadius = 18f
+                setStroke(1, Color.rgb(57, 93, 137))
+            }
+            setPadding(12, 6, 12, 6)
+            setOnClickListener { action() }
+        }
         val header = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(18, 16, 18, 16)
@@ -128,16 +141,16 @@ class MainActivity : Activity() {
         }
         val top = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         top.addView(makeText("✦  ASH JARVIS", 23f, Color.rgb(125, 211, 252)), LinearLayout.LayoutParams(0, -2, 1f))
-        top.addView(Button(this).apply { text = "VOICE"; contentDescription = "Choose male or female voice"; setOnClickListener { showVoiceSettings() } })
-        top.addView(Button(this).apply { text = "⚙"; contentDescription = "AI settings"; setOnClickListener { showAiSetup() } })
+        top.addView(makeAction("VOICE") { showVoiceSettings() }.apply { contentDescription = "Choose male or female voice" })
+        top.addView(makeAction("⚙") { showAiSetup() }.apply { contentDescription = "AI settings" })
         header.addView(top)
-        header.addView(makeText("YOUR AI. YOUR PHONE. YOUR RULES.", 10f, Color.rgb(164, 184, 216)).apply { setPadding(0, 5, 0, 8) })
+        header.addView(makeText("YOUR PERSONAL AI  •  VOICE  •  PHONE  •  SPORTS", 10f, Color.rgb(164, 184, 216)).apply { setPadding(0, 5, 0, 8) })
         val statusRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         statusRow.addView(makeText("●", 12f, Color.rgb(74, 222, 128)))
         statusRow.addView(makeText("  Voice & phone tools", 12f, Color.rgb(222, 231, 245)), LinearLayout.LayoutParams(0, -2, 1f))
-        statusRow.addView(Button(this).apply { text = "SPORTS"; setOnClickListener { showSportsOdds() } })
-        statusRow.addView(Button(this).apply { text = "PHONE"; setOnClickListener { showPhoneTools() } })
-        statusRow.addView(Button(this).apply { text = "OFFLINE AI"; setOnClickListener { showOfflineModelPicker() } })
+        statusRow.addView(makeAction("SPORTS") { showSportsOdds() })
+        statusRow.addView(makeAction("PHONE") { showPhoneTools() })
+        statusRow.addView(makeAction("OFFLINE AI") { showOfflineModelPicker() })
         header.addView(statusRow)
         root.addView(header)
 
@@ -179,6 +192,13 @@ class MainActivity : Activity() {
 
         val listenButton = Button(this).apply {
             text = if (prefs.getBoolean("ash_listening_enabled", false)) "■  STOP LISTENING" else "🎙  HEY ASH · START LISTENING"
+            isAllCaps = false
+            setTextColor(Color.WHITE)
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(Color.rgb(23, 91, 112))
+                cornerRadius = 24f
+                setStroke(1, Color.rgb(69, 183, 211))
+            }
             setOnClickListener { toggleBackgroundListening(this) }
         }
         root.addView(listenButton, LinearLayout.LayoutParams(-1, -2).apply { topMargin = 10; bottomMargin = 8 })
@@ -213,8 +233,8 @@ class MainActivity : Activity() {
             }
         }
         composer.addView(input, LinearLayout.LayoutParams(0, -2, 1f))
-        composer.addView(Button(this).apply { text = "🎙"; contentDescription = "Speak to Ash"; setOnClickListener { startVoiceInput() } })
-        composer.addView(Button(this).apply { text = "➤"; contentDescription = "Send message"; setOnClickListener { sendMessage() } })
+        composer.addView(makeAction("🎙") { startVoiceInput() }.apply { contentDescription = "Speak to Ash" })
+        composer.addView(makeAction("➤") { sendMessage() }.apply { contentDescription = "Send message" })
         root.addView(composer)
         footer = makeText("", 10f, Color.rgb(255, 195, 105)).apply { setPadding(3, 8, 3, 0) }
         root.addView(footer)
