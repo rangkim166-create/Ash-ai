@@ -242,7 +242,9 @@ class SportsOddsActivity : Activity() {
                 val payload = withContext(Dispatchers.IO) {
                     OddsEngine.checkOddEven(key, event.optString("sport_key"), event.optString("id"))
                 }
+                val firstEvent = payload.optJSONArray("data")?.optJSONObject(0)
                 val books = payload.optJSONArray("bookmakers")
+                    ?: firstEvent?.optJSONArray("bookmakers")
                     ?: payload.optJSONObject("data")?.optJSONArray("bookmakers")
                     ?: JSONArray()
                 val lines = mutableListOf<String>()
