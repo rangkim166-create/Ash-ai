@@ -158,6 +158,10 @@ object OddsEngine {
                     byId[id] = summary
                     found++
                 }
+                if (remaining?.toIntOrNull() == 0) {
+                    errors.add("API quota is exhausted; stopped scanning remaining sports to avoid repeated failed requests.")
+                    break
+                }
             } catch (e: Exception) {
                 errors.add("$sportKey: ${(e.message ?: "request failed").take(160)}")
             }
