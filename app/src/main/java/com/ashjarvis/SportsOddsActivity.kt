@@ -72,7 +72,7 @@ class SportsOddsActivity : Activity() {
         top.addView(text("ASH SPORTS INTELLIGENCE", 19f, accent, true), LinearLayout.LayoutParams(0, -2, 1f))
         top.addView(button("BACK") { finish() })
         header.addView(top)
-        header.addView(text("TODAY'S SLATE  •  LIVE BOOKMAKER PRICES", 11f, muted).apply { setPadding(0, 8, 0, 0) })
+        header.addView(text("TODAY'S SLATE  •  ODDS + TEAM INTELLIGENCE", 11f, muted).apply { setPadding(0, 8, 0, 0) })
         root.addView(header)
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, 12, 0, 8) }
         controls.addView(button("TODAY") { currentTab = "today"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -125,12 +125,12 @@ class SportsOddsActivity : Activity() {
         if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
         candidates.take(20).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nTap to research recent results online if local result history is missing.") { researchMatch(event) }
+                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nTap to research team profiles, recent results, available players, performance news and possible injury clues.") { researchMatch(event) }
         }
         card("ALL UPCOMING GAMES", "Saved games found through your API key: ${upcoming.size}") {}
         upcoming.filter { candidates.none { c -> c.optString("id") == it.optString("id") } }.take(30).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")} • ${event.optString("commence_time")}\nBookmakers: ${event.optInt("bookmaker_count")} • First seen: ${event.optString("first_seen")}\nTap to research online") { researchMatch(event) }
+                "${event.optString("sport_title")} • ${event.optString("commence_time")}\nBookmakers: ${event.optInt("bookmaker_count")} • First seen: ${event.optString("first_seen")}\nTap for team/player profiles, recent form and current news") { researchMatch(event) }
         }
         val last = getSharedPreferences("ash_jarvis", MODE_PRIVATE).getString("odds_last_sync", "not yet")
         status.text = "Last sync: $last • Stored history: ${history.length()} games"
