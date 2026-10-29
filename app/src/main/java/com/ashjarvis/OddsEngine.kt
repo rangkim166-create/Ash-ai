@@ -210,6 +210,12 @@ object OddsEngine {
                         .put("research_has_results", report.optBoolean("has_results_history"))
                         .put("research_home_recent", report.optJSONArray("home_recent") ?: JSONArray())
                         .put("research_away_recent", report.optJSONArray("away_recent") ?: JSONArray())
+                        .put("research_home_profile", report.optJSONObject("home_profile") ?: JSONObject())
+                        .put("research_away_profile", report.optJSONObject("away_profile") ?: JSONObject())
+                        .put("research_home_players", report.optJSONArray("home_players") ?: JSONArray())
+                        .put("research_away_players", report.optJSONArray("away_players") ?: JSONArray())
+                        .put("research_news", report.optJSONArray("news") ?: JSONArray())
+                        .put("research_availability_flags", report.optJSONArray("availability_flags") ?: JSONArray())
                         .put("research_web_notes", report.optJSONArray("web_notes") ?: JSONArray())
                         .put("research_sources", report.optJSONArray("sources") ?: JSONArray())
                 } catch (_: Exception) {
@@ -255,6 +261,12 @@ object OddsEngine {
                 .put("bookmakers", books)
                 .put("research_results_count", evidence)
                 .put("research_has_results", event.optBoolean("research_has_results", false))
+                .put("home_profile", event.optJSONObject("research_home_profile") ?: JSONObject())
+                .put("away_profile", event.optJSONObject("research_away_profile") ?: JSONObject())
+                .put("home_players", event.optJSONArray("research_home_players") ?: JSONArray())
+                .put("away_players", event.optJSONArray("research_away_players") ?: JSONArray())
+                .put("news", event.optJSONArray("research_news") ?: JSONArray())
+                .put("availability_flags", event.optJSONArray("research_availability_flags") ?: JSONArray())
                 .put("research_sources", event.optJSONArray("research_sources") ?: JSONArray())
                 .put("evidence_score", score)
                 .put("confidence", when {
@@ -437,7 +449,7 @@ object OddsEngine {
         }
 
         fun decodeFeedText(value: String): String = value
-            .replace(Regex("(?is)<!\\[CDATA\\[(.*?)]]>"), "$1")
+            .replace(Regex("(?is)<!\\[CDATA\\[(.*?)]]>")) { it.groupValues[1] }
             .replace(Regex("(?is)<[^>]+>"), " ")
             .replace("&amp;", "&").replace("&quot;", "\"")
             .replace("&#39;", "'").replace("&#039;", "'")
