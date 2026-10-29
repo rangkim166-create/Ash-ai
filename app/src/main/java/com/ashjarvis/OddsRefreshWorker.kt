@@ -11,6 +11,8 @@ class OddsRefreshWorker(context: Context, params: WorkerParameters) : CoroutineW
         val key = OddsEngine.readApiKey(applicationContext) ?: return@withContext Result.failure()
         try {
             OddsEngine.sync(applicationContext, key)
+            val picks = OddsEngine.buildDailyPicks(applicationContext)
+            DailyPicksNotifier.notify(applicationContext, picks)
             Result.success()
         } catch (_: Exception) {
             if (runAttemptCount < 3) Result.retry() else Result.failure()
