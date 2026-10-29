@@ -22,3 +22,11 @@ The Android project will use Kotlin and Jetpack Compose. Build it with a compati
 ## Sports Intelligence (new foundation)
 
 A free-first historical data collector and Elo prediction baseline for football and tennis, plus NBA historical team-game data collection, lives in [sports_ai/README.md](sports_ai/README.md). A scheduled GitHub Actions workflow refreshes available source data daily. Data availability depends on upstream sources; this is an early baseline, not a verified profitable prediction system.
+
+## Live bookmaker odds integration
+
+Ash's native Android app now has a **SPORTS** button that connects to the server-side proxy in [sports_api](sports_api/README.md). Deploy that service and configure its private `ODDS_API_KEY` environment variable, then enter the service's HTTPS URL in Ash. The API key is not embedded in the APK.
+
+The screen retrieves current/upcoming bookmaker odds for available sports and featured markets. It also offers an on-demand check for an event's odd/even market. **The Odds API does not list odd/even among its standard markets**, so that check may return unavailable; Ash must not fabricate bookmaker prices from over/under odds. The free plan has current odds but no historical odds, so the odds collector does not pretend to have historical bookmaker snapshots.
+
+A GitHub Actions workflow builds a debug APK after app changes. The first run should be checked in Actions before claiming the build passed.
