@@ -501,7 +501,7 @@ class MainActivity : Activity() {
                             val stream = if (connection.responseCode in 200..299) connection.inputStream else connection.errorStream
                             val body = stream.bufferedReader().use { it.readText() }
                             if (connection.responseCode !in 200..299) throw IllegalStateException(body.take(700))
-                            JSONObject(body)
+                            return JSONObject(body)
                         } finally { connection.disconnect() }
                     }
                     val encodedId = java.net.URLEncoder.encode(eventId, "UTF-8")
