@@ -43,6 +43,10 @@ class SportsOddsActivity : Activity() {
         window.statusBarColor = bg
         window.navigationBarColor = bg
         scheduleDailyRefresh()
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 991)
+        }
         render()
     }
 
@@ -99,7 +103,21 @@ class SportsOddsActivity : Activity() {
             .filter { it.optString("commence_time").isNotBlank() && it.optString("commence_time") >= java.time.Instant.now().toString() }
             .sortedBy { it.optString("commence_time") }
         val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
-        card("DAILY SHORTLIST", "Ash builds suggested slips from actual prices returned by your feed. Target odds are combined prices, not win probabilities or guarantees.") {}
+        card("DAILY SHORTLIST", "Ash scans active sports exposed by your API key, then ranks a small daily research shortlist. Each sport requires a separate odds request, so your API quota/plan limits coverage. Target odds are combined prices, not win probabilities or guarantees.") {}
+        val dailyPicks = OddsEngine.savedDailyPicks(this)
+        val picksText = if (dailyPicks.length() == 0) {
+            "No daily shortlist saved yet. Tap REFRESH NOW to scan available sports and research leading candidates."
+        } else {
+            (0 until dailyPicks.length()).mapNotNull { i ->
+                val pick = dailyPicks.optJSONObject(i) ?: return@mapNotNull null
+                "${i + 1}. ${pick.optString("away_team")} vs ${pick.optString("home_team")}\n   Pick: ${pick.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, pick.optDouble("price", 0.0))}\n   Bookmakers: ${pick.optInt("bookmakers")} • Recent results found: ${pick.optInt("research_results_count")} • ${pick.optString("confidence")}"
+            }.joinToString("\n\n") + "\n\nThese are research candidates, not guaranteed winners. Use only money you can afford to lose."
+        }
+        card("ASH DAILY MATCHES TO WATCH", picksText) {
+            AlertDialog.Builder(this).setTitle("Daily researched shortlist")
+                .setMessage(picksText)
+                .setPositiveButton("OK", null).show()
+        }
         showAccumulatorTargets(candidates)
         card("ODD / EVEN • TARGET 1.50", "Choose a match and check whether your provider actually returns an odd/even market near 1.50. Ash never invents these prices.") {
             chooseOddEvenGame(upcoming)
@@ -118,7 +136,7 @@ class SportsOddsActivity : Activity() {
         status.text = "Last sync: $last • Stored history: ${history.length()} games"
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         actions.addView(button("REFRESH NOW") { refreshNow() }, LinearLayout.LayoutParams(0, -2, 1f))
-        actions.addView(button("CHOOSE LEAGUES") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
+        actions.addView(button("VIEW SPORTS API LIST") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(actions, 0)
     }
 
@@ -311,7 +329,7 @@ class SportsOddsActivity : Activity() {
     private fun showLeagues() {
         val key = OddsEngine.readApiKey(this)
         if (key.isNullOrBlank()) { showSetup(); return }
-        status.text = "Loading leagues available on your API plan…"
+        status.text = "Loading active sports from your API…"
         scope.launch {
             try {
                 val sports = withContext(Dispatchers.IO) { OddsEngine.loadSports(key) }
@@ -319,23 +337,19 @@ class SportsOddsActivity : Activity() {
                     .filter { it.optBoolean("active", true) && it.optString("key").isNotBlank() }
                     .sortedWith(compareBy<JSONObject>({ it.optString("group") }, { it.optString("title") }))
                 val labels = options.map { "${it.optString("group", "Sport")} • ${it.optString("title", it.optString("key"))}" }.toTypedArray()
-                val selected = OddsEngine.favoriteKeys(this@SportsOddsActivity)
-                val checks = BooleanArray(options.size) { selected.contains(options[it].optString("key")) }
-                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Choose daily leagues")
-                    .setMultiChoiceItems(labels, checks) { _, which, isChecked -> checks[which] = isChecked }
-                    .setNegativeButton("CANCEL", null)
-                    .setPositiveButton("SAVE LEAGUES") { _, _ ->
-                        val chosen = options.indices.filter { checks[it] }.map { options[it].optString("key") }.toSet()
-                        if (chosen.isEmpty()) Toast.makeText(this@SportsOddsActivity, "Choose at least one league", Toast.LENGTH_LONG).show()
-                        else {
-                            OddsEngine.saveFavorites(this@SportsOddsActivity, chosen)
-                            Toast.makeText(this@SportsOddsActivity, "Daily leagues saved", Toast.LENGTH_SHORT).show()
-                            refreshNow()
-                        }
-                    }.show()
-                status.text = "Select leagues to check each day"
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Active sports exposed by your API key")
+                    .setMessage("Ash's daily scan checks all active sports returned by this key. The Odds API needs a separate odds request for each sport, so a broad scan can use more API credits. Actual fixtures and bookmaker markets depend on your provider plan.")
+                    .setItems(labels) { _, which ->
+                        val chosen = options[which]
+                        AlertDialog.Builder(this@SportsOddsActivity)
+                            .setTitle(chosen.optString("title", chosen.optString("key")))
+                            .setMessage("API key: ${chosen.optString("key")}\nGroup: ${chosen.optString("group")}\nActive: ${chosen.optBoolean("active", true)}\n\nThis competition is included in the all-active-sports scan.")
+                            .setPositiveButton("OK", null).show()
+                    }
+                    .setPositiveButton("CLOSE", null).show()
+                status.text = "All active sports listed • ${options.size} available"
             } catch (e: Exception) {
-                status.text = "Could not load leagues"
+                status.text = "Could not load sports list"
                 Toast.makeText(this@SportsOddsActivity, (e.message ?: "Request failed").take(300), Toast.LENGTH_LONG).show()
             }
         }
@@ -454,12 +468,24 @@ class SportsOddsActivity : Activity() {
         status.text = "Fetching today's bookmaker odds…"
         scope.launch {
             try {
-                val result = withContext(Dispatchers.IO) { OddsEngine.sync(this@SportsOddsActivity, key) }
-                val summary = "Games received: ${result.gamesFound}\nNew games discovered: ${result.newGames}\nLeagues checked: ${result.sportsChecked}\nAPI credits remaining: ${result.remaining ?: "not reported"}" +
-                    if (result.errors.isNotEmpty()) "\n\nSome leagues could not be checked:\n" + result.errors.take(4).joinToString("\n") else ""
+                val pair = withContext(Dispatchers.IO) {
+                    val result = OddsEngine.sync(this@SportsOddsActivity, key)
+                    val picks = OddsEngine.buildDailyPicks(this@SportsOddsActivity)
+                    result to picks
+                }
+                val result = pair.first
+                val picks = pair.second
+                DailyPicksNotifier.notify(this@SportsOddsActivity, picks)
+                val pickSummary = if (picks.length() == 0) "\nNo evidence-ranked picks available today; Ash did not force a selection."
+                    else "\nDaily shortlist:\n" + (0 until picks.length()).mapNotNull { i ->
+                        val p = picks.optJSONObject(i) ?: return@mapNotNull null
+                        "• ${p.optString("away_team")} vs ${p.optString("home_team")} — ${p.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, p.optDouble("price", 0.0))} (${p.optString("confidence")})"
+                    }.joinToString("\n")
+                val summary = "Games received: ${result.gamesFound}\nNew games discovered: ${result.newGames}\nActive sports scanned: ${result.sportsChecked}\nAPI credits remaining: ${result.remaining ?: "not reported"}" + pickSummary +
+                    if (result.errors.isNotEmpty()) "\n\nSome sports could not be checked:\n" + result.errors.take(4).joinToString("\n") else ""
                 AlertDialog.Builder(this@SportsOddsActivity).setTitle("Daily odds refresh complete")
                     .setMessage(summary).setPositiveButton("VIEW GAMES") { _, _ -> currentTab = "today"; render() }.show()
-                status.text = "Updated • ${result.newGames} new games discovered"
+                status.text = "Updated • ${result.newGames} new games • ${picks.length()} shortlist picks"
             } catch (e: Exception) {
                 status.text = "Refresh failed"
                 AlertDialog.Builder(this@SportsOddsActivity).setTitle("Couldn't refresh odds")
