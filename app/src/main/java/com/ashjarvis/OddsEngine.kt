@@ -191,15 +191,15 @@ object OddsEngine {
                 val kickoff = it.optString("commence_time")
                 kickoff.isNotBlank() && try { Instant.parse(kickoff).isAfter(now) } catch (_: Exception) { false }
             }
+        // Research a few more than the final shortlist, then reject matches without enough evidence.
         val candidates = upcoming.filter {
             it.optString("candidate").isNotBlank() &&
-                it.optInt("candidate_bookmakers") >= 2 &&
-                it.optDouble("candidate_price", 0.0) in 1.20..1.90
+                it.optInt("candidate_bookmakers") >= 3 &&
+                it.optDouble("candidate_price", 0.0) in 1.25..1.75
         }.sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
-            .thenBy { kotlin.math.abs(it.optDouble("candidate_price", 9.0) - 1.55) })
-            .take(3)
+            .thenBy { kotlin.math.abs(it.optDouble("candidate_price", 9.0) - 1.50) })
+            .take(5)
 
-        // Online enrichment is capped to the leading three games to avoid hammering free public sources.
         candidates.forEach { event ->
             val checkedAt = event.optString("research_checked_at")
             val fresh = try { checkedAt.isNotBlank() && Instant.parse(checkedAt).isAfter(now.minusSeconds(24L * 3600L)) } catch (_: Exception) { false }
@@ -225,42 +225,76 @@ object OddsEngine {
             }
         }
 
-        fun formScore(rows: JSONArray?): Int {
-            if (rows == null) return 0
-            var score = 0
+        fun formStats(rows: JSONArray?): Pair<Int, Int> {
+            if (rows == null) return 0 to 0
+            var points = 0
+            var played = 0
             for (i in 0 until rows.length()) {
                 val row = rows.optJSONObject(i) ?: continue
-                score += when (row.optString("outcome")) { "W" -> 2; "D" -> 1; else -> 0 }
+                when (row.optString("outcome")) {
+                    "W" -> { points += 3; played++ }
+                    "D" -> { points += 1; played++ }
+                    "L" -> { played++ }
+                }
             }
-            return score
+            return points to played
         }
-        val ranked = candidates.map { event ->
+
+        val ranked = candidates.mapNotNull { event ->
             val homeRows = event.optJSONArray("research_home_recent")
             val awayRows = event.optJSONArray("research_away_recent")
-            val evidence = (homeRows?.length() ?: 0) + (awayRows?.length() ?: 0)
+            val (homePoints, homePlayed) = formStats(homeRows)
+            val (awayPoints, awayPlayed) = formStats(awayRows)
             val selection = event.optString("candidate")
             val homeName = event.optString("home_team")
             val awayName = event.optString("away_team")
-            val formEdge = when {
-                selection.equals(homeName, ignoreCase = true) -> formScore(homeRows) - formScore(awayRows)
-                selection.equals(awayName, ignoreCase = true) -> formScore(awayRows) - formScore(homeRows)
-                else -> 0
+            val homePerGame = if (homePlayed > 0) homePoints.toDouble() / homePlayed else 0.0
+            val awayPerGame = if (awayPlayed > 0) awayPoints.toDouble() / awayPlayed else 0.0
+            val edge = when {
+                selection.equals(homeName, ignoreCase = true) -> homePerGame - awayPerGame
+                selection.equals(awayName, ignoreCase = true) -> awayPerGame - homePerGame
+                else -> 0.0
             }
             val books = event.optInt("candidate_bookmakers")
-            val price = event.optDouble("candidate_price", 2.0)
-            val score = books * 10 + minOf(evidence, 10) * 2 + formEdge.coerceIn(-5, 5) - kotlin.math.abs(price - 1.55) * 5
+            val price = event.optDouble("candidate_price", 0.0)
+            val flags = event.optJSONArray("research_availability_flags")?.length() ?: 0
+
+            // Conservative evidence gate: both teams need recent scored results, odds need
+            // multi-book support, and the selected side must have a positive recent-form edge.
+            val strong = books >= 4 && homePlayed >= 4 && awayPlayed >= 4 &&
+                edge >= 0.60 && price in 1.25..1.65 && flags == 0
+            val moderate = books >= 3 && homePlayed >= 3 && awayPlayed >= 3 &&
+                edge >= 0.25 && price in 1.25..1.75 && flags <= 1
+            if (!strong && !moderate) return@mapNotNull null
+
+            val evidenceIndex = (
+                minOf(books, 5) * 8 +
+                (minOf(homePlayed, 5) + minOf(awayPlayed, 5)) * 3 +
+                ((edge + 1.0) * 10).toInt().coerceIn(0, 20) +
+                if (price <= 1.50) 10 else 6
+            ).coerceIn(0, 100)
+            val reason = buildList {
+                add("$books bookmakers return this selection")
+                add("recent results available for both teams ($homePlayed home-team records, $awayPlayed away-team records)")
+                add("selected team's recent points-per-game edge: %.2f".format(java.util.Locale.US, edge))
+                if (flags > 0) add("possible team/player availability news needs manual confirmation")
+            }.joinToString("; ")
+
             JSONObject()
                 .put("id", event.optString("id"))
                 .put("sport_key", event.optString("sport_key"))
                 .put("sport_title", event.optString("sport_title"))
-                .put("home_team", event.optString("home_team"))
-                .put("away_team", event.optString("away_team"))
+                .put("home_team", homeName)
+                .put("away_team", awayName)
                 .put("commence_time", event.optString("commence_time"))
-                .put("selection", event.optString("candidate"))
+                .put("selection", selection)
                 .put("price", price)
                 .put("bookmakers", books)
-                .put("research_results_count", evidence)
-                .put("research_has_results", event.optBoolean("research_has_results", false))
+                .put("research_results_count", homePlayed + awayPlayed)
+                .put("home_recent_count", homePlayed)
+                .put("away_recent_count", awayPlayed)
+                .put("form_edge_per_game", edge)
+                .put("research_has_results", homePlayed > 0 && awayPlayed > 0)
                 .put("home_profile", event.optJSONObject("research_home_profile") ?: JSONObject())
                 .put("away_profile", event.optJSONObject("research_away_profile") ?: JSONObject())
                 .put("home_players", event.optJSONArray("research_home_players") ?: JSONArray())
@@ -268,13 +302,12 @@ object OddsEngine {
                 .put("news", event.optJSONArray("research_news") ?: JSONArray())
                 .put("availability_flags", event.optJSONArray("research_availability_flags") ?: JSONArray())
                 .put("research_sources", event.optJSONArray("research_sources") ?: JSONArray())
-                .put("evidence_score", score)
-                .put("confidence", when {
-                    evidence >= 6 && books >= 3 -> "Medium evidence"
-                    evidence >= 2 && books >= 2 -> "Limited evidence"
-                    else -> "Low evidence"
-                })
-        }.sortedByDescending { it.optInt("evidence_score") }.take(3)
+                .put("evidence_index", evidenceIndex)
+                .put("confidence", if (strong) "Stronger evidence — still uncertain" else "Moderate evidence — still uncertain")
+                .put("reason", reason)
+        }.sortedWith(compareByDescending<JSONObject> { it.optInt("evidence_index") }
+            .thenByDescending { it.optInt("bookmakers") }).take(3)
+
         val result = JSONArray()
         ranked.forEach { result.put(it) }
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
