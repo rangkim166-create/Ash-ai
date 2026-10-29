@@ -140,7 +140,8 @@ object OddsEngine {
                 val events = payload.optJSONArray("data") ?: JSONArray()
                 for (i in 0 until events.length()) {
                     val event = events.optJSONObject(i) ?: continue
-                    val id = event.optString("id")\n                    if (id.isBlank()) continue
+                    val id = event.optString("id")
+                    if (id.isBlank()) continue
                     val now = Instant.now().toString()
                     val prior = byId[id]
                     val summary = summarize(event, sportKey, sport.optString("title", sportKey), now, prior)
