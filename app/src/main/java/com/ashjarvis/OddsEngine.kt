@@ -193,12 +193,12 @@ object OddsEngine {
                 it.optDouble("candidate_price", 0.0) in 1.20..1.90
         }.sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
             .thenBy { kotlin.math.abs(it.optDouble("candidate_price", 9.0) - 1.55) })
-            .take(6)
+            .take(3)
 
-        // Online enrichment is capped to the leading six games to avoid hammering free public sources.
+        // Online enrichment is capped to the leading three games to avoid hammering free public sources.
         candidates.forEach { event ->
             val checkedAt = event.optString("research_checked_at")
-            val fresh = try { checkedAt.isNotBlank() && Instant.parse(checkedAt).isAfter(now.minusSeconds(24 * 3600)) } catch (_: Exception) { false }
+            val fresh = try { checkedAt.isNotBlank() && Instant.parse(checkedAt).isAfter(now.minusSeconds(24L * 3600L)) } catch (_: Exception) { false }
             if (!fresh) {
                 try {
                     val report = researchMatch(event.optString("home_team"), event.optString("away_team"), event.optString("sport_title"))
@@ -228,10 +228,17 @@ object OddsEngine {
             val homeRows = event.optJSONArray("research_home_recent")
             val awayRows = event.optJSONArray("research_away_recent")
             val evidence = (homeRows?.length() ?: 0) + (awayRows?.length() ?: 0)
-            val formDifference = kotlin.math.abs(formScore(homeRows) - formScore(awayRows))
+            val selection = event.optString("candidate")
+            val homeName = event.optString("home_team")
+            val awayName = event.optString("away_team")
+            val formEdge = when {
+                selection.equals(homeName, ignoreCase = true) -> formScore(homeRows) - formScore(awayRows)
+                selection.equals(awayName, ignoreCase = true) -> formScore(awayRows) - formScore(homeRows)
+                else -> 0
+            }
             val books = event.optInt("candidate_bookmakers")
             val price = event.optDouble("candidate_price", 2.0)
-            val score = books * 10 + minOf(evidence, 10) * 2 + minOf(formDifference, 10) - kotlin.math.abs(price - 1.55) * 5
+            val score = books * 10 + minOf(evidence, 10) * 2 + formEdge.coerceIn(-5, 5) - kotlin.math.abs(price - 1.55) * 5
             JSONObject()
                 .put("id", event.optString("id"))
                 .put("sport_key", event.optString("sport_key"))
