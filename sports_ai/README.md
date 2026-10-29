@@ -45,21 +45,21 @@ The data pipeline must never describe itself as literally complete: no public so
 - OpenFootball's football JSON results are public domain; regional text files are imported only where the score line is unambiguous.
 - The ATP/WTA archive used here is marked CC BY-NC-SA 4.0 upstream. It is non-commercial unless a separate permission/license is obtained.
 - The Saudi league and multi-league basketball archives do not clearly state a reuse license in their README. Keep attribution and do not redistribute or use commercially until permission is confirmed.
-- Football-Data.co.uk explicitly limits its free datasets to private use and excludes commercial or AI/data-training products; it is intentionally **not** part of the automated collection workflow.
+- Football-Data.co.uk explicitly limits its free datasets to private individuals and excludes commercial/AI data-training projects with heavy repeated automated downloads. It is **not** downloaded or imported by the automated workflow. Do not use its CSVs for training or publish its data without permission.
 - Results datasets are not a substitute for live fixtures, injuries, lineups or licensed historical bookmaker odds. No match is guaranteed.
 
 ## Expanded coverage pipeline
 
 The daily GitHub Actions job now attempts these additional imports:
 
-- Football-Data CSV results and bookmaker odds for selected European divisions from 2000/01 onward where source files exist. The original CSV rows, including available odds columns, are retained in `raw_json`; odds coverage varies by league and season.
+- A global ODC-BY football results dataset containing 1.2M+ match records across 207 domestic leagues and 20 international competitions, reported upstream from 1888–2023. Attribution is retained; old records may contain errors and team identities may vary.
 - OpenFootball's world archive for regional football text files. The parser imports only score lines it can recognize; the audit report lists target leagues that were not detected.
 - Saudi Pro League CSV archive where available. Its upstream reuse licence is unclear, so treat it as research-only until permission is confirmed.
 - NBA, EuroLeague, EuroCup, ABA League and Slovenian league parquet tables where available. Their upstream reuse licence is also unclear; do not redistribute commercially without permission.
 - A coverage audit in `data/history/coverage-report.json` records imported match counts, competitions/seasons and Arab league targets not found.
 
-The workflow builds the SQLite database, imports additional sources, rebuilds `ratings.json`, packages the raw archive/database/report as the `ash-sports-history` Actions artifact, and commits small manifests/ratings to the repository. The artifact has a 90-day retention limit; it is not permanent storage.
+The workflow builds the SQLite database, imports additional sources, rebuilds `ratings.json`, packages the raw archive/database/report as the `ash-sports-history` Actions artifact, and commits small manifests/ratings to the repository. The artifact has a 90-day retention limit; each successful run removes older copies so the latest archive is easy to find. The full database is reproducible from source URLs but is not permanently stored in Git history.
 
 ## Current limitations
 
-This is the broadest best-effort collection configured in the repository, not literally every historical match worldwide. Some sources may disappear, change schemas, have incomplete seasons or impose non-commercial terms. The coverage audit is the source of truth after a successful workflow run; do not claim a league is covered until its match count is non-zero and the season range has been reviewed. Historical odds are available only for the CSV rows that actually include them. Current fixtures, injuries, confirmed lineups and live odds still require separate feeds.
+This is a broad best-effort collection configured in the repository, not literally every historical match worldwide. The global football archive greatly expands league coverage, but the coverage audit must be checked before assuming any specific Arab competition or season is complete. Some sources may disappear, change schemas, have incomplete seasons or impose non-commercial terms. The coverage audit is the source of truth after a successful workflow run; do not claim a league is covered until its match count is non-zero and the season range has been reviewed. Historical odds are available only for the CSV rows that actually include them. Current fixtures, injuries, confirmed lineups and live odds still require separate feeds.
