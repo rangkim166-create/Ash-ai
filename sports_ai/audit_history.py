@@ -55,7 +55,7 @@ def main():
         season_counts = [
             {"sport": sport, "year": year, "matches": count}
             for sport, year, count in db.execute(
-                "SELECT sport, substr(COALESCE(NULLIF(season,''), NULLIF(match_date,''), 'unknown'),1,4), COUNT(*) "
+                "SELECT sport, substr(COALESCE(NULLIF(season,''), NULLIF(match_date,''), 'unknown'),1,4) AS year, COUNT(*) "
                 "FROM matches GROUP BY sport, substr(COALESCE(NULLIF(season,''), NULLIF(match_date,''), 'unknown'),1,4) "
                 "ORDER BY sport, year"
             )
