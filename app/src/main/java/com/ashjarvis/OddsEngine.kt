@@ -217,4 +217,136 @@ object OddsEngine {
             .put("candidate_bookmakers", bestBooks)
             .put("snapshots", snapshots)
     }
+
+    /**
+     * Fallback internet research for a fixture when local result history is missing.
+     * Uses TheSportsDB's public team/recent-events endpoints and Wikipedia search snippets.
+     * Empty results are reported as missing data, never treated as an invalid match.
+     */
+    fun researchMatch(homeTeam: String, awayTeam: String, sportTitle: String): JSONObject {
+        val report = JSONObject()
+            .put("home_team", homeTeam)
+            .put("away_team", awayTeam)
+            .put("sport_title", sportTitle)
+            .put("researched_at", Instant.now().toString())
+        val sources = JSONArray()
+        val homeRecent = JSONArray()
+        val awayRecent = JSONArray()
+        val webNotes = JSONArray()
+
+        fun searchTeam(teamName: String): JSONObject? {
+            val url = "https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=" +
+                URLEncoder.encode(teamName, "UTF-8")
+            val json = researchRequest(url)
+            return json.optJSONArray("teams")?.let { teams ->
+                if (teams.length() > 0) teams.optJSONObject(0) else null
+            }
+        }
+
+        fun loadRecent(team: JSONObject?, destination: JSONArray, teamName: String) {
+            val id = team?.optString("idTeam").orEmpty()
+            if (id.isBlank()) return
+            val url = "https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=" +
+                URLEncoder.encode(id, "UTF-8")
+            val events = researchRequest(url).optJSONArray("results") ?: return
+            val count = minOf(events.length(), 5)
+            for (i in 0 until count) {
+                val e = events.optJSONObject(i) ?: continue
+                val home = e.optString("strHomeTeam")
+                val away = e.optString("strAwayTeam")
+                val hs = e.optString("intHomeScore")
+                val ascore = e.optString("intAwayScore")
+                val scoreAvailable = hs.isNotBlank() && hs != "null" && ascore.isNotBlank() && ascore != "null"
+                var outcome = "result unavailable"
+                if (scoreAvailable) {
+                    val h = hs.toIntOrNull()
+                    val a = ascore.toIntOrNull()
+                    if (h != null && a != null) {
+                        val isHome = home.equals(teamName, ignoreCase = true) ||
+                            home.equals(team?.optString("strTeam").orEmpty(), ignoreCase = true)
+                        val teamScore = if (isHome) h else a
+                        val opponentScore = if (isHome) a else h
+                        outcome = when {
+                            teamScore > opponentScore -> "W"
+                            teamScore < opponentScore -> "L"
+                            else -> "D"
+                        }
+                    }
+                }
+                destination.put(JSONObject()
+                    .put("date", e.optString("dateEvent"))
+                    .put("event", e.optString("strEvent"))
+                    .put("home", home)
+                    .put("away", away)
+                    .put("home_score", hs)
+                    .put("away_score", ascore)
+                    .put("outcome", outcome))
+            }
+        }
+
+        fun searchWeb(teamName: String) {
+            val url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
+                URLEncoder.encode(teamName + " " + sportTitle + " team recent results", "UTF-8") +
+                "&format=json&utf8=1&srlimit=3"
+            val results = researchRequest(url).optJSONObject("query")?.optJSONArray("search") ?: return
+            for (i in 0 until results.length()) {
+                val item = results.optJSONObject(i) ?: continue
+                val snippet = item.optString("snippet")
+                    .replace(Regex("<[^>]*>"), " ")
+                    .replace("&quot;", "\"")
+                    .replace("&#039;", "'")
+                    .replace("&amp;", "&")
+                    .replace(Regex("\\s+"), " ")
+                    .trim()
+                if (snippet.isNotBlank()) webNotes.put(JSONObject()
+                    .put("title", item.optString("title"))
+                    .put("snippet", snippet)
+                    .put("team", teamName))
+            }
+        }
+
+        try {
+            val home = searchTeam(homeTeam)
+            if (home != null) {
+                sources.put("TheSportsDB team profile: " + home.optString("strTeam", homeTeam))
+                loadRecent(home, homeRecent, homeTeam)
+            }
+        } catch (_: Exception) { }
+        try {
+            val away = searchTeam(awayTeam)
+            if (away != null) {
+                sources.put("TheSportsDB team profile: " + away.optString("strTeam", awayTeam))
+                loadRecent(away, awayRecent, awayTeam)
+            }
+        } catch (_: Exception) { }
+        try { searchWeb(homeTeam); sources.put("Wikipedia search API") } catch (_: Exception) { }
+        try { searchWeb(awayTeam); if (sources.toString().contains("Wikipedia search API").not()) sources.put("Wikipedia search API") } catch (_: Exception) { }
+
+        report.put("home_recent", homeRecent)
+            .put("away_recent", awayRecent)
+            .put("web_notes", webNotes)
+            .put("sources", sources)
+            .put("has_results_history", homeRecent.length() > 0 || awayRecent.length() > 0)
+        return report
+    }
+
+    private fun researchRequest(url: String): JSONObject {
+        val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            requestMethod = "GET"
+            connectTimeout = 9000
+            readTimeout = 12000
+            setRequestProperty("Accept", "application/json")
+            setRequestProperty("User-Agent", "AshJarvis-SportsResearch/1.0 (Android)")
+        }
+        try {
+            val code = connection.responseCode
+            val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+            val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+            if (code !in 200..299) throw IllegalStateException("Research source HTTP $code")
+            return JSONObject(body)
+        } finally {
+            connection.disconnect()
+        }
+    }
+
 }
