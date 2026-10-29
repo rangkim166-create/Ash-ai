@@ -14,7 +14,7 @@ PORT = int(os.getenv("PORT", "8000"))
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "").strip()
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 CACHE_SECONDS = max(15, int(os.getenv("ODDS_CACHE_SECONDS", "60")))
-_cache: dict[str, tuple[float, object]] = {}
+_cache: dict[str, tuple[float, object]] = {}\n_request_times: dict[str, list[float]] = {}
 SPORT_KEY_RE = re.compile(r"^[a-z0-9_]{2,80}$")
 MARKET_RE = re.compile(r"^[a-z0-9_]{2,60}$")
 REGIONS_ALLOWED = {"uk", "eu", "us", "us2", "au"}
@@ -70,6 +70,15 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
         query = parse_qs(parsed.query)
+        if parsed.path in {"/odds", "/event-markets", "/event-odds"}:
+            ip = self.client_address[0]
+            now = time.time()
+            recent = [stamp for stamp in _request_times.get(ip, []) if now - stamp < 60]
+            if len(recent) >= 18:
+                self.send_json(429, {"error": "Rate limit reached. Wait a minute before requesting more odds."})
+                return
+            recent.append(now)
+            _request_times[ip] = recent
         if parsed.path == "/health":
             self.send_json(200, {"ok": True, "service": "ash-sports-api", "odds_api_key_configured": bool(ODDS_API_KEY)})
             return
