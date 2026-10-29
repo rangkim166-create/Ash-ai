@@ -123,10 +123,9 @@ object OddsEngine {
         val allSports = loadSports(apiKey)
         val active = (0 until allSports.length()).mapNotNull { allSports.optJSONObject(it) }
             .filter { it.optBoolean("active", true) && it.optString("key").isNotBlank() }
-        val favs = favoriteKeys(context)
-        if (favs.isEmpty()) throw IllegalStateException("Choose at least one league in Sports settings first.")
-        val sports = active.filter { favs.contains(it.optString("key")) }
-        if (sports.isEmpty()) throw IllegalStateException("Your selected leagues are not active on this API key. Open Leagues and choose from the available list.")
+        // Daily discovery mode: scan every active sport/competition exposed by this API key.
+        // The Odds API requires a separate odds request per sport, so quota depends on plan and coverage.
+        val sports = active
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val old = history(context)
         val byId = linkedMapOf<String, JSONObject>()
@@ -163,12 +162,104 @@ object OddsEngine {
                 errors.add("$sportKey: ${(e.message ?: "request failed").take(160)}")
             }
         }
-        val sorted = byId.values.sortedByDescending { it.optString("last_seen") }.take(250)
+        val sorted = byId.values.sortedByDescending { it.optString("last_seen") }.take(1000)
         val saved = JSONArray()
         sorted.forEach { saved.put(it) }
         prefs.edit().putString(HISTORY_KEY, saved.toString()).putString("odds_last_sync", Instant.now().toString()).apply()
         if (found == 0 && errors.isNotEmpty()) throw IllegalStateException(errors.take(3).joinToString("\n"))
         return SyncResult(found, added, sports.size, errors, remaining)
+    }
+
+    fun savedDailyPicks(context: Context): JSONArray = try {
+        JSONArray(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("ash_daily_picks_json", "[]") ?: "[]")
+    } catch (_: Exception) { JSONArray() }
+
+    /**
+     * Build a small daily evidence shortlist from real upcoming API fixtures.
+     * For the leading candidates, research recent results online when local evidence is absent/stale.
+     * Never fabricates results or treats missing data as a losing/winning signal.
+     */
+    fun buildDailyPicks(context: Context): JSONArray {
+        val now = Instant.now()
+        val history = history(context)
+        val upcoming = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
+            .filter {
+                val kickoff = it.optString("commence_time")
+                kickoff.isNotBlank() && try { Instant.parse(kickoff).isAfter(now) } catch (_: Exception) { false }
+            }
+        val candidates = upcoming.filter {
+            it.optString("candidate").isNotBlank() &&
+                it.optInt("candidate_bookmakers") >= 2 &&
+                it.optDouble("candidate_price", 0.0) in 1.20..1.90
+        }.sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
+            .thenBy { kotlin.math.abs(it.optDouble("candidate_price", 9.0) - 1.55) })
+            .take(6)
+
+        // Online enrichment is capped to the leading six games to avoid hammering free public sources.
+        candidates.forEach { event ->
+            val checkedAt = event.optString("research_checked_at")
+            val fresh = try { checkedAt.isNotBlank() && Instant.parse(checkedAt).isAfter(now.minusSeconds(24 * 3600)) } catch (_: Exception) { false }
+            if (!fresh) {
+                try {
+                    val report = researchMatch(event.optString("home_team"), event.optString("away_team"), event.optString("sport_title"))
+                    event.put("research_checked_at", now.toString())
+                        .put("research_has_results", report.optBoolean("has_results_history"))
+                        .put("research_home_recent", report.optJSONArray("home_recent") ?: JSONArray())
+                        .put("research_away_recent", report.optJSONArray("away_recent") ?: JSONArray())
+                        .put("research_web_notes", report.optJSONArray("web_notes") ?: JSONArray())
+                        .put("research_sources", report.optJSONArray("sources") ?: JSONArray())
+                } catch (_: Exception) {
+                    event.put("research_checked_at", now.toString())
+                        .put("research_has_results", false)
+                }
+            }
+        }
+
+        fun formScore(rows: JSONArray?): Int {
+            if (rows == null) return 0
+            var score = 0
+            for (i in 0 until rows.length()) {
+                val row = rows.optJSONObject(i) ?: continue
+                score += when (row.optString("outcome")) { "W" -> 2; "D" -> 1; else -> 0 }
+            }
+            return score
+        }
+        val ranked = candidates.map { event ->
+            val homeRows = event.optJSONArray("research_home_recent")
+            val awayRows = event.optJSONArray("research_away_recent")
+            val evidence = (homeRows?.length() ?: 0) + (awayRows?.length() ?: 0)
+            val formDifference = kotlin.math.abs(formScore(homeRows) - formScore(awayRows))
+            val books = event.optInt("candidate_bookmakers")
+            val price = event.optDouble("candidate_price", 2.0)
+            val score = books * 10 + minOf(evidence, 10) * 2 + minOf(formDifference, 10) - kotlin.math.abs(price - 1.55) * 5
+            JSONObject()
+                .put("id", event.optString("id"))
+                .put("sport_key", event.optString("sport_key"))
+                .put("sport_title", event.optString("sport_title"))
+                .put("home_team", event.optString("home_team"))
+                .put("away_team", event.optString("away_team"))
+                .put("commence_time", event.optString("commence_time"))
+                .put("selection", event.optString("candidate"))
+                .put("price", price)
+                .put("bookmakers", books)
+                .put("research_results_count", evidence)
+                .put("research_has_results", event.optBoolean("research_has_results", false))
+                .put("research_sources", event.optJSONArray("research_sources") ?: JSONArray())
+                .put("evidence_score", score)
+                .put("confidence", when {
+                    evidence >= 6 && books >= 3 -> "Medium evidence"
+                    evidence >= 2 && books >= 2 -> "Limited evidence"
+                    else -> "Low evidence"
+                })
+        }.sortedByDescending { it.optInt("evidence_score") }.take(3)
+        val result = JSONArray()
+        ranked.forEach { result.put(it) }
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(HISTORY_KEY, history.toString())
+            .putString("ash_daily_picks_json", result.toString())
+            .putString("ash_daily_picks_date", java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString())
+            .apply()
+        return result
     }
 
     private fun summarize(event: JSONObject, sportKey: String, sportTitle: String, now: String, prior: JSONObject?): JSONObject {
@@ -194,7 +285,8 @@ object OddsEngine {
         var bestBooks = 0
         for ((name, list) in prices) {
             val avg = list.average()
-            if (list.size >= 2 && avg in 1.20..1.90 && list.size > bestBooks) {
+            if (list.size >= 2 && avg in 1.20..1.90 &&
+                (list.size > bestBooks || (list.size == bestBooks && kotlin.math.abs(avg - 1.55) < kotlin.math.abs(bestAvg - 1.55)))) {
                 bestName = name; bestAvg = avg; bestBooks = list.size
             }
         }
