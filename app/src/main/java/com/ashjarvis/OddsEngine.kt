@@ -205,7 +205,7 @@ object OddsEngine {
             val fresh = try { checkedAt.isNotBlank() && Instant.parse(checkedAt).isAfter(now.minusSeconds(24L * 3600L)) } catch (_: Exception) { false }
             if (!fresh) {
                 try {
-                    val report = researchMatch(event.optString("home_team"), event.optString("away_team"), event.optString("sport_title"))
+                    val report = researchMatch(event.optString("home_team"), event.optString("away_team"), event.optString("sport_title"), includePlayerNews = false)
                     event.put("research_checked_at", now.toString())
                         .put("research_has_results", report.optBoolean("has_results_history"))
                         .put("research_home_recent", report.optJSONArray("home_recent") ?: JSONArray())
