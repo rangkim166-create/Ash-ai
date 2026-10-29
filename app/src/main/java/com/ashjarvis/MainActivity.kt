@@ -17,6 +17,7 @@ import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
 import android.widget.Button
+import android.widget.ProgressBar
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
@@ -847,8 +848,10 @@ class MainActivity : Activity() {
             val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
             val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
             when (status) {
-                DownloadManager.STATUS_PENDING, DownloadManager.STATUS_RUNNING, DownloadManager.STATUS_PAUSED ->
-                    Toast.makeText(this, "Model download is still in progress.", Toast.LENGTH_LONG).show()
+                DownloadManager.STATUS_PENDING, DownloadManager.STATUS_RUNNING, DownloadManager.STATUS_PAUSED -> {
+                    val modelName = prefs.getString("offline_model_name", fileName) ?: fileName
+                    showModelDownloadProgress(downloadId, modelName)
+                }
                 DownloadManager.STATUS_FAILED ->
                     AlertDialog.Builder(this)
                         .setTitle("Model download failed")
@@ -883,6 +886,111 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun showModelDownloadProgress(downloadId: Long, modelName: String) {
+        val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(28, 18, 28, 8)
+        }
+        val statusText = TextView(this).apply {
+            text = "Connecting to Android Download Manager…"
+            textSize = 14f
+            setTextColor(Color.rgb(40, 50, 65))
+        }
+        val bar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            isIndeterminate = true
+            max = 1000
+        }
+        val detailText = TextView(this).apply {
+            textSize = 12f
+            setTextColor(Color.rgb(70, 80, 95))
+            setPadding(0, 10, 0, 0)
+        }
+        panel.addView(statusText)
+        panel.addView(bar, LinearLayout.LayoutParams(-1, 20).apply { topMargin = 14 })
+        panel.addView(detailText)
+        var polling = true
+        val handler = android.os.Handler(mainLooper)
+        lateinit var dialog: AlertDialog
+        val poll = object : Runnable {
+            override fun run() {
+                if (!polling || !dialog.isShowing) return
+                try {
+                    manager.query(DownloadManager.Query().setFilterById(downloadId)).use { cursor ->
+                        if (cursor == null || !cursor.moveToFirst()) {
+                            statusText.text = "Download record not found"
+                            detailText.text = "Reopen Offline AI and start the download again."
+                            bar.isIndeterminate = false
+                            bar.progress = 0
+                            polling = false
+                            return
+                        }
+                        val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                        val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
+                        val downloaded = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)).coerceAtLeast(0L)
+                        val total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                        val knownTotal = total > 0L
+                        val percent = if (knownTotal) ((downloaded * 100L) / total).toInt().coerceIn(0, 100) else 0
+                        bar.isIndeterminate = !knownTotal && status == DownloadManager.STATUS_RUNNING
+                        if (knownTotal) bar.progress = percent * 10
+                        val downloadedLabel = String.format(Locale.US, "%.1f MB", downloaded / (1024.0 * 1024.0))
+                        val totalLabel = if (knownTotal) String.format(Locale.US, "%.1f MB", total / (1024.0 * 1024.0)) else "size unknown"
+                        detailText.text = if (knownTotal) "$downloadedLabel of $totalLabel • $percent%" else "$downloadedLabel downloaded • $totalLabel"
+                        when (status) {
+                            DownloadManager.STATUS_PENDING -> statusText.text = "Waiting to start"
+                            DownloadManager.STATUS_RUNNING -> statusText.text = "Downloading $modelName…"
+                            DownloadManager.STATUS_PAUSED -> statusText.text = "Paused • " + when (reason) {
+                                DownloadManager.PAUSED_WAITING_FOR_NETWORK -> "waiting for network"
+                                DownloadManager.PAUSED_WAITING_TO_RETRY -> "waiting to retry"
+                                DownloadManager.PAUSED_QUEUED_FOR_WIFI -> "waiting for Wi-Fi"
+                                DownloadManager.PAUSED_UNKNOWN -> "paused by Android"
+                                else -> "reason $reason"
+                            }
+                            DownloadManager.STATUS_SUCCESSFUL -> {
+                                statusText.text = "Download complete ✓"
+                                bar.isIndeterminate = false
+                                bar.progress = 1000
+                                detailText.text = "$totalLabel downloaded. Tap CHECK DOWNLOADED to prepare the model."
+                                polling = false
+                            }
+                            DownloadManager.STATUS_FAILED -> {
+                                statusText.text = "Download failed"
+                                detailText.text = "Android error $reason. Check connection and storage, then retry."
+                                bar.isIndeterminate = false
+                                polling = false
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    statusText.text = "Can't read download status"
+                    detailText.text = e.message ?: "Try CHECK DOWNLOADED again."
+                }
+                if (polling && dialog.isShowing) handler.postDelayed(this, 1000L)
+            }
+        }
+        dialog = AlertDialog.Builder(this)
+            .setTitle("Ash Jarvis • Model download")
+            .setView(panel)
+            .setNegativeButton("CLOSE", null)
+            .setNeutralButton("CANCEL DOWNLOAD", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener {
+                manager.remove(downloadId)
+                prefs.edit().remove("offline_model_download_id").apply()
+                polling = false
+                dialog.dismiss()
+                Toast.makeText(this, "Model download cancelled", Toast.LENGTH_SHORT).show()
+            }
+            handler.post(poll)
+        }
+        dialog.setOnDismissListener {
+            polling = false
+            handler.removeCallbacks(poll)
+        }
+        dialog.show()
+    }
+
     private fun startOfflineModelDownload(model: OfflineModel) {
         try {
             val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
@@ -895,11 +1003,7 @@ class MainActivity : Activity() {
                 .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + model.fileName)
             val id = manager.enqueue(request)
             prefs.edit().putLong("offline_model_download_id", id).putString("offline_model_file", model.fileName).apply()
-            AlertDialog.Builder(this)
-                .setTitle("Download started")
-                .setMessage(model.name + " is downloading over Wi-Fi to Downloads/AshJarvis. When complete, the file is stored on your phone. Ash still needs its local inference engine integrated before it can answer with this model offline.")
-                .setPositiveButton("OK", null)
-                .show()
+            showModelDownloadProgress(id, model.name)
         } catch (e: Exception) {
             Toast.makeText(this, "Could not start download: " + (e.message ?: "unknown error"), Toast.LENGTH_LONG).show()
         }
