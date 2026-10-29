@@ -322,9 +322,9 @@ object OddsEngine {
     }
 
     /**
-     * Fallback internet research for a fixture when local result history is missing.
-     * Uses TheSportsDB's public team/recent-events endpoints and Wikipedia search snippets.
-     * Empty results are reported as missing data, never treated as an invalid match.
+     * Multi-source research for a fixture. Uses team profiles, recent events, available roster
+     * metadata and current news snippets. Public sources can be incomplete or wrong; every
+     * field is labelled as evidence, never treated as confirmed injury or guaranteed prediction.
      */
     fun researchMatch(homeTeam: String, awayTeam: String, sportTitle: String): JSONObject {
         val report = JSONObject()
@@ -336,14 +336,46 @@ object OddsEngine {
         val homeRecent = JSONArray()
         val awayRecent = JSONArray()
         val webNotes = JSONArray()
+        val homePlayers = JSONArray()
+        val awayPlayers = JSONArray()
+        val news = JSONArray()
+
+        fun norm(value: String): String = value.lowercase().replace(Regex("[^a-z0-9]"), "")
 
         fun searchTeam(teamName: String): JSONObject? {
             val url = "https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t=" +
                 URLEncoder.encode(teamName, "UTF-8")
-            val json = researchRequest(url)
-            return json.optJSONArray("teams")?.let { teams ->
-                if (teams.length() > 0) teams.optJSONObject(0) else null
+            val teams = researchRequest(url).optJSONArray("teams") ?: return null
+            if (teams.length() == 0) return null
+            val requested = norm(teamName)
+            val exact = (0 until teams.length()).mapNotNull { teams.optJSONObject(it) }
+                .firstOrNull { norm(it.optString("strTeam")) == requested }
+            if (exact != null) return exact
+            // Avoid silently attaching another club's roster/results to a similarly named team.
+            return (0 until teams.length()).mapNotNull { teams.optJSONObject(it) }
+                .firstOrNull {
+                    val found = norm(it.optString("strTeam"))
+                    found.length >= 5 && (found.contains(requested) || requested.contains(found))
+                }
+        }
+
+        fun addTeamProfile(team: JSONObject?, teamName: String, label: String) {
+            if (team == null) {
+                report.put("${label}_profile", JSONObject().put("team", teamName).put("found", false))
+                return
             }
+            val description = team.optString("strDescriptionEN").trim()
+            report.put("${label}_profile", JSONObject()
+                .put("team", team.optString("strTeam", teamName))
+                .put("found", true)
+                .put("sport", team.optString("strSport"))
+                .put("league", team.optString("strLeague"))
+                .put("country", team.optString("strCountry"))
+                .put("formed_year", team.optString("intFormedYear"))
+                .put("stadium", team.optString("strStadium"))
+                .put("description", description.take(900)))
+            val id = team.optString("idTeam")
+            if (id.isNotBlank()) sources.put("TheSportsDB team profile: " + team.optString("strTeam", teamName))
         }
 
         fun loadRecent(team: JSONObject?, destination: JSONArray, teamName: String) {
@@ -352,29 +384,23 @@ object OddsEngine {
             val url = "https://www.thesportsdb.com/api/v1/json/3/eventslast.php?id=" +
                 URLEncoder.encode(id, "UTF-8")
             val events = researchRequest(url).optJSONArray("results") ?: return
-            val count = minOf(events.length(), 5)
-            for (i in 0 until count) {
+            for (i in 0 until minOf(events.length(), 5)) {
                 val e = events.optJSONObject(i) ?: continue
                 val home = e.optString("strHomeTeam")
                 val away = e.optString("strAwayTeam")
                 val hs = e.optString("intHomeScore")
                 val ascore = e.optString("intAwayScore")
-                val scoreAvailable = hs.isNotBlank() && hs != "null" && ascore.isNotBlank() && ascore != "null"
-                var outcome = "result unavailable"
-                if (scoreAvailable) {
-                    val h = hs.toIntOrNull()
-                    val a = ascore.toIntOrNull()
-                    if (h != null && a != null) {
-                        val isHome = home.equals(teamName, ignoreCase = true) ||
-                            home.equals(team?.optString("strTeam").orEmpty(), ignoreCase = true)
-                        val teamScore = if (isHome) h else a
-                        val opponentScore = if (isHome) a else h
-                        outcome = when {
-                            teamScore > opponentScore -> "W"
-                            teamScore < opponentScore -> "L"
-                            else -> "D"
-                        }
-                    }
+                val h = hs.toIntOrNull()
+                val a = ascore.toIntOrNull()
+                val scoreAvailable = h != null && a != null
+                val teamIsHome = e.optString("idHomeTeam") == id ||
+                    norm(home) == norm(team.optString("strTeam", teamName))
+                val teamScore = if (teamIsHome) h else a
+                val opponentScore = if (teamIsHome) a else h
+                val outcome = if (!scoreAvailable) "result unavailable" else when {
+                    teamScore!! > opponentScore!! -> "W"
+                    teamScore < opponentScore -> "L"
+                    else -> "D"
                 }
                 destination.put(JSONObject()
                     .put("date", e.optString("dateEvent"))
@@ -387,49 +413,134 @@ object OddsEngine {
             }
         }
 
-        fun searchWeb(teamName: String) {
-            val url = "https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=" +
-                URLEncoder.encode(teamName + " " + sportTitle + " team recent results", "UTF-8") +
-                "&format=json&utf8=1&srlimit=3"
-            val results = researchRequest(url).optJSONObject("query")?.optJSONArray("search") ?: return
-            for (i in 0 until results.length()) {
-                val item = results.optJSONObject(i) ?: continue
-                val snippet = item.optString("snippet")
-                    .replace(Regex("<[^>]*>"), " ")
-                    .replace("&quot;", "\"")
-                    .replace("&#039;", "'")
-                    .replace("&amp;", "&")
-                    .replace(Regex("\\s+"), " ")
-                    .trim()
-                if (snippet.isNotBlank()) webNotes.put(JSONObject()
-                    .put("title", item.optString("title"))
-                    .put("snippet", snippet)
-                    .put("team", teamName))
+        fun loadPlayers(team: JSONObject?, destination: JSONArray) {
+            val id = team?.optString("idTeam").orEmpty()
+            if (id.isBlank()) return
+            val url = "https://www.thesportsdb.com/api/v1/json/3/lookup_all_players.php?id=" +
+                URLEncoder.encode(id, "UTF-8")
+            val players = researchRequest(url).optJSONArray("player") ?: return
+            // Keep the available squad list concise and avoid storing large biography blobs.
+            for (i in 0 until minOf(players.length(), 12)) {
+                val p = players.optJSONObject(i) ?: continue
+                val name = p.optString("strPlayer").trim()
+                if (name.isBlank()) continue
+                destination.put(JSONObject()
+                    .put("name", name)
+                    .put("position", p.optString("strPosition"))
+                    .put("nationality", p.optString("strNationality"))
+                    .put("number", p.optString("strNumber"))
+                    .put("status", p.optString("strStatus"))
+                    .put("description", p.optString("strDescriptionEN").trim().take(320))
+                    .put("thumb", p.optString("strCutout", p.optString("strThumb"))))
+            }
+            if (destination.length() > 0) sources.put("TheSportsDB available squad metadata")
+        }
+
+        fun decodeFeedText(value: String): String = value
+            .replace(Regex("(?is)<!\\[CDATA\\[(.*?)]]>"), "$1")
+            .replace(Regex("(?is)<[^>]+>"), " ")
+            .replace("&amp;", "&").replace("&quot;", "\"")
+            .replace("&#39;", "'").replace("&#039;", "'")
+            .replace("&apos;", "'").replace("&lt;", "<").replace("&gt;", ">")
+            .replace(Regex("&#(\\d+);")) { match ->
+                match.groupValues[1].toIntOrNull()?.let { String(Character.toChars(it)) } ?: match.value
+            }
+            .replace(Regex("\\s+"), " ").trim()
+
+        fun tagValue(block: String, tag: String): String {
+            val match = Regex("(?is)<$tag\\b[^>]*>(.*?)</$tag\\s*>").find(block)
+            return match?.groupValues?.getOrNull(1)?.let { decodeFeedText(it) }.orEmpty()
+        }
+
+        fun searchNews(query: String, teamName: String) {
+            val url = "https://news.google.com/rss/search?q=" +
+                URLEncoder.encode(query, "UTF-8") + "&hl=en-US&gl=US&ceid=US:en"
+            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 9000
+                readTimeout = 12000
+                setRequestProperty("User-Agent", "AshJarvis-SportsResearch/1.0 (Android)")
+            }
+            try {
+                val code = connection.responseCode
+                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+                val xml = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+                if (code !in 200..299) throw IllegalStateException("News search HTTP $code")
+                val items = Regex("(?is)<item\\b[^>]*>(.*?)</item>").findAll(xml).take(5)
+                for (itemMatch in items) {
+                    val block = itemMatch.groupValues[1]
+                    val title = tagValue(block, "title")
+                    val link = Regex("(?is)<link\\b[^>]*>(.*?)</link\\s*>").find(block)
+                        ?.groupValues?.getOrNull(1)?.trim().orEmpty()
+                    val description = tagValue(block, "description")
+                    val published = tagValue(block, "pubDate")
+                    if (title.isNotBlank()) {
+                        val item = JSONObject()
+                            .put("team", teamName)
+                            .put("title", title.take(220))
+                            .put("snippet", description.take(420))
+                            .put("published", published)
+                            .put("url", link)
+                        news.put(item)
+                        webNotes.put(item)
+                    }
+                }
+            } finally {
+                connection.disconnect()
             }
         }
 
-        try {
-            val home = searchTeam(homeTeam)
-            if (home != null) {
-                sources.put("TheSportsDB team profile: " + home.optString("strTeam", homeTeam))
-                loadRecent(home, homeRecent, homeTeam)
+        var home: JSONObject? = null
+        var away: JSONObject? = null
+        try { home = searchTeam(homeTeam); addTeamProfile(home, homeTeam, "home") } catch (_: Exception) {
+            report.put("home_profile", JSONObject().put("team", homeTeam).put("found", false))
+        }
+        try { away = searchTeam(awayTeam); addTeamProfile(away, awayTeam, "away") } catch (_: Exception) {
+            report.put("away_profile", JSONObject().put("team", awayTeam).put("found", false))
+        }
+        try { loadRecent(home, homeRecent, homeTeam) } catch (_: Exception) { }
+        try { loadRecent(away, awayRecent, awayTeam) } catch (_: Exception) { }
+        try { loadPlayers(home, homePlayers) } catch (_: Exception) { }
+        try { loadPlayers(away, awayPlayers) } catch (_: Exception) { }
+        try { searchNews("\"$homeTeam\" $sportTitle latest news injuries unavailable lineup form", homeTeam) } catch (_: Exception) { }
+        try { searchNews("\"$awayTeam\" $sportTitle latest news injuries unavailable lineup form", awayTeam) } catch (_: Exception) { }
+        if (news.length() > 0) sources.put("Google News RSS search results")
+        if (webNotes.length() > 0) {
+            for (i in 0 until minOf(webNotes.length(), 6)) {
+                val item = webNotes.optJSONObject(i) ?: continue
+                val snippet = item.optString("snippet")
+                if (snippet.isNotBlank()) item.put("snippet", snippet.take(320))
             }
-        } catch (_: Exception) { }
-        try {
-            val away = searchTeam(awayTeam)
-            if (away != null) {
-                sources.put("TheSportsDB team profile: " + away.optString("strTeam", awayTeam))
-                loadRecent(away, awayRecent, awayTeam)
-            }
-        } catch (_: Exception) { }
-        try { searchWeb(homeTeam); sources.put("Wikipedia search API") } catch (_: Exception) { }
-        try { searchWeb(awayTeam); if (sources.toString().contains("Wikipedia search API").not()) sources.put("Wikipedia search API") } catch (_: Exception) { }
+        }
+
+        val riskTerms = listOf("injured", "injury", "unavailable", "suspended", "doubtful", "ruled out", "misses", "out of")
+        val flags = JSONArray()
+        for (i in 0 until news.length()) {
+            val item = news.optJSONObject(i) ?: continue
+            val text = (item.optString("title") + " " + item.optString("snippet")).lowercase()
+            val matched = riskTerms.filter { text.contains(it) }
+            if (matched.isNotEmpty()) flags.put(JSONObject()
+                .put("team", item.optString("team"))
+                .put("headline", item.optString("title"))
+                .put("terms", matched.joinToString(", ")))
+        }
 
         report.put("home_recent", homeRecent)
             .put("away_recent", awayRecent)
+            .put("home_players", homePlayers)
+            .put("away_players", awayPlayers)
             .put("web_notes", webNotes)
+            .put("news", news)
+            .put("availability_flags", flags)
             .put("sources", sources)
             .put("has_results_history", homeRecent.length() > 0 || awayRecent.length() > 0)
+            .put("evidence_summary", JSONObject()
+                .put("home_results", homeRecent.length())
+                .put("away_results", awayRecent.length())
+                .put("home_players", homePlayers.length())
+                .put("away_players", awayPlayers.length())
+                .put("news_items", news.length())
+                .put("possible_availability_flags", flags.length()))
         return report
     }
 
