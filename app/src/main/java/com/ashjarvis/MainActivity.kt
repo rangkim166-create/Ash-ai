@@ -1363,9 +1363,19 @@ class MainActivity : Activity() {
 
     private fun handleSportsPredictionCommand(text: String): Boolean {
         val lower = text.lowercase(Locale.ROOT)
-        val historyIntent = lower.contains("sports history") || lower.startsWith("history football") ||
-            lower.startsWith("history tennis") || lower.startsWith("history basketball") ||
-            lower == "sports data" || lower == "sports status"
+        val mentionsHistory = lower.contains("history") || lower.contains("historical results") ||
+            lower.contains("past results") || lower.contains("match records") || lower.contains("old matches")
+        val namesSport = lower.contains("football") || lower.contains("soccer") ||
+            lower.contains("tennis") || lower.contains("basketball") || lower.contains("nba") ||
+            lower.contains("sports")
+        // Accept natural variations such as "show history", "missing history",
+        // "how much history do you have?", and sport-specific history requests.
+        val historyIntent = (mentionsHistory && (namesSport || lower == "history" ||
+            lower.startsWith("show history") || lower.startsWith("check history") ||
+            lower.startsWith("missing history") || lower.startsWith("how much history") ||
+            lower.startsWith("what history") || lower.startsWith("your history"))) ||
+            lower == "sports data" || lower == "sports status" ||
+            lower == "history" || lower == "show history" || lower == "check history"
         val predictionIntent = lower.startsWith("predict ") || lower.startsWith("prediction ") ||
             lower.startsWith("sports predict") || lower.contains(" prediction for ")
         if (!historyIntent && !predictionIntent) return false
