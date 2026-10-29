@@ -33,6 +33,9 @@
             android:exported="false"
             android:foregroundServiceType="microphone" />
         <activity
+            android:name=".SportsOddsActivity"
+            android:exported="false" />
+        <activity
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
