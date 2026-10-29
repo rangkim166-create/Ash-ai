@@ -36,14 +36,16 @@ object OddsEngine {
             .apply()
     }
 
-    fun readApiKey(context: Context): String? = try {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val encrypted = prefs.getString("odds_key_cipher", null) ?: return null
-        val iv = prefs.getString("odds_key_iv", null) ?: return null
-        val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-        cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), GCMParameterSpec(128, Base64.decode(iv, Base64.NO_WRAP)))
-        String(cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP)), Charsets.UTF_8).takeIf { it.isNotBlank() }
-    } catch (_: Exception) { null }
+    fun readApiKey(context: Context): String? {
+        return try {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val encrypted = prefs.getString("odds_key_cipher", null) ?: return null
+            val iv = prefs.getString("odds_key_iv", null) ?: return null
+            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), GCMParameterSpec(128, Base64.decode(iv, Base64.NO_WRAP)))
+            String(cipher.doFinal(Base64.decode(encrypted, Base64.NO_WRAP)), Charsets.UTF_8).takeIf { it.isNotBlank() }
+        } catch (_: Exception) { null }
+    }
 
     fun clearApiKey(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
@@ -136,7 +138,7 @@ object OddsEngine {
                 val events = payload.optJSONArray("data") ?: JSONArray()
                 for (i in 0 until events.length()) {
                     val event = events.optJSONObject(i) ?: continue
-                    val id = event.optString("id").ifBlank { continue }
+                    val id = event.optString("id")\n                    if (id.isBlank()) continue
                     val now = Instant.now().toString()
                     val prior = byId[id]
                     val summary = summarize(event, sportKey, sport.optString("title", sportKey), now, prior)
