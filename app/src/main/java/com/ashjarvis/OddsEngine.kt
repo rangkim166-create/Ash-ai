@@ -84,7 +84,10 @@ object OddsEngine {
             listOf("x-requests-remaining", "x-requests-used", "x-requests-last").forEach { name ->
                 headers[name] = connection.getHeaderField(name).orEmpty()
             }
-            return JSONObject(body) to headers
+            val parsed = if (body.trimStart().startsWith("[")) {
+                JSONObject().put("data", JSONArray(body))
+            } else JSONObject(body)
+            return parsed to headers
         } finally { connection.disconnect() }
     }
 
