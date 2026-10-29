@@ -1,0 +1,11 @@
+{
+  "generated_at_utc": "2026-10-29T03:54:51Z",
+  "source": "https://codeload.github.com/schochastics/football-data/zip/refs/heads/master",
+  "repository": "https://github.com/schochastics/football-data",
+  "source_file": "football-data-master/data/results/games.parquet",
+  "archive_bytes": 35219264,
+  "parquet_bytes": 16400261,
+  "license": "Open Data Commons Attribution License (ODC-BY 1.0); provide attribution and follow license terms.",
+  "upstream_coverage": "1,237,935 football matches across 207 domestic leagues and 20 international tournaments, 1888-2023 (upstream README; coverage may vary by competition).",
+  "note": "Historical data can contain old-record errors and inconsistent team identities; inspect coverage report."
+}
