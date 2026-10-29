@@ -87,6 +87,7 @@ jobs:
           if [ -f data/history/ratings.json ]; then git add data/history/ratings.json; fi
           if [ -f data/history/coverage-report.json ]; then git add data/history/coverage-report.json; fi
           if [ -f data/history/raw/football_world/manifest.json ]; then git add data/history/raw/football_world/manifest.json; fi
+          if [ -f data/history/raw/global_football/manifest.json ]; then git add data/history/raw/global_football/manifest.json; fi
           if [ -f data/history/raw/arab_football/saudi/manifest.json ]; then git add data/history/raw/arab_football/saudi/manifest.json; fi
           if [ -f data/history/raw/basketball_parquet/manifest.json ]; then git add data/history/raw/basketball_parquet/manifest.json; fi
           if ! git diff --cached --quiet; then
