@@ -1110,6 +1110,7 @@ class MainActivity : Activity() {
             return
         }
         if (handleSportsPredictionCommand(text)) return
+        if (handleSportsOddsCommand(text)) return
         val offlineSelected = prefs.getBoolean("offline_ai_enabled", false)
         val offlineName = prefs.getString("offline_model_name", null)
         if (!offlineSelected && (getApiKey().isNullOrBlank() || (prefs.getString("model", "") ?: "").isBlank())) {
@@ -1176,6 +1177,21 @@ class MainActivity : Activity() {
                 }
             }
         }
+    }
+
+    private fun handleSportsOddsCommand(text: String): Boolean {
+        val lower = text.lowercase(Locale.ROOT)
+        val intent = lower == "odds" || lower.startsWith("odds ") ||
+            lower.contains("bookmaker odds") || lower.contains("odd even") ||
+            lower.contains("odd/even") || lower.contains("live odds")
+        if (!intent) return false
+        input.setText("")
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager)
+            .hideSoftInputFromWindow(input.windowToken, 0)
+        addMessage("You", text)
+        addMessage("Ash Jarvis", "Opening live bookmaker odds. Choose a sport, then use CHECK ODD/EVEN on an event if you want Ash to verify whether that market is actually available.")
+        showSportsOdds()
+        return true
     }
 
     private fun handleSportsPredictionCommand(text: String): Boolean {
