@@ -25,8 +25,10 @@ A free-first historical data collector and Elo prediction baseline for football 
 
 ## Live bookmaker odds integration
 
-Ash's native Android app now has a **SPORTS** button that connects to the server-side proxy in [sports_api](sports_api/README.md). Deploy that service and configure its private `ODDS_API_KEY` environment variable, then enter the service's HTTPS URL in Ash. The API key is not embedded in the APK.
+Ash's **SPORTS** button opens a separate native **Ash Sports Intelligence** screen with Today, History and Setup tabs. Each customer can paste their own The Odds API key into the app. The key is encrypted using Android Keystore on that device and is not committed to source control or embedded in the APK.
 
-The screen retrieves current/upcoming bookmaker odds for available sports and featured markets. It also offers an on-demand check for an event's odd/even market. **The Odds API does not list odd/even among its standard markets**, so that check may return unavailable; Ash must not fabricate bookmaker prices from over/under odds. The free plan has current odds but no historical odds, so the odds collector does not pretend to have historical bookmaker snapshots.
+Customers can select leagues/competitions available to their API plan. Ash retrieves current/upcoming head-to-head odds, creates a clearly labelled shortlist using a simple price-range and multi-bookmaker availability filter, and stores newly discovered games plus recent snapshots locally. WorkManager schedules a background refresh every 24 hours after the Sports screen has been opened. The first refresh starts after a key is connected. API availability and quota depend on the customer's Odds API subscription; some sports may not be available on a free plan.
 
-A GitHub Actions workflow builds a debug APK after app changes. The first run should be checked in Actions before claiming the build passed.
+The shortlist is a filtering aid, **not a guarantee of a winning bet**. Odd/even is not a standard market in The Odds API's published list, so Ash must not invent bookmaker odd/even prices from over/under data. The local history stores games/odds snapshots seen by this app; it is not a substitute for the provider's paid historical-odds archive.
+
+A GitHub Actions workflow builds a debug APK after app changes; check the latest Actions run before installing.
