@@ -338,7 +338,7 @@ object OddsEngine {
      * metadata and current news snippets. Public sources can be incomplete or wrong; every
      * field is labelled as evidence, never treated as confirmed injury or guaranteed prediction.
      */
-    fun researchMatch(homeTeam: String, awayTeam: String, sportTitle: String): JSONObject {
+    fun researchMatch(homeTeam: String, awayTeam: String, sportTitle: String, includePlayerNews: Boolean = true): JSONObject {
         val report = JSONObject()
             .put("home_team", homeTeam)
             .put("away_team", awayTeam)
@@ -517,8 +517,22 @@ object OddsEngine {
         try { loadRecent(away, awayRecent, awayTeam) } catch (_: Exception) { }
         try { loadPlayers(home, homePlayers) } catch (_: Exception) { }
         try { loadPlayers(away, awayPlayers) } catch (_: Exception) { }
-        try { searchNews("\"$homeTeam\" $sportTitle latest news injuries unavailable lineup form", homeTeam) } catch (_: Exception) { }
-        try { searchNews("\"$awayTeam\" $sportTitle latest news injuries unavailable lineup form", awayTeam) } catch (_: Exception) { }
+        try { searchNews("\"$homeTeam\" $sportTitle latest news injuries unavailable lineup recent form player stats goals assists top scorer", homeTeam) } catch (_: Exception) { }
+        try { searchNews("\"$awayTeam\" $sportTitle latest news injuries unavailable lineup recent form player stats goals assists top scorer", awayTeam) } catch (_: Exception) { }
+        // On-demand deep research also checks recent public news about a few rostered players.
+        // Daily background refresh skips these extra calls to protect free-source rate limits.
+        if (includePlayerNews) {
+            listOf(homePlayers to homeTeam, awayPlayers to awayTeam).forEach { pair ->
+                val roster = pair.first
+                for (i in 0 until minOf(roster.length(), 2)) {
+                    val player = roster.optJSONObject(i)?.optString("name").orEmpty()
+                    if (player.isBlank()) continue
+                    try {
+                        searchNews("\"$player\" $sportTitle stats goals assists performance form injury availability", "Player: $player")
+                    } catch (_: Exception) { }
+                }
+            }
+        }
         if (news.length() > 0) sources.put("Google News RSS search results")
         if (webNotes.length() > 0) {
             for (i in 0 until minOf(webNotes.length(), 6)) {
