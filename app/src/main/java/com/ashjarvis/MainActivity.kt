@@ -450,7 +450,25 @@ class MainActivity : Activity() {
                 AlertDialog.Builder(this@MainActivity)
                     .setTitle("Ash live bookmaker odds")
                     .setMessage(out.toString().take(12000))
-                    .setPositiveButton("DONE", null)
+                    .setPositiveButton("CHECK ODD/EVEN") { _, _ ->
+                        if (events.length() == 0) {
+                            Toast.makeText(this@MainActivity, "No events available to check", Toast.LENGTH_LONG).show()
+                        } else {
+                            val count = minOf(events.length(), 12)
+                            val eventLabels = (0 until count).map { idx ->
+                                val ev = events.getJSONObject(idx)
+                                "${ev.optString("away_team")} vs ${ev.optString("home_team")}"
+                            }.toTypedArray()
+                            AlertDialog.Builder(this@MainActivity)
+                                .setTitle("Choose event to check odd/even")
+                                .setItems(eventLabels) { _, index ->
+                                    val ev = events.getJSONObject(index)
+                                    checkOddEvenForEvent(base, sportKey, ev.optString("id"), ev.optString("away_team"), ev.optString("home_team"))
+                                }
+                                .setNegativeButton("CANCEL", null).show()
+                        }
+                    }
+                    .setNegativeButton("DONE", null)
                     .setNeutralButton("RECONNECT") { _, _ ->
                         prefs.edit().remove("sports_api_base_url").apply()
                         showSportsOdds()
@@ -463,6 +481,83 @@ class MainActivity : Activity() {
                     .setTitle("Couldn't load odds")
                     .setMessage((e.message ?: "Unknown error").take(1000))
                     .setPositiveButton("OK", null).show()
+            }
+        }
+    }
+
+    private fun checkOddEvenForEvent(base: String, sportKey: String, eventId: String, away: String, home: String) {
+        if (eventId.isBlank()) {
+            Toast.makeText(this, "Event ID missing; cannot check market", Toast.LENGTH_LONG).show()
+            return
+        }
+        footer.text = "Ash Sports: checking whether bookmakers publish odd/even…"
+        aiScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    fun getJson(path: String): JSONObject {
+                        val connection = (URL(base + path).openConnection() as HttpURLConnection).apply {
+                            requestMethod = "GET"
+                            connectTimeout = 12000
+                            readTimeout = 20000
+                        }
+                        try {
+                            val stream = if (connection.responseCode in 200..299) connection.inputStream else connection.errorStream
+                            val body = stream.bufferedReader().use { it.readText() }
+                            if (connection.responseCode !in 200..299) throw IllegalStateException(body.take(700))
+                            JSONObject(body)
+                        } finally { connection.disconnect() }
+                    }
+                    val encodedId = java.net.URLEncoder.encode(eventId, "UTF-8")
+                    val marketsPayload = getJson("/event-markets?sport=$sportKey&event_id=$encodedId&regions=uk,eu")
+                    val providerEvent = marketsPayload.optJSONObject("data")
+                    val books = providerEvent?.optJSONArray("bookmakers") ?: JSONArray()
+                    val candidates = setOf("odd_even", "odd_even_goals", "total_goals_odd_even")
+                    val available = linkedSetOf<String>()
+                    for (b in 0 until books.length()) {
+                        val markets = books.getJSONObject(b).optJSONArray("markets") ?: JSONArray()
+                        for (m in 0 until markets.length()) {
+                            val key = markets.getJSONObject(m).optString("key")
+                            if (key in candidates) available.add(key)
+                        }
+                    }
+                    if (available.isEmpty()) {
+                        return@withContext "No bookmaker returned an odd/even market for this event. The Odds API's published standard market list does not include odd/even. Ash did not invent odds."
+                    }
+                    val report = StringBuilder("Odd/even market keys returned: ${available.joinToString(", ")}\n\n")
+                    for (key in available) {
+                        val odds = getJson("/event-odds?sport=$sportKey&event_id=$encodedId&regions=uk,eu&markets=$key")
+                        val eventData = odds.optJSONObject("data")
+                        val oddsBooks = eventData?.optJSONArray("bookmakers") ?: JSONArray()
+                        for (b in 0 until oddsBooks.length()) {
+                            val book = oddsBooks.getJSONObject(b)
+                            val marketArray = book.optJSONArray("markets") ?: JSONArray()
+                            for (m in 0 until marketArray.length()) {
+                                val market = marketArray.getJSONObject(m)
+                                if (market.optString("key") != key) continue
+                                report.append(book.optString("title")).append(": ")
+                                val outcomes = market.optJSONArray("outcomes") ?: JSONArray()
+                                val items = mutableListOf<String>()
+                                for (o in 0 until outcomes.length()) {
+                                    val outcome = outcomes.getJSONObject(o)
+                                    items.add("${outcome.optString("name")} @ ${outcome.optDouble("price")}")
+                                }
+                                report.append(items.joinToString(", ")).append("\n")
+                            }
+                        }
+                    }
+                    report.toString()
+                }
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Odd/even • $away vs $home")
+                    .setMessage(result.take(5000))
+                    .setPositiveButton("OK", null).show()
+                footer.text = "Ash Sports: odd/even market check complete"
+            } catch (e: Exception) {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Odd/even odds unavailable")
+                    .setMessage((e.message ?: "Provider does not support this market").take(900) + "\n\nThis usually means The Odds API doesn't expose odd/even for this event. Ash will not substitute made-up prices.")
+                    .setPositiveButton("OK", null).show()
+                footer.text = "Ash Sports: odd/even not available from provider"
             }
         }
     }
