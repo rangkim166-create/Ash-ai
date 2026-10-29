@@ -106,12 +106,12 @@ class SportsOddsActivity : Activity() {
         card("DAILY SHORTLIST", "Ash scans active sports exposed by your API key, then ranks a small daily research shortlist. Each sport requires a separate odds request, so your API quota/plan limits coverage. Target odds are combined prices, not win probabilities or guarantees.") {}
         val dailyPicks = OddsEngine.savedDailyPicks(this)
         val picksText = if (dailyPicks.length() == 0) {
-            "No daily shortlist saved yet. Tap REFRESH NOW to scan available sports and research leading candidates."
+            "Ash has not found a match that passes its current evidence checks yet. Tap REFRESH NOW later or check another league. No pick is better than forcing a weak one."
         } else {
             (0 until dailyPicks.length()).mapNotNull { i ->
                 val pick = dailyPicks.optJSONObject(i) ?: return@mapNotNull null
-                "${i + 1}. ${pick.optString("away_team")} vs ${pick.optString("home_team")}\n   Pick: ${pick.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, pick.optDouble("price", 0.0))}\n   Bookmakers: ${pick.optInt("bookmakers")} • Recent results found: ${pick.optInt("research_results_count")} • ${pick.optString("confidence")}"
-            }.joinToString("\n\n") + "\n\nThese are research candidates, not guaranteed winners. Use only money you can afford to lose."
+                "${i + 1}. ${pick.optString(\"away_team\")} vs ${pick.optString(\"home_team\")}\\n   Pick: ${pick.optString(\"selection\")} @ ${\"%.2f\".format(java.util.Locale.US, pick.optDouble(\"price\", 0.0))}\\n   Evidence index: ${pick.optInt(\"evidence_index\")}/100 (NOT win probability)\\n   Bookmakers: ${pick.optInt(\"bookmakers\")} • Recent results: ${pick.optInt(\"home_recent_count\")} + ${pick.optInt(\"away_recent_count\")} • ${pick.optString(\"confidence\")}\\n   Why shortlisted: ${pick.optString(\"reason\")}"
+            }.joinToString("\\n\\n") + "\\n\\nEvidence index is a heuristic, not a measured chance of winning. Prices and team news can change; no outcome is guaranteed."
         }
         card("ASH DAILY MATCHES TO WATCH", picksText) {
             AlertDialog.Builder(this).setTitle("Daily researched shortlist")
