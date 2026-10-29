@@ -190,6 +190,7 @@ class SportsOddsActivity : Activity() {
                 scheduleDailyRefresh()
                 currentTab = "today"
                 render()
+                refreshNow()
             } catch (e: Exception) {
                 status.text = "Connection failed"
                 AlertDialog.Builder(this@SportsOddsActivity).setTitle("Could not connect")
