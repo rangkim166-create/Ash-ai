@@ -356,7 +356,7 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun researchMatch(event: JSONObject) {
-        status.text = "Local result history may be missing • researching the internet…"
+        status.text = "Ash is researching team form, squads, player profiles and current news…"
         scope.launch {
             try {
                 val report = withContext(Dispatchers.IO) {
@@ -367,49 +367,91 @@ class SportsOddsActivity : Activity() {
                     )
                 }
                 fun formatRecent(label: String, rows: JSONArray): String {
-                    if (rows.length() == 0) return "${label} recent results: no verified results found online"
+                    if (rows.length() == 0) return "$label recent results: no verified results found online"
                     val lines = (0 until minOf(rows.length(), 5)).mapNotNull { i ->
                         val row = rows.optJSONObject(i) ?: return@mapNotNull null
                         val score = "${row.optString("home_score")}–${row.optString("away_score")}"
                         val scoreText = if (score.contains("null") || score == "–") "score unavailable" else score
-                        "• ${row.optString("date")}  ${row.optString("event")} — ${scoreText} (${row.optString("outcome")})"
+                        "• ${row.optString("date")}  ${row.optString("event")} — $scoreText (${row.optString("outcome")})"
                     }
-                    return "${label} recent results:\n" + lines.joinToString("\n")
+                    return "$label recent results:\n" + lines.joinToString("\n")
+                }
+                fun profile(label: String, item: JSONObject): String {
+                    if (!item.optBoolean("found", false)) return "$label profile: not found in the public team database"
+                    return buildString {
+                        append(label).append(" TEAM PROFILE\n")
+                        append("League: ").append(item.optString("league", "not listed")).append(" • Country: ")
+                            .append(item.optString("country", "not listed")).append("\n")
+                        append("Stadium: ").append(item.optString("stadium", "not listed"))
+                            .append(" • Founded: ").append(item.optString("formed_year", "not listed")).append("\n")
+                        val description = item.optString("description")
+                        if (description.isNotBlank()) append(description.take(480)).append("\n")
+                    }
+                }
+                fun roster(label: String, players: JSONArray): String {
+                    if (players.length() == 0) return "$label squad: no roster data returned by the public source"
+                    val lines = (0 until minOf(players.length(), 10)).mapNotNull { i ->
+                        val p = players.optJSONObject(i) ?: return@mapNotNull null
+                        val position = p.optString("position").takeIf { it.isNotBlank() } ?: "position not listed"
+                        val number = p.optString("number").takeIf { it.isNotBlank() && it != "null" }?.let { " #$it" }.orEmpty()
+                        val nationality = p.optString("nationality").takeIf { it.isNotBlank() }?.let { " • $it" }.orEmpty()
+                        val description = p.optString("description").takeIf { it.isNotBlank() }?.let { " — ${it.take(130)}" }.orEmpty()
+                        "• ${p.optString("name")}$number — $position$nationality$description"
+                    }
+                    return "$label AVAILABLE PLAYER PROFILES (up to 10 shown):\n" + lines.joinToString("\n")
                 }
                 val homeRecent = report.optJSONArray("home_recent") ?: JSONArray()
                 val awayRecent = report.optJSONArray("away_recent") ?: JSONArray()
-                val notes = report.optJSONArray("web_notes") ?: JSONArray()
+                val homeProfile = report.optJSONObject("home_profile") ?: JSONObject()
+                val awayProfile = report.optJSONObject("away_profile") ?: JSONObject()
+                val homePlayers = report.optJSONArray("home_players") ?: JSONArray()
+                val awayPlayers = report.optJSONArray("away_players") ?: JSONArray()
+                val news = report.optJSONArray("news") ?: JSONArray()
+                val flags = report.optJSONArray("availability_flags") ?: JSONArray()
                 val sources = report.optJSONArray("sources") ?: JSONArray()
-                val noteLines = (0 until minOf(notes.length(), 6)).mapNotNull { i ->
-                    val item = notes.optJSONObject(i) ?: return@mapNotNull null
-                    "• ${item.optString("title")}: ${item.optString("snippet")}"
+                val newsLines = (0 until minOf(news.length(), 8)).mapNotNull { i ->
+                    val item = news.optJSONObject(i) ?: return@mapNotNull null
+                    val headline = item.optString("title")
+                    val snippet = item.optString("snippet")
+                    val date = item.optString("published")
+                    "• [${item.optString("team")}] $headline" +
+                        (if (date.isNotBlank()) " ($date)" else "") +
+                        (if (snippet.isNotBlank()) "\n  ${snippet.take(220)}" else "") +
+                        (if (item.optString("url").isNotBlank()) "\n  ${item.optString("url")}" else "")
                 }
+                val flagLines = (0 until minOf(flags.length(), 5)).mapNotNull { i ->
+                    val item = flags.optJSONObject(i) ?: return@mapNotNull null
+                    "• Possible availability-news flag for ${item.optString("team")}: ${item.optString("headline")}"
+                }
+                val sourceLines = (0 until sources.length()).mapNotNull { i ->
+                    sources.optString(i).takeIf { it.isNotBlank() }
+                }.distinct()
                 val message = buildString {
-                    append("Internet research completed: ").append(report.optString("researched_at")).append("\n\n")
+                    append("ASH SPORTS RESEARCH • ").append(report.optString("researched_at")).append("\n")
+                    append("Match: ").append(event.optString("away_team")).append(" vs ").append(event.optString("home_team")).append("\n\n")
+                    append(profile(event.optString("home_team"), homeProfile)).append("\n")
+                    append(profile(event.optString("away_team"), awayProfile)).append("\n")
                     append(formatRecent(event.optString("home_team"), homeRecent)).append("\n\n")
                     append(formatRecent(event.optString("away_team"), awayRecent)).append("\n\n")
-                    append("WEB CONTEXT\n")
-                    append(if (noteLines.isEmpty()) "No useful web snippets were returned." else noteLines.joinToString("\n"))
+                    append(roster(event.optString("home_team"), homePlayers)).append("\n\n")
+                    append(roster(event.optString("away_team"), awayPlayers)).append("\n\n")
+                    append("CURRENT ONLINE NEWS\n")
+                    append(if (newsLines.isEmpty()) "No useful recent headlines returned by the news source." else newsLines.joinToString("\n"))
+                    append("\n\nPOSSIBLE INJURY / AVAILABILITY CLUES\n")
+                    append(if (flagLines.isEmpty()) "No obvious injury/availability keywords found. This does NOT confirm that every player is fit." else flagLines.joinToString("\n"))
                     append("\n\nSOURCES\n")
-                    append(if (sources.length() == 0) "Sources did not return data this time." else
-                        (0 until sources.length()).mapNotNull { sources.optString(it).takeIf { s -> s.isNotBlank() } }.distinct().joinToString(", "))
-                    append("\n\n")
-                    if (homeRecent.length() == 0 && awayRecent.length() == 0) {
-                        append("No verified recent results were found. This match is NOT invalid; Ash must mark the evidence as insufficient and avoid pretending the history exists.")
-                    } else {
-                        append("Research evidence only. Verify team identity and match details; this is not a guaranteed prediction.")
-                    }
+                    append(if (sourceLines.isEmpty()) "No source returned usable data this time." else sourceLines.joinToString("\n"))
+                    append("\n\nASSESSMENT LIMITS\n")
+                    append("Roster and biography data can be incomplete or outdated. News keyword matches are clues, not verified injury reports. Player ability ratings, confirmed starting lineups and live fitness status are not guaranteed by these free sources. Ash must lower confidence when evidence is missing.")
                 }
                 AlertDialog.Builder(this@SportsOddsActivity)
-                    .setTitle("Ash internet match research")
+                    .setTitle("Ash team & player intelligence")
                     .setMessage(message)
                     .setPositiveButton("OK", null)
                     .show()
-                status.text = if (homeRecent.length() + awayRecent.length() > 0)
-                    "Internet research complete • recent results found"
-                else "Internet searched • no verified recent results found"
+                status.text = "Research done • results ${homeRecent.length() + awayRecent.length()} • players ${homePlayers.length() + awayPlayers.length()} • news ${news.length()}"
             } catch (e: Exception) {
-                status.text = "Internet research temporarily unavailable"
+                status.text = "Research temporarily unavailable"
                 AlertDialog.Builder(this@SportsOddsActivity)
                     .setTitle("Research unavailable")
                     .setMessage("Ash could not reach a research source right now. The match is not invalid; try again when internet is available.\n\n${(e.message ?: "Network request failed").take(300)}")
