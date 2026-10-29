@@ -771,8 +771,9 @@ class MainActivity : Activity() {
 
         fun selectedRam(): Int = ramOptions[ramSpinner.selectedItemPosition].substringBefore(" ").toIntOrNull() ?: 16
         fun compatibleModels(): List<OfflineModel> {
-            val ram = selectedRam()
-            return offlineModels.filter { it.minRamGb <= ram }.ifEmpty { listOf(offlineModels.first()) }
+            // Show every bundled model, including Dolphin, but clearly warn when a model exceeds the selected RAM.
+            // Hiding large models made users think Dolphin was not supported.
+            return offlineModels
         }
         fun refreshModels(preferredName: String? = null) {
             val choices = compatibleModels()
@@ -783,9 +784,11 @@ class MainActivity : Activity() {
                 ?: choices.lastOrNull { it.minRamGb <= selectedRam() }
                 ?: choices.first()
             modelSpinner.setSelection(choices.indexOf(chosen).coerceAtLeast(0))
+            val ram = selectedRam()
+            val ramWarning = if (chosen.minRamGb > ram) "\n\n⚠️ This model is above your selected RAM setting. It may download successfully but run slowly, fail to load, or cause Android to close Ash." else ""
             details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
-                "\nRecommended minimum RAM: " + chosen.ramLabel +
-                "\n\nAsh can load compatible GGUF models locally. Not every GGUF architecture or chat template is supported by the bundled runtime."
+                "\nRecommended minimum RAM: " + chosen.ramLabel + ramWarning +
+                "\n\nOnly GGUF models supported by Ash's bundled inference runtime will run. A successful download alone does not guarantee that every architecture or chat template works."
         }
         ramSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = refreshModels()
