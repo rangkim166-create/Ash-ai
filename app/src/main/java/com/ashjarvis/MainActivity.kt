@@ -60,6 +60,7 @@ class MainActivity : Activity() {
     private val aiScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     @Volatile private var offlineEdge: LLMEdge? = null
     private val speechRequestCode = 7124
+    private val ggufImportRequestCode = 7135
     companion object { const val ACTION_STOP_SPEAKING = "com.ashjarvis.ACTION_STOP_SPEAKING" }
     private val stopSpeechReceiver = object : android.content.BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -322,6 +323,53 @@ class MainActivity : Activity() {
                 input.setText(spoken)
                 input.setSelection(input.text.length)
                 sendMessage()
+            }
+        } else if (requestCode == ggufImportRequestCode && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            importGgufModel(uri)
+        }
+    }
+
+    private fun importGgufModel(uri: Uri) {
+        footer.text = "Importing model into Ash… keep the app open"
+        Toast.makeText(this, "Importing model. Large files may take a while.", Toast.LENGTH_LONG).show()
+        aiScope.launch {
+            try {
+                val imported = withContext(Dispatchers.IO) {
+                    val displayName = contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
+                        ?.use { cursor -> if (cursor.moveToFirst()) cursor.getString(0) else null }
+                        ?: uri.lastPathSegment?.substringAfterLast('/') ?: "custom-model.gguf"
+                    if (!displayName.lowercase(Locale.ROOT).endsWith(".gguf")) {
+                        throw IllegalArgumentException("Choose a .gguf model file.")
+                    }
+                    val safeName = displayName.substringAfterLast('/').replace(Regex("[^A-Za-z0-9._-]"), "_")
+                    val destination = java.io.File(filesDir, safeName)
+                    contentResolver.openInputStream(uri).use { source ->
+                        if (source == null) throw IllegalStateException("Android couldn't open that file.")
+                        destination.outputStream().use { target -> source.copyTo(target) }
+                    }
+                    if (!destination.isFile || destination.length() < 1024 * 1024) {
+                        destination.delete()
+                        throw IllegalStateException("The selected file is too small to be a valid language model.")
+                    }
+                    Pair(destination, displayName)
+                }
+                try { offlineEdge?.close() } catch (_: Exception) {}
+                offlineEdge = null
+                prefs.edit()
+                    .putString("offline_model_file", imported.first.name)
+                    .putString("offline_model_name", imported.second)
+                    .putBoolean("offline_model_downloaded", true)
+                    .putBoolean("offline_ai_enabled", true)
+                    .remove("offline_model_download_id")
+                    .apply()
+                footer.text = "Imported local model • checking on first reply"
+                addMessage("Ash Jarvis", "Imported " + imported.second + ". I'll try to load it for offline replies. If its architecture or chat template isn't supported, choose a compatible GGUF model.")
+                Toast.makeText(this@MainActivity, "Model imported and selected for Offline AI", Toast.LENGTH_LONG).show()
+                updateStatus()
+            } catch (e: Exception) {
+                footer.text = "Model import failed"
+                addMessage("Ash Jarvis", "Couldn't import model: " + (e.message ?: "unknown error"))
             }
         }
     }
@@ -704,6 +752,21 @@ class MainActivity : Activity() {
         }
         panel.addView(modelSpinner)
         panel.addView(details)
+        panel.addView(Button(this).apply {
+            text = "IMPORT ANY COMPATIBLE .GGUF FROM PHONE"
+            setOnClickListener {
+                try {
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "*/*"
+                        putExtra(Intent.EXTRA_MIME_TYPES, arrayOf("application/octet-stream", "application/x-gguf", "*/*"))
+                    }
+                    startActivityForResult(intent, ggufImportRequestCode)
+                } catch (e: Exception) {
+                    Toast.makeText(this@MainActivity, "Couldn't open model picker: " + (e.message ?: "unknown error"), Toast.LENGTH_LONG).show()
+                }
+            }
+        })
 
         fun selectedRam(): Int = ramOptions[ramSpinner.selectedItemPosition].substringBefore(" ").toIntOrNull() ?: 16
         fun compatibleModels(): List<OfflineModel> {
@@ -721,7 +784,7 @@ class MainActivity : Activity() {
             modelSpinner.setSelection(choices.indexOf(chosen).coerceAtLeast(0))
             details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
                 "\nRecommended minimum RAM: " + chosen.ramLabel +
-                "\n\nNote: downloading a GGUF file alone does not enable chat. The local inference engine must be integrated."
+                "\n\nAsh can load compatible GGUF models locally. Not every GGUF architecture or chat template is supported by the bundled runtime."
         }
         ramSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = refreshModels()
@@ -732,7 +795,7 @@ class MainActivity : Activity() {
                 val chosen = compatibleModels().getOrNull(position) ?: return
                 details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
                     "\nRecommended minimum RAM: " + chosen.ramLabel +
-                    "\n\nNote: downloading a GGUF file alone does not enable chat. The local inference engine must be integrated."
+                    "\n\nAsh can load compatible GGUF models locally. Not every GGUF architecture or chat template is supported by the bundled runtime."
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
