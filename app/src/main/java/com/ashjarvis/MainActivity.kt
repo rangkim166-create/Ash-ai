@@ -135,6 +135,7 @@ class MainActivity : Activity() {
         val statusRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         statusRow.addView(makeText("●", 12f, Color.rgb(74, 222, 128)))
         statusRow.addView(makeText("  Voice & phone tools", 12f, Color.rgb(222, 231, 245)), LinearLayout.LayoutParams(0, -2, 1f))
+        statusRow.addView(Button(this).apply { text = "SPORTS"; setOnClickListener { showSportsOdds() } })
         statusRow.addView(Button(this).apply { text = "PHONE"; setOnClickListener { showPhoneTools() } })
         statusRow.addView(Button(this).apply { text = "OFFLINE AI"; setOnClickListener { showOfflineModelPicker() } })
         header.addView(statusRow)
@@ -301,6 +302,167 @@ class MainActivity : Activity() {
                 input.setText(spoken)
                 input.setSelection(input.text.length)
                 sendMessage()
+            }
+        }
+    }
+
+    private fun showSportsOdds() {
+        val savedBase = (prefs.getString("sports_api_base_url", "") ?: "").trim().trimEnd('/')
+        if (savedBase.isBlank()) {
+            val field = EditText(this).apply {
+                hint = "https://your-ash-sports-api.onrender.com"
+                setSingleLine(true)
+                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            }
+            AlertDialog.Builder(this)
+                .setTitle("Connect Ash Sports API")
+                .setMessage("Enter the HTTPS URL of Ash's deployed odds backend. The Odds API key stays on that server, not in this APK.")
+                .setView(field)
+                .setNegativeButton("CANCEL", null)
+                .setPositiveButton("SAVE & CONNECT") { _, _ ->
+                    val base = field.text.toString().trim().trimEnd('/')
+                    if (!base.startsWith("https://")) {
+                        Toast.makeText(this, "Use a valid HTTPS backend URL", Toast.LENGTH_LONG).show()
+                    } else {
+                        prefs.edit().putString("sports_api_base_url", base).apply()
+                        loadSportsList(base)
+                    }
+                }.show()
+            return
+        }
+        loadSportsList(savedBase)
+    }
+
+    private fun loadSportsList(base: String) {
+        footer.text = "Ash Sports: loading available sports…"
+        aiScope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val connection = (URL("$base/sports").openConnection() as HttpURLConnection).apply {
+                        requestMethod = "GET"
+                        connectTimeout = 12000
+                        readTimeout = 18000
+                    }
+                    try {
+                        val stream = if (connection.responseCode in 200..299) connection.inputStream else connection.errorStream
+                        val body = stream.bufferedReader().use { it.readText() }
+                        if (connection.responseCode !in 200..299) throw IllegalStateException(body.take(400))
+                        JSONObject(body).optJSONArray("data") ?: JSONArray()
+                    } finally { connection.disconnect() }
+                }
+                if (result.length() == 0) {
+                    footer.text = "Ash Sports: provider returned no active sports"
+                    Toast.makeText(this@MainActivity, "No active sports were returned by the odds provider", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+                val options = (0 until result.length()).map { result.getJSONObject(it) }
+                    .filter { it.optBoolean("active", true) && it.optString("key").isNotBlank() }
+                    .sortedWith(compareBy<JSONObject>({ it.optString("group") }, { it.optString("title") }))
+                    .take(80)
+                val labels = options.map { obj ->
+                    val group = obj.optString("group", "Sport")
+                    "$group • ${obj.optString("title", obj.optString("key"))} [${obj.optString("key")}]"
+                }.toTypedArray()
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Choose a sport / competition")
+                    .setItems(labels) { _, which ->
+                        val sportKey = options[which].optString("key")
+                        val title = options[which].optString("title", sportKey)
+                        loadLiveOdds(base, sportKey, title)
+                    }
+                    .setNeutralButton("CHANGE API URL") { _, _ ->
+                        prefs.edit().remove("sports_api_base_url").apply()
+                        showSportsOdds()
+                    }
+                    .setNegativeButton("CLOSE", null)
+                    .show()
+                footer.text = "Ash Sports: connected"
+            } catch (e: Exception) {
+                footer.text = "Ash Sports: connection failed"
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Ash Sports connection failed")
+                    .setMessage((e.message ?: "Could not load sports").take(1000) + "\n\nCheck the backend URL and ensure ODDS_API_KEY is set on the server.")
+                    .setPositiveButton("CHANGE URL") { _, _ ->
+                        prefs.edit().remove("sports_api_base_url").apply()
+                        showSportsOdds()
+                    }
+                    .setNegativeButton("OK", null).show()
+            }
+        }
+    }
+
+    private fun loadLiveOdds(base: String, sportKey: String, sportTitle: String) {
+        footer.text = "Ash Sports: loading live odds for $sportTitle…"
+        aiScope.launch {
+            try {
+                val payload = withContext(Dispatchers.IO) {
+                    val url = "$base/odds?sport=$sportKey&regions=uk,eu&markets=h2h,totals&oddsFormat=decimal"
+                    val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                        requestMethod = "GET"
+                        connectTimeout = 12000
+                        readTimeout = 22000
+                    }
+                    try {
+                        val stream = if (connection.responseCode in 200..299) connection.inputStream else connection.errorStream
+                        val body = stream.bufferedReader().use { it.readText() }
+                        if (connection.responseCode !in 200..299) throw IllegalStateException(body.take(800))
+                        JSONObject(body)
+                    } finally { connection.disconnect() }
+                }
+                val events = payload.optJSONArray("data") ?: JSONArray()
+                val out = StringBuilder()
+                out.append("ASH SPORTS • ").append(sportTitle).append("\n")
+                out.append("Bookmaker odds from The Odds API • decimal format\n\n")
+                if (events.length() == 0) {
+                    out.append("No live/upcoming events with odds were returned for this competition right now.\n\n")
+                } else {
+                    for (i in 0 until minOf(events.length(), 12)) {
+                        val event = events.getJSONObject(i)
+                        out.append(event.optString("away_team")).append(" vs ").append(event.optString("home_team")).append("\n")
+                        out.append("Kick-off: ").append(event.optString("commence_time")).append("\n")
+                        val books = event.optJSONArray("bookmakers") ?: JSONArray()
+                        for (b in 0 until minOf(books.length(), 3)) {
+                            val book = books.getJSONObject(b)
+                            out.append("  ").append(book.optString("title")).append(": ")
+                            val markets = book.optJSONArray("markets") ?: JSONArray()
+                            val parts = mutableListOf<String>()
+                            for (m in 0 until markets.length()) {
+                                val market = markets.getJSONObject(m)
+                                val key = market.optString("key")
+                                if (key != "h2h" && key != "totals") continue
+                                val outcomes = market.optJSONArray("outcomes") ?: JSONArray()
+                                val outcomeParts = mutableListOf<String>()
+                                for (o in 0 until outcomes.length()) {
+                                    val outcome = outcomes.getJSONObject(o)
+                                    val point = if (outcome.has("point")) " ${outcome.optDouble("point")}" else ""
+                                    outcomeParts.add("${outcome.optString("name")}$point ${outcome.optDouble("price")}")
+                                }
+                                if (outcomeParts.isNotEmpty()) parts.add("$key: " + outcomeParts.joinToString(", "))
+                            }
+                            out.append(if (parts.isEmpty()) "no featured odds" else parts.joinToString(" | ")).append("\n")
+                        }
+                        out.append("\n")
+                    }
+                }
+                out.append("ODD/EVEN: The Odds API does not list this as a standard market. Ash will only show bookmaker odd/even prices if the provider returns that exact market for an event; it will never invent prices from over/under odds.\n")
+                val remaining = payload.optJSONObject("quota")?.optString("x-requests-remaining", "unknown") ?: "unknown"
+                out.append("\nAPI credits remaining: ").append(remaining)
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Ash live bookmaker odds")
+                    .setMessage(out.toString().take(12000))
+                    .setPositiveButton("DONE", null)
+                    .setNeutralButton("RECONNECT") { _, _ ->
+                        prefs.edit().remove("sports_api_base_url").apply()
+                        showSportsOdds()
+                    }
+                    .show()
+                footer.text = "Ash Sports: odds loaded • verify prices at bookmaker before acting"
+            } catch (e: Exception) {
+                footer.text = "Ash Sports: odds request failed"
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Couldn't load odds")
+                    .setMessage((e.message ?: "Unknown error").take(1000))
+                    .setPositiveButton("OK", null).show()
             }
         }
     }
