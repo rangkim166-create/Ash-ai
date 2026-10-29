@@ -155,6 +155,22 @@ class AshListeningService : Service() {
             awaitingCommand = false
             handler.removeCallbacks(commandTimeout)
             dispatchCommand(raw.trim())
+            return
+        }
+
+        // Allow a small, explicit set of phone-navigation commands without a wake phrase.
+        // This lets the user say "go back" directly while the visible listening service is on,
+        // without treating ordinary conversation as a command.
+        val directNavigationCommands = setOf(
+            "go back", "back", "press back", "go backwards",
+            "go home", "home screen", "press home", "go to home screen",
+            "scroll down", "scroll up", "page down", "page up",
+            "swipe left", "swipe right",
+            "open notifications", "show notifications",
+            "open quick settings", "show quick settings"
+        )
+        if (lower in directNavigationCommands) {
+            dispatchCommand(raw.trim())
         }
     }
 
