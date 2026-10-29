@@ -37,7 +37,7 @@ def main():
         if not candidates:
             raise SystemExit("No global match-results parquet found in source archive; inspect upstream schema.")
         # Prefer the explicit data/results parquet file; preserve other candidates only if needed.
-        candidates.sort(key=lambda i: (0 if "/data/results" in i.filename.lower() else 1, i.file_size))
+        candidates.sort(key=lambda i: (0 if "/data/results" in i.filename.lower() else 1, -i.file_size))
         selected = candidates[0]
         target = OUT / "global-football-results.parquet"
         target.write_bytes(zf.read(selected))
