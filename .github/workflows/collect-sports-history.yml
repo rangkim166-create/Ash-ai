@@ -15,6 +15,7 @@ concurrency:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   collect:
@@ -30,11 +31,9 @@ jobs:
       - name: Install parquet reader for basketball history
         run: python -m pip install --upgrade pandas pyarrow
       - name: Syntax-check collector and database scripts
-        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/collect_football_data.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/import_openfootball_txt.py sports_ai/import_football_data.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_basketball_history.py sports_ai/import_basketball_history.py sports_ai/audit_history.py
+        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/collect_football_data.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/import_openfootball_txt.py sports_ai/collect_global_football.py sports_ai/import_global_football.py sports_ai/import_football_data.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_basketball_history.py sports_ai/import_basketball_history.py sports_ai/audit_history.py
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
-      - name: Download historical football results and odds
-        run: python sports_ai/collect_football_data.py
       - name: Download Saudi Pro League historical archive
         continue-on-error: true
         run: python sports_ai/collect_saudi_history.py
@@ -44,10 +43,12 @@ jobs:
       - name: Fetch additional Arab and African football source archive
         continue-on-error: true
         run: python sports_ai/collect_arab_football.py
+      - name: Download global historical football results (1888-2023)
+        run: python sports_ai/collect_global_football.py
       - name: Normalize results into SQLite
         run: python sports_ai/build_database.py
-      - name: Import historical football results and odds
-        run: python sports_ai/import_football_data.py
+      - name: Import global historical football results
+        run: python sports_ai/import_global_football.py
       - name: Import regional OpenFootball text results
         run: python sports_ai/import_openfootball_txt.py
       - name: Import Saudi Pro League history
@@ -63,12 +64,21 @@ jobs:
           cd data/history
           zip -qr ../../ash-sports-history.zip raw full-history-manifest.json ash_sports_history.sqlite ratings.json coverage-report.json
       - name: Upload collected historical datasets
+        id: upload_history
         uses: actions/upload-artifact@v4
         with:
           name: ash-sports-history
           path: ash-sports-history.zip
           if-no-files-found: error
           retention-days: 90
+      - name: Remove older copies of the history artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          current_id="${{ steps.upload_history.outputs.artifact-id }}"
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/artifacts?per_page=100" --jq '.artifacts[] | select(.name == "ash-sports-history" and (.id|tostring) != "'$current_id'") | .id' | while read artifact_id; do
+            [ -z "$artifact_id" ] || gh api --method DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id" || true
+          done
       - name: Commit only the small source manifest
         run: |
           git config user.name "github-actions[bot]"
@@ -76,7 +86,6 @@ jobs:
           git add data/history/full-history-manifest.json
           if [ -f data/history/ratings.json ]; then git add data/history/ratings.json; fi
           if [ -f data/history/coverage-report.json ]; then git add data/history/coverage-report.json; fi
-          if [ -f data/history/football-data-manifest.json ]; then git add data/history/football-data-manifest.json; fi
           if [ -f data/history/raw/football_world/manifest.json ]; then git add data/history/raw/football_world/manifest.json; fi
           if [ -f data/history/raw/arab_football/saudi/manifest.json ]; then git add data/history/raw/arab_football/saudi/manifest.json; fi
           if [ -f data/history/raw/basketball_parquet/manifest.json ]; then git add data/history/raw/basketball_parquet/manifest.json; fi
