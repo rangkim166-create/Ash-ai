@@ -97,6 +97,13 @@ object OddsEngine {
         return payload.optJSONArray("data") ?: JSONArray()
     }
 
+    fun checkOddEven(apiKey: String, sportKey: String, eventId: String): JSONObject {
+        val key = URLEncoder.encode(apiKey, "UTF-8")
+        val sport = URLEncoder.encode(sportKey, "UTF-8")
+        val event = URLEncoder.encode(eventId, "UTF-8")
+        return requestJson("$BASE/sports/$sport/events/$event/odds/?apiKey=$key&regions=uk,eu&markets=odd_even&oddsFormat=decimal").first
+    }
+
     fun favoriteKeys(context: Context): MutableSet<String> {
         val stored = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(FAVORITES_KEY, null)
         return stored?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.toMutableSet()
