@@ -307,30 +307,7 @@ class MainActivity : Activity() {
     }
 
     private fun showSportsOdds() {
-        val savedBase = (prefs.getString("sports_api_base_url", "") ?: "").trim().trimEnd('/')
-        if (savedBase.isBlank()) {
-            val field = EditText(this).apply {
-                hint = "https://your-ash-sports-api.onrender.com"
-                setSingleLine(true)
-                inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
-            }
-            AlertDialog.Builder(this)
-                .setTitle("Connect Ash Sports API")
-                .setMessage("Enter the HTTPS URL of Ash's deployed odds backend. The Odds API key stays on that server, not in this APK.")
-                .setView(field)
-                .setNegativeButton("CANCEL", null)
-                .setPositiveButton("SAVE & CONNECT") { _, _ ->
-                    val base = field.text.toString().trim().trimEnd('/')
-                    if (!base.startsWith("https://")) {
-                        Toast.makeText(this, "Use a valid HTTPS backend URL", Toast.LENGTH_LONG).show()
-                    } else {
-                        prefs.edit().putString("sports_api_base_url", base).apply()
-                        loadSportsList(base)
-                    }
-                }.show()
-            return
-        }
-        loadSportsList(savedBase)
+        startActivity(Intent(this, SportsOddsActivity::class.java))
     }
 
     private fun loadSportsList(base: String) {
