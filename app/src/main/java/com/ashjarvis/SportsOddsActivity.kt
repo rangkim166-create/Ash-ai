@@ -99,8 +99,12 @@ class SportsOddsActivity : Activity() {
             .filter { it.optString("commence_time").isNotBlank() && it.optString("commence_time") >= java.time.Instant.now().toString() }
             .sortedBy { it.optString("commence_time") }
         val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
-        card("DAILY SHORTLIST", "Candidates are filtered from available bookmaker prices. This is not a guarantee or a promise of profit.") {}
-        if (candidates.isEmpty()) body.addView(text("No shortlisted games saved yet. Tap REFRESH to collect the latest odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
+        card("DAILY SHORTLIST", "Ash builds suggested slips from actual prices returned by your feed. Target odds are combined prices, not win probabilities or guarantees.") {}
+        showAccumulatorTargets(candidates)
+        card("ODD / EVEN • TARGET 1.50", "Choose a match and check whether your provider actually returns an odd/even market near 1.50. Ash never invents these prices.") {
+            chooseOddEvenGame(upcoming)
+        }
+        if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
         candidates.take(20).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
                 "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nTap to check if odd/even odds are published. Shortlist only, not a prediction guarantee.") { checkOddEven(event) }
@@ -116,6 +120,109 @@ class SportsOddsActivity : Activity() {
         actions.addView(button("REFRESH NOW") { refreshNow() }, LinearLayout.LayoutParams(0, -2, 1f))
         actions.addView(button("CHOOSE LEAGUES") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(actions, 0)
+    }
+
+    private fun showAccumulatorTargets(candidates: List<JSONObject>) {
+        val targets = listOf(2.0, 4.0, 5.0, 6.0, 10.0, 100.0)
+        val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        targets.forEach { target ->
+            val picks = mutableListOf<JSONObject>()
+            var combined = 1.0
+            candidates.filter {
+                val price = it.optDouble("candidate_price", 0.0)
+                price >= 1.20 && price <= 2.50 && it.optString("candidate").isNotBlank()
+            }.sortedBy { it.optDouble("candidate_price", 99.0) }.forEach { event ->
+                if (combined < target && picks.none { it.optString("id") == event.optString("id") }) {
+                    picks.add(event)
+                    combined *= event.optDouble("candidate_price", 1.0)
+                }
+            }
+            val ready = combined >= target && picks.isNotEmpty()
+            val title = "TARGET ${target.toInt()} ODDS" + if (ready) "  •  ${picks.size} PICKS" else "  •  NOT ENOUGH GAMES"
+            val details = if (ready) {
+                "Approx. combined decimal odds: %.2f".format(java.util.Locale.US, combined) +
+                    "\n" + picks.joinToString("\n") { "• ${it.optString("away_team")} vs ${it.optString("home_team")} — ${it.optString("candidate")} @ ${it.optDouble("candidate_price", 0.0)}" } +
+                    "\nResearch shortlist only. Prices can change; no outcome is guaranteed."
+            } else {
+                "Ash has not found enough distinct upcoming games with usable prices to reach this target. Refresh later or select more leagues. No games are added just to force the target."
+            }
+            card(title, details) {
+                if (!ready) {
+                    Toast.makeText(this, "Not enough qualifying games for target ${target.toInt()}", Toast.LENGTH_LONG).show()
+                } else {
+                    AlertDialog.Builder(this).setTitle("Daily ${target.toInt()}-odds shortlist")
+                        .setMessage(details)
+                        .setPositiveButton("OK", null).show()
+                }
+            }
+            row.addView(View(this).apply { setBackgroundColor(Color.rgb(36, 49, 73)) },
+                LinearLayout.LayoutParams(-1, (resources.displayMetrics.density).toInt().coerceAtLeast(1)).apply {
+                    topMargin = 2; bottomMargin = 8
+                })
+        }
+    }
+
+    private fun chooseOddEvenGame(events: List<JSONObject>) {
+        if (events.isEmpty()) {
+            AlertDialog.Builder(this).setTitle("No upcoming games")
+                .setMessage("Refresh your selected leagues first. Ash can only check matches returned by your odds provider.")
+                .setPositiveButton("REFRESH") { _, _ -> refreshNow() }
+                .setNegativeButton("CLOSE", null).show()
+            return
+        }
+        val labels = events.take(80).map { event ->
+            "${event.optString("away_team")} vs ${event.optString("home_team")} • ${event.optString("sport_title")}"
+        }.toTypedArray()
+        AlertDialog.Builder(this).setTitle("Choose match • odd/even near 1.50")
+            .setItems(labels) { _, which -> checkOddEvenAtTarget(events.take(80)[which]) }
+            .setNegativeButton("CANCEL", null).show()
+    }
+
+    private fun checkOddEvenAtTarget(event: JSONObject) {
+        val key = OddsEngine.readApiKey(this)
+        if (key.isNullOrBlank()) { showSetup(); return }
+        status.text = "Checking real odd/even market prices…"
+        scope.launch {
+            try {
+                val payload = withContext(Dispatchers.IO) {
+                    OddsEngine.checkOddEven(key, event.optString("sport_key"), event.optString("id"))
+                }
+                val firstEvent = payload.optJSONArray("data")?.optJSONObject(0)
+                val books = payload.optJSONArray("bookmakers")
+                    ?: firstEvent?.optJSONArray("bookmakers")
+                    ?: payload.optJSONObject("data")?.optJSONArray("bookmakers")
+                    ?: JSONArray()
+                val found = mutableListOf<String>()
+                for (i in 0 until books.length()) {
+                    val book = books.optJSONObject(i) ?: continue
+                    val markets = book.optJSONArray("markets") ?: JSONArray()
+                    for (j in 0 until markets.length()) {
+                        val market = markets.optJSONObject(j) ?: continue
+                        if (market.optString("key") !in setOf("odd_even", "odd_even_goals", "total_goals_odd_even")) continue
+                        val outcomes = market.optJSONArray("outcomes") ?: JSONArray()
+                        for (k in 0 until outcomes.length()) {
+                            val outcome = outcomes.optJSONObject(k) ?: continue
+                            val price = outcome.optDouble("price", 0.0)
+                            if (price in 1.35..1.65) {
+                                found.add("${book.optString("title", book.optString("key"))}: ${outcome.optString("name")} @ ${"%.2f".format(java.util.Locale.US, price)}")
+                            }
+                        }
+                    }
+                }
+                val message = if (found.isEmpty()) {
+                    "No actual odd/even price near 1.50 was returned for this match. The selected API feed may not support this market. Try another match or a provider that offers odd/even odds."
+                } else found.distinct().joinToString("\n") + "\n\nPrices shown are returned by the provider and may change before kickoff."
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Odd/even • target 1.50")
+                    .setMessage("${event.optString("away_team")} vs ${event.optString("home_team")}\n\n$message")
+                    .setPositiveButton("OK", null).show()
+                status.text = if (found.isEmpty()) "No odd/even prices near 1.50 returned" else "${found.size} odd/even prices found"
+            } catch (e: Exception) {
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Odd/even market unavailable")
+                    .setMessage((e.message ?: "The provider did not return this market").take(700))
+                    .setPositiveButton("OK", null).show()
+                status.text = "Odd/even market unavailable for this match"
+            }
+        }
     }
 
     private fun showHistory() {
