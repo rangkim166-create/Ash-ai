@@ -107,12 +107,12 @@ class SportsOddsActivity : Activity() {
         if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
         candidates.take(20).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nTap to check if odd/even odds are published. Shortlist only, not a prediction guarantee.") { checkOddEven(event) }
+                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nTap to research recent results online if local result history is missing.") { researchMatch(event) }
         }
         card("ALL UPCOMING GAMES", "Saved games found through your API key: ${upcoming.size}") {}
         upcoming.filter { candidates.none { c -> c.optString("id") == it.optString("id") } }.take(30).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")} • ${event.optString("commence_time")}\nBookmakers: ${event.optInt("bookmaker_count")} • First seen: ${event.optString("first_seen")}") {}
+                "${event.optString("sport_title")} • ${event.optString("commence_time")}\nBookmakers: ${event.optInt("bookmaker_count")} • First seen: ${event.optString("first_seen")}\nTap to research online") { researchMatch(event) }
         }
         val last = getSharedPreferences("ash_jarvis", MODE_PRIVATE).getString("odds_last_sync", "not yet")
         status.text = "Last sync: $last • Stored history: ${history.length()} games"
@@ -234,7 +234,7 @@ class SportsOddsActivity : Activity() {
         rows.take(100).forEach { event ->
             val snapshots = event.optJSONArray("snapshots") ?: JSONArray()
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nFirst discovered: ${event.optString("first_seen")}\nLast checked: ${event.optString("last_seen")}\nOdds snapshots stored: ${snapshots.length()}") {}
+                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nFirst discovered: ${event.optString("first_seen")}\nLast checked: ${event.optString("last_seen")}\nOdds snapshots stored: ${snapshots.length()}\nTap to research match history online") { researchMatch(event) }
         }
         status.text = "History is stored locally on this device • ${history.length()} games"
         body.addView(button("CLEAR MATCH HISTORY") {
@@ -337,6 +337,70 @@ class SportsOddsActivity : Activity() {
             } catch (e: Exception) {
                 status.text = "Could not load leagues"
                 Toast.makeText(this@SportsOddsActivity, (e.message ?: "Request failed").take(300), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun researchMatch(event: JSONObject) {
+        status.text = "Local result history may be missing • researching the internet…"
+        scope.launch {
+            try {
+                val report = withContext(Dispatchers.IO) {
+                    OddsEngine.researchMatch(
+                        event.optString("home_team"),
+                        event.optString("away_team"),
+                        event.optString("sport_title")
+                    )
+                }
+                fun formatRecent(label: String, rows: JSONArray): String {
+                    if (rows.length() == 0) return "\${label} recent results: no verified results found online"
+                    val lines = (0 until minOf(rows.length(), 5)).mapNotNull { i ->
+                        val row = rows.optJSONObject(i) ?: return@mapNotNull null
+                        val score = "\${row.optString("home_score")}–\${row.optString("away_score")}"
+                        val scoreText = if (score.contains("null") || score == "–") "score unavailable" else score
+                        "• \${row.optString("date")}  \${row.optString("event")} — \${scoreText} (\${row.optString("outcome")})"
+                    }
+                    return "\${label} recent results:\\n" + lines.joinToString("\\n")
+                }
+                val homeRecent = report.optJSONArray("home_recent") ?: JSONArray()
+                val awayRecent = report.optJSONArray("away_recent") ?: JSONArray()
+                val notes = report.optJSONArray("web_notes") ?: JSONArray()
+                val sources = report.optJSONArray("sources") ?: JSONArray()
+                val noteLines = (0 until minOf(notes.length(), 6)).mapNotNull { i ->
+                    val item = notes.optJSONObject(i) ?: return@mapNotNull null
+                    "• \${item.optString("title")}: \${item.optString("snippet")}"
+                }
+                val message = buildString {
+                    append("Internet research completed: ").append(report.optString("researched_at")).append("\\n\\n")
+                    append(formatRecent(event.optString("home_team"), homeRecent)).append("\\n\\n")
+                    append(formatRecent(event.optString("away_team"), awayRecent)).append("\\n\\n")
+                    append("WEB CONTEXT\\n")
+                    append(if (noteLines.isEmpty()) "No useful web snippets were returned." else noteLines.joinToString("\\n"))
+                    append("\\n\\nSOURCES\\n")
+                    append(if (sources.length() == 0) "Sources did not return data this time." else
+                        (0 until sources.length()).mapNotNull { sources.optString(it).takeIf { s -> s.isNotBlank() } }.distinct().joinToString(", "))
+                    append("\\n\\n")
+                    if (homeRecent.length() == 0 && awayRecent.length() == 0) {
+                        append("No verified recent results were found. This match is NOT invalid; Ash must mark the evidence as insufficient and avoid pretending the history exists.")
+                    } else {
+                        append("Research evidence only. Verify team identity and match details; this is not a guaranteed prediction.")
+                    }
+                }
+                AlertDialog.Builder(this@SportsOddsActivity)
+                    .setTitle("Ash internet match research")
+                    .setMessage(message)
+                    .setPositiveButton("OK", null)
+                    .show()
+                status.text = if (homeRecent.length() + awayRecent.length() > 0)
+                    "Internet research complete • recent results found"
+                else "Internet searched • no verified recent results found"
+            } catch (e: Exception) {
+                status.text = "Internet research temporarily unavailable"
+                AlertDialog.Builder(this@SportsOddsActivity)
+                    .setTitle("Research unavailable")
+                    .setMessage("Ash could not reach a research source right now. The match is not invalid; try again when internet is available.\\n\\n\${(e.message ?: "Network request failed").take(300)}")
+                    .setPositiveButton("OK", null)
+                    .show()
             }
         }
     }
