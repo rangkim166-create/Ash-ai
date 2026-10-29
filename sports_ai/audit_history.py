@@ -11,26 +11,38 @@ DB = ROOT / "data" / "history" / "ash_sports_history.sqlite"
 OUT = ROOT / "data" / "history" / "coverage-report.json"
 TARGETS = {
     "arab_football": [
-        ("Saudi Pro League", ["saudi"]),
-        ("Egyptian Premier League", ["egypt", "egyptian"]),
-        ("Moroccan Botola", ["morocco", "moroccan", "botola"]),
-        ("Algerian Ligue 1", ["algeria", "algerian"]),
-        ("Qatar Stars League", ["qatar"]),
-        ("UAE Pro League", ["uae", "united arab emirates", "emirates"]),
-        ("Tunisian Ligue 1", ["tunisia", "tunisian"]),
+        {"name": "Saudi Pro League", "exact": ["saudi arabia", "saudi pro league"], "prefixes": ["saudi pro league "]},
+        {"name": "Egyptian Premier League", "exact": ["egypt", "egyptian premier league", "egyptian premiership"], "prefixes": ["egyptian premier league "]},
+        {"name": "Moroccan Botola", "exact": ["morocco", "moroccan botola", "botola pro"], "prefixes": ["moroccan botola ", "botola pro "]},
+        {"name": "Algerian Ligue 1", "exact": ["algeria", "algerian ligue 1"], "prefixes": ["algerian ligue 1 "]},
+        {"name": "Qatar Stars League", "exact": ["qatar", "qatar stars league"], "prefixes": ["qatar stars league "]},
+        {"name": "UAE Pro League", "exact": ["united arab emirates", "uae pro league", "uae league"], "prefixes": ["uae pro league "]},
+        {"name": "Tunisian Ligue 1", "exact": ["tunisia", "tunisian ligue 1"], "prefixes": ["tunisian ligue 1 "]},
     ],
     "popular_europe": [
-        ("English Premier League", ["premier league", "england"]),
-        ("English Championship", ["championship"]),
-        ("German Bundesliga", ["bundesliga", "germany"]),
-        ("Spanish La Liga", ["la liga", "spain"]),
-        ("Italian Serie A", ["serie a", "italy"]),
-        ("French Ligue 1", ["ligue 1", "france"]),
-        ("Dutch Eredivisie", ["eredivisie"]),
-        ("Portuguese Primeira Liga", ["primeira", "portugal"]),
-        ("Scottish Premiership", ["scotland", "premiership"]),
+        {"name": "English Premier League", "exact": ["england", "english premier league"], "prefixes": ["english premier league "]},
+        {"name": "English Championship", "exact": ["english championship"], "prefixes": ["english championship "]},
+        {"name": "German Bundesliga", "exact": ["germany", "german bundesliga"], "prefixes": ["german bundesliga "]},
+        {"name": "Spanish La Liga", "exact": ["spain", "spanish la liga"], "prefixes": ["spanish la liga "]},
+        {"name": "Italian Serie A", "exact": ["italy", "italian serie a"], "prefixes": ["italian serie a "]},
+        {"name": "French Ligue 1", "exact": ["france", "french ligue 1"], "prefixes": ["french ligue 1 "]},
+        {"name": "Dutch Eredivisie", "exact": ["netherlands", "dutch eredivisie"], "prefixes": ["netherlands eredivisie ", "dutch eredivisie "]},
+        {"name": "Portuguese Primeira Liga", "exact": ["portugal", "portuguese primeira liga"], "prefixes": ["portuguese primeira liga "]},
+        {"name": "Scottish Premiership", "exact": ["scotland", "scottish premiership"], "prefixes": ["scottish premiership "]},
     ],
 }
+
+
+def normalize_competition(value: str) -> str:
+    return " ".join(str(value or "").casefold().replace("-", " ").replace("_", " ").split())
+
+
+def is_target_competition(value: str, target: dict) -> bool:
+    normalized = normalize_competition(value)
+    if normalized in {normalize_competition(item) for item in target["exact"]}:
+        return True
+    return any(normalized.startswith(normalize_competition(prefix)) for prefix in target["prefixes"])
+
 
 
 def main():
@@ -65,13 +77,13 @@ def main():
     target_report = {}
     for group, items in TARGETS.items():
         target_report[group] = []
-        for name, keywords in items:
+        for target in items:
             matched = [
                 item for item in all_competitions
-                if any(word in item["competition"].casefold() for word in keywords)
+                if is_target_competition(item["competition"], target)
             ]
             target_report[group].append({
-                "target": name,
+                "target": target["name"],
                 "detected": bool(matched),
                 "matched_competitions": [item["competition"] for item in matched[:15]],
                 "matches_found": sum(item["matches"] for item in matched),
