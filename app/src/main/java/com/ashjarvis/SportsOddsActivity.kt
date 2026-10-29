@@ -103,7 +103,7 @@ class SportsOddsActivity : Activity() {
         if (candidates.isEmpty()) body.addView(text("No shortlisted games saved yet. Tap REFRESH to collect the latest odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
         candidates.take(20).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nWhy shown: price 1.20–1.90 and matched by at least 2 books. Not a prediction guarantee.") {}
+                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nTap to check if odd/even odds are published. Shortlist only, not a prediction guarantee.") { checkOddEven(event) }
         }
         card("ALL UPCOMING GAMES", "Saved games found through your API key: ${upcoming.size}") {}
         upcoming.filter { candidates.none { c -> c.optString("id") == it.optString("id") } }.take(30).forEach { event ->
@@ -229,6 +229,47 @@ class SportsOddsActivity : Activity() {
             } catch (e: Exception) {
                 status.text = "Could not load leagues"
                 Toast.makeText(this@SportsOddsActivity, (e.message ?: "Request failed").take(300), Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun checkOddEven(event: JSONObject) {
+        val key = OddsEngine.readApiKey(this)
+        if (key.isNullOrBlank()) { showSetup(); return }
+        status.text = "Checking bookmaker odd/even market…"
+        scope.launch {
+            try {
+                val payload = withContext(Dispatchers.IO) {
+                    OddsEngine.checkOddEven(key, event.optString("sport_key"), event.optString("id"))
+                }
+                val books = payload.optJSONArray("bookmakers")
+                    ?: payload.optJSONObject("data")?.optJSONArray("bookmakers")
+                    ?: JSONArray()
+                val lines = mutableListOf<String>()
+                for (i in 0 until books.length()) {
+                    val book = books.optJSONObject(i) ?: continue
+                    val markets = book.optJSONArray("markets") ?: continue
+                    for (j in 0 until markets.length()) {
+                        val market = markets.optJSONObject(j) ?: continue
+                        if (market.optString("key") !in setOf("odd_even", "odd_even_goals", "total_goals_odd_even")) continue
+                        val outcomes = market.optJSONArray("outcomes") ?: continue
+                        val prices = (0 until outcomes.length()).mapNotNull { idx ->
+                            outcomes.optJSONObject(idx)?.let { "${it.optString("name")} @ ${it.optDouble("price", 0.0)}" }
+                        }
+                        if (prices.isNotEmpty()) lines.add("${book.optString("title", book.optString("key"))}: ${prices.joinToString(", ")}")
+                    }
+                }
+                val message = if (lines.isEmpty()) {
+                    "No bookmaker returned an odd/even market for this event. This feed may not publish odd/even; Ash will not guess or convert over/under odds into fake prices."
+                } else lines.joinToString("\n")
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Odd/even market check")
+                    .setMessage(message).setPositiveButton("OK", null).show()
+                status.text = if (lines.isEmpty()) "Odd/even odds unavailable for this game" else "Odd/even odds found"
+            } catch (e: Exception) {
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Odd/even unavailable")
+                    .setMessage((e.message ?: "Provider does not publish this market").take(700))
+                    .setPositiveButton("OK", null).show()
+                status.text = "Odd/even odds unavailable for this game"
             }
         }
     }
