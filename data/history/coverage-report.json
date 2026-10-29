@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-29T03:58:09.385791+00:00",
+  "generated_at_utc": "2026-10-29T04:07:03.000264+00:00",
   "completeness": "best_effort_not_exhaustive",
   "summary": {
     "total_matches": 1800931,
@@ -29,87 +29,60 @@
         "matched_competitions": [
           "saudi-arabia",
           "Saudi Pro League",
-          "saudi-arabia — AFC CL",
-          "Saudi Arabia",
-          "saudi-arabia — AFC Pokal",
-          "saudi-arabia — Fifa Club"
+          "Saudi Arabia"
         ],
-        "matches_found": 8008
+        "matches_found": 7686
       },
       {
         "target": "Egyptian Premier League",
         "detected": true,
         "matched_competitions": [
           "egypt",
-          "Egypt",
-          "egypt — CAF CL",
-          "egypt — CAF CC",
-          "egypt — jordan",
-          "egypt — Fifa Club",
-          "egypt — CAF SC"
+          "Egypt"
         ],
-        "matches_found": 7314
+        "matches_found": 6889
       },
       {
         "target": "Moroccan Botola",
         "detected": true,
         "matched_competitions": [
           "morocco",
-          "Morocco",
-          "morocco — CAF CC",
-          "morocco — CAF CL",
-          "morocco — Fifa Club",
-          "morocco — CAF SC"
+          "Morocco"
         ],
-        "matches_found": 9336
+        "matches_found": 8989
       },
       {
         "target": "Algerian Ligue 1",
         "detected": true,
         "matched_competitions": [
           "algeria",
-          "Algeria",
-          "algeria — CAF CL",
-          "algeria — CAF CC",
-          "algeria — Fifa Club"
+          "Algeria"
         ],
-        "matches_found": 7103
+        "matches_found": 6791
       },
       {
         "target": "Qatar Stars League",
         "detected": true,
         "matched_competitions": [
-          "qatar",
-          "qatar — AFC CL",
-          "iraq — qatar",
-          "qatar — AFC Pokal",
-          "qatar — Fifa Club"
+          "qatar"
         ],
-        "matches_found": 3569
+        "matches_found": 3314
       },
       {
         "target": "UAE Pro League",
         "detected": true,
         "matched_competitions": [
-          "united-arab-emirates",
-          "united-arab-emirates — AFC CL",
-          "yemen — united-arab-emirates",
-          "united-arab-emirates — AFC Pokal",
-          "united-arab-emirates — Fifa Club"
+          "united-arab-emirates"
         ],
-        "matches_found": 4129
+        "matches_found": 3857
       },
       {
         "target": "Tunisian Ligue 1",
         "detected": true,
         "matched_competitions": [
-          "tunisia",
-          "tunisia — CAF CL",
-          "tunisia — CAF CC",
-          "tunisia — CAF SC",
-          "tunisia — Fifa Club"
+          "tunisia"
         ],
-        "matches_found": 7953
+        "matches_found": 7577
       }
     ],
     "popular_europe": [
@@ -118,9 +91,6 @@
         "detected": true,
         "matched_competitions": [
           "england",
-          "england — UEFA EL",
-          "england — UEFA CL",
-          "wales — england",
           "English Premier League 2010/11",
           "English Premier League 2011/12",
           "English Premier League 2012/13",
@@ -131,9 +101,12 @@
           "English Premier League 2017/18",
           "English Premier League 2018/19",
           "English Premier League 2019/20",
-          "English Premier League 2020/21"
+          "English Premier League 2020/21",
+          "English Premier League 2021/22",
+          "English Premier League 2022/23",
+          "English Premier League 2023/24"
         ],
-        "matches_found": 56472
+        "matches_found": 54443
       },
       {
         "target": "English Championship",
@@ -153,59 +126,31 @@
           "English Championship 2018/19",
           "English Championship 2019/20",
           "English Championship 2020/21",
-          "Virginia Slims Championships"
+          "English Championship 2026/27"
         ],
-        "matches_found": 8567
+        "matches_found": 7848
       },
       {
         "target": "German Bundesliga",
         "detected": true,
         "matched_competitions": [
-          "germany",
-          "germany — ddr",
-          "germany — UEFA EL",
-          "germany — UEFA CL",
-          "Deutsche 2. Bundesliga 2012/13",
-          "Deutsche 2. Bundesliga 2013/14",
-          "Deutsche 2. Bundesliga 2014/15",
-          "Deutsche 2. Bundesliga 2015/16",
-          "Deutsche 2. Bundesliga 2016/17",
-          "Deutsche 2. Bundesliga 2017/18",
-          "Deutsche 2. Bundesliga 2018/19",
-          "Deutsche 2. Bundesliga 2019/20",
-          "Deutsche 2. Bundesliga 2020/21",
-          "Deutsche 2. Bundesliga 2021/22",
-          "Deutsche 2. Bundesliga 2022/23"
+          "germany"
         ],
-        "matches_found": 49027
+        "matches_found": 30018
       },
       {
         "target": "Spanish La Liga",
         "detected": true,
         "matched_competitions": [
-          "spain",
-          "spain — UEFA EL",
-          "spain — UEFA CL",
-          "Spain Segunda División 2024/25",
-          "Spain Primera División 2025/26",
-          "Spain Primera División 2024/25",
-          "spain — ddr",
-          "Spain Segunda División 2025/26",
-          "Spain Primera División 2026/27",
-          "spain — UEFA ITC",
-          "spain — UEFA SC",
-          "spain — UEFA CONF L",
-          "spain — Fifa Club"
+          "spain"
         ],
-        "matches_found": 29732
+        "matches_found": 26562
       },
       {
         "target": "Italian Serie A",
         "detected": true,
         "matched_competitions": [
           "italy",
-          "italy — UEFA EL",
-          "italy — UEFA CL",
           "Italian Serie A 2013/14",
           "Italian Serie A 2014/15",
           "Italian Serie A 2015/16",
@@ -217,17 +162,17 @@
           "Italian Serie A 2021/22",
           "Italian Serie A 2022/23",
           "Italian Serie A 2023/24",
-          "Italian Serie A 2025/26"
+          "Italian Serie A 2025/26",
+          "Italian Serie A 2024/25",
+          "Italian Serie A 2026/27"
         ],
-        "matches_found": 35021
+        "matches_found": 33394
       },
       {
         "target": "French Ligue 1",
         "detected": true,
         "matched_competitions": [
           "france",
-          "france — UEFA EL",
-          "france — UEFA CL",
           "French Ligue 1 2014/15",
           "French Ligue 1 2015/16",
           "French Ligue 1 2016/17",
@@ -239,14 +184,16 @@
           "French Ligue 1 2023/24",
           "French Ligue 1 2024/25",
           "French Ligue 1 2025/26",
-          "French Ligue 1 2019/20"
+          "French Ligue 1 2019/20",
+          "French Ligue 1 2026/27"
         ],
-        "matches_found": 35127
+        "matches_found": 33866
       },
       {
         "target": "Dutch Eredivisie",
         "detected": true,
         "matched_competitions": [
+          "netherlands",
           "Netherlands Eredivisie 2018/19",
           "Netherlands Eredivisie 2020/21",
           "Netherlands Eredivisie 2021/22",
@@ -257,15 +204,13 @@
           "Netherlands Eredivisie 2019/20",
           "Netherlands Eredivisie 2026/27"
         ],
-        "matches_found": 2436
+        "matches_found": 22779
       },
       {
         "target": "Portuguese Primeira Liga",
         "detected": true,
         "matched_competitions": [
           "portugal",
-          "portugal — UEFA EL",
-          "portugal — UEFA CL",
           "Portuguese Primeira Liga 2018/19",
           "Portuguese Primeira Liga 2019/20",
           "Portuguese Primeira Liga 2020/21",
@@ -274,28 +219,17 @@
           "Portuguese Primeira Liga 2023/24",
           "Portuguese Primeira Liga 2024/25",
           "Portuguese Primeira Liga 2025/26",
-          "portugal — ddr",
-          "Portuguese Primeira Liga 2026/27",
-          "el-salvador — portugal",
-          "portugal — UEFA CONF L"
+          "Portuguese Primeira Liga 2026/27"
         ],
-        "matches_found": 23836
+        "matches_found": 22789
       },
       {
         "target": "Scottish Premiership",
         "detected": true,
         "matched_competitions": [
-          "scotland",
-          "scotland — UEFA EL",
-          "scotland — UEFA CL",
-          "scotland — ddr",
-          "Perth Scotland",
-          "scotland — UEFA CONF L",
-          "scotland — UEFA ITC",
-          "West of Scotland",
-          "scotland — UEFA SC"
+          "scotland"
         ],
-        "matches_found": 33706
+        "matches_found": 32878
       }
     ]
   },
@@ -4949,7 +4883,7 @@
     }
   ],
   "pipeline_metadata": {
-    "built_at_utc": "2026-10-29T03:57:13.918394+00:00",
+    "built_at_utc": "2026-10-29T04:05:25.793009+00:00",
     "total_matches": "416052",
     "counts_by_sport": "{\"football\": 54481, \"tennis\": 361571}",
     "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
