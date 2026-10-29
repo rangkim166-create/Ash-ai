@@ -80,8 +80,10 @@ object OddsEngine {
                 val detail = try { JSONObject(body).optString("message", body) } catch (_: Exception) { body }
                 throw IllegalStateException("Odds API HTTP $code: ${detail.take(240)}")
             }
-            val headers = connection.headerFields.filterKeys { it != null }.mapKeys { it.key.lowercase() }
-                .mapValues { it.value?.firstOrNull().orEmpty() }
+            val headers = mutableMapOf<String, String>()
+            listOf("x-requests-remaining", "x-requests-used", "x-requests-last").forEach { name ->
+                headers[name] = connection.getHeaderField(name).orEmpty()
+            }
             return JSONObject(body) to headers
         } finally { connection.disconnect() }
     }
