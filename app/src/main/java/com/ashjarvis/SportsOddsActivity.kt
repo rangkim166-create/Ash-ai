@@ -353,14 +353,14 @@ class SportsOddsActivity : Activity() {
                     )
                 }
                 fun formatRecent(label: String, rows: JSONArray): String {
-                    if (rows.length() == 0) return "\${label} recent results: no verified results found online"
+                    if (rows.length() == 0) return "${label} recent results: no verified results found online"
                     val lines = (0 until minOf(rows.length(), 5)).mapNotNull { i ->
                         val row = rows.optJSONObject(i) ?: return@mapNotNull null
-                        val score = "\${row.optString("home_score")}–\${row.optString("away_score")}"
+                        val score = "${row.optString("home_score")}–${row.optString("away_score")}"
                         val scoreText = if (score.contains("null") || score == "–") "score unavailable" else score
-                        "• \${row.optString("date")}  \${row.optString("event")} — \${scoreText} (\${row.optString("outcome")})"
+                        "• ${row.optString("date")}  ${row.optString("event")} — ${scoreText} (${row.optString("outcome")})"
                     }
-                    return "\${label} recent results:\\n" + lines.joinToString("\\n")
+                    return "${label} recent results:\n" + lines.joinToString("\n")
                 }
                 val homeRecent = report.optJSONArray("home_recent") ?: JSONArray()
                 val awayRecent = report.optJSONArray("away_recent") ?: JSONArray()
@@ -368,18 +368,18 @@ class SportsOddsActivity : Activity() {
                 val sources = report.optJSONArray("sources") ?: JSONArray()
                 val noteLines = (0 until minOf(notes.length(), 6)).mapNotNull { i ->
                     val item = notes.optJSONObject(i) ?: return@mapNotNull null
-                    "• \${item.optString("title")}: \${item.optString("snippet")}"
+                    "• ${item.optString("title")}: ${item.optString("snippet")}"
                 }
                 val message = buildString {
-                    append("Internet research completed: ").append(report.optString("researched_at")).append("\\n\\n")
-                    append(formatRecent(event.optString("home_team"), homeRecent)).append("\\n\\n")
-                    append(formatRecent(event.optString("away_team"), awayRecent)).append("\\n\\n")
-                    append("WEB CONTEXT\\n")
-                    append(if (noteLines.isEmpty()) "No useful web snippets were returned." else noteLines.joinToString("\\n"))
-                    append("\\n\\nSOURCES\\n")
+                    append("Internet research completed: ").append(report.optString("researched_at")).append("\n\n")
+                    append(formatRecent(event.optString("home_team"), homeRecent)).append("\n\n")
+                    append(formatRecent(event.optString("away_team"), awayRecent)).append("\n\n")
+                    append("WEB CONTEXT\n")
+                    append(if (noteLines.isEmpty()) "No useful web snippets were returned." else noteLines.joinToString("\n"))
+                    append("\n\nSOURCES\n")
                     append(if (sources.length() == 0) "Sources did not return data this time." else
                         (0 until sources.length()).mapNotNull { sources.optString(it).takeIf { s -> s.isNotBlank() } }.distinct().joinToString(", "))
-                    append("\\n\\n")
+                    append("\n\n")
                     if (homeRecent.length() == 0 && awayRecent.length() == 0) {
                         append("No verified recent results were found. This match is NOT invalid; Ash must mark the evidence as insufficient and avoid pretending the history exists.")
                     } else {
@@ -398,7 +398,7 @@ class SportsOddsActivity : Activity() {
                 status.text = "Internet research temporarily unavailable"
                 AlertDialog.Builder(this@SportsOddsActivity)
                     .setTitle("Research unavailable")
-                    .setMessage("Ash could not reach a research source right now. The match is not invalid; try again when internet is available.\\n\\n\${(e.message ?: "Network request failed").take(300)}")
+                    .setMessage("Ash could not reach a research source right now. The match is not invalid; try again when internet is available.\n\n${(e.message ?: "Network request failed").take(300)}")
                     .setPositiveButton("OK", null)
                     .show()
             }
