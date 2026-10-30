@@ -115,9 +115,21 @@ object OddsEngine {
             .putString(FAVORITES_KEY, keys.joinToString(",")).apply()
     }
 
-    fun history(context: Context): JSONArray = try {
-        JSONArray(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(HISTORY_KEY, "[]") ?: "[]")
-    } catch (_: Exception) { JSONArray() }
+    fun history(context: Context): JSONArray {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val db = LocalSportsDatabase.get(context)
+        // One-time migration: preserve the old SharedPreferences archive before switching to SQLite.
+        if (!prefs.getBoolean("sports_sqlite_migrated_v1", false)) {
+            val legacy = try { JSONArray(prefs.getString(HISTORY_KEY, "[]") ?: "[]") } catch (_: Exception) { JSONArray() }
+            for (i in 0 until legacy.length()) {
+                val row = legacy.optJSONObject(i) ?: continue
+                val id = row.optString("id")
+                if (id.isNotBlank()) db.put("match", id, row)
+            }
+            prefs.edit().putBoolean("sports_sqlite_migrated_v1", true).apply()
+        }
+        return db.list("match", 10000)
+    }
 
     fun sync(context: Context, apiKey: String): SyncResult {
         val allSports = loadSports(apiKey)
@@ -156,6 +168,8 @@ object OddsEngine {
                     val summary = summarize(event, sportKey, sport.optString("title", sportKey), now, prior)
                     if (prior == null) added++
                     byId[id] = summary
+                    // Persist each discovered fixture immediately; a later failed request cannot erase it.
+                    LocalSportsDatabase.get(context).put("match", id, summary)
                     found++
                 }
                 if (remaining?.toIntOrNull() == 0) {
@@ -166,10 +180,17 @@ object OddsEngine {
                 errors.add("$sportKey: ${(e.message ?: "request failed").take(160)}")
             }
         }
-        val sorted = byId.values.sortedByDescending { it.optString("last_seen") }.take(1000)
+        val sorted = byId.values.sortedByDescending { it.optString("last_seen") }
         val saved = JSONArray()
-        sorted.forEach { saved.put(it) }
-        prefs.edit().putString(HISTORY_KEY, saved.toString()).putString("odds_last_sync", Instant.now().toString()).apply()
+        sorted.forEach {
+            saved.put(it)
+            val id = it.optString("id")
+            if (id.isNotBlank()) LocalSportsDatabase.get(context).put("match", id, it)
+        }
+        // SharedPreferences remains a small compatibility cache; SQLite is the durable source of truth.
+        val cache = JSONArray()
+        sorted.take(1000).forEach { cache.put(it) }
+        prefs.edit().putString(HISTORY_KEY, cache.toString()).putString("odds_last_sync", Instant.now().toString()).apply()
         if (found == 0 && errors.isNotEmpty()) throw IllegalStateException(errors.take(3).joinToString("\n"))
         return SyncResult(found, added, sports.size, errors, remaining)
     }
@@ -310,10 +331,31 @@ object OddsEngine {
 
         val result = JSONArray()
         ranked.forEach { result.put(it) }
+        val db = LocalSportsDatabase.get(context)
+        // Keep the researched fixture, profiles, roster, news and source references on-device.
+        candidates.forEach { event ->
+            val id = event.optString("id")
+            if (id.isNotBlank()) {
+                db.put("match", id, event)
+                db.put("match_research", id, JSONObject()
+                    .put("event_id", id)
+                    .put("checked_at", event.optString("research_checked_at"))
+                    .put("home_profile", event.optJSONObject("research_home_profile") ?: JSONObject())
+                    .put("away_profile", event.optJSONObject("research_away_profile") ?: JSONObject())
+                    .put("home_recent", event.optJSONArray("research_home_recent") ?: JSONArray())
+                    .put("away_recent", event.optJSONArray("research_away_recent") ?: JSONArray())
+                    .put("home_players", event.optJSONArray("research_home_players") ?: JSONArray())
+                    .put("away_players", event.optJSONArray("research_away_players") ?: JSONArray())
+                    .put("news", event.optJSONArray("research_news") ?: JSONArray())
+                    .put("sources", event.optJSONArray("research_sources") ?: JSONArray()))
+            }
+        }
+        val pickDate = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
+        db.put("daily_picks", pickDate, JSONObject().put("date", pickDate).put("picks", result))
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(HISTORY_KEY, history.toString())
+            .putString(HISTORY_KEY, history.toString().take(900000))
             .putString("ash_daily_picks_json", result.toString())
-            .putString("ash_daily_picks_date", java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString())
+            .putString("ash_daily_picks_date", pickDate)
             .apply()
         return result
     }
