@@ -141,7 +141,7 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun showAccumulatorTargets(candidates: List<JSONObject>) {
-        val targets = listOf(2.0, 4.0, 5.0, 6.0, 10.0, 100.0)
+        val targets = listOf(1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 20.0, 50.0, 100.0)
         val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         targets.forEach { target ->
             val picks = mutableListOf<JSONObject>()
@@ -244,8 +244,11 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun showHistory() {
+        val db = LocalSportsDatabase.get(this)
         val history = OddsEngine.history(this)
-        card("MATCH HISTORY", "${history.length()} unique games collected. Each game stores when Ash first found it and recent odds snapshots.") {}
+        card("ASH'S ON-PHONE DATABASE",
+            "${db.count("match")} saved fixtures • ${db.count("match_research")} research reports • ${db.count("daily_picks")} dated pick records\n\nStored in the app's private SQLite database. The history list below shows the most recent records; older records remain stored.") {}
+        card("MATCH HISTORY", "${history.length()} recent games loaded from local SQLite. Each game stores when Ash first found it and recent odds snapshots.") {}
         val rows = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
             .sortedByDescending { it.optString("first_seen") }
         if (rows.isEmpty()) body.addView(text("No games collected yet. Connect your key, choose leagues, then refresh.", 14f, muted).apply { setPadding(12, 12, 12, 12) })
@@ -260,7 +263,14 @@ class SportsOddsActivity : Activity() {
                 .setMessage("This only deletes the local match/odds history on this phone.")
                 .setNegativeButton("CANCEL", null)
                 .setPositiveButton("CLEAR") { _, _ ->
-                    getSharedPreferences("ash_jarvis", MODE_PRIVATE).edit().remove("ash_odds_history_json").apply()
+                    val localDb = LocalSportsDatabase.get(this)
+                    localDb.clear("match")
+                    localDb.clear("match_research")
+                    localDb.clear("daily_picks")
+                    getSharedPreferences("ash_jarvis", MODE_PRIVATE).edit()
+                        .remove("ash_odds_history_json")
+                        .putBoolean("sports_sqlite_migrated_v1", true)
+                        .apply()
                     render()
                 }.show()
         })
@@ -365,6 +375,10 @@ class SportsOddsActivity : Activity() {
                         event.optString("away_team"),
                         event.optString("sport_title")
                     )
+                }
+                val eventId = event.optString("id")
+                if (eventId.isNotBlank()) {
+                    LocalSportsDatabase.get(this@SportsOddsActivity).put("match_research", eventId, report)
                 }
                 fun formatRecent(label: String, rows: JSONArray): String {
                     if (rows.length() == 0) return "$label recent results: no verified results found online"
