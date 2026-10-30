@@ -44,8 +44,8 @@ object HistoricalSportsArchive {
 
                 val dateCol = column("date", "match_date", "game_date", "tourney_date", "date_event", "datetime", "fixture_date")
                 if (dateCol < 0) throw IllegalArgumentException("No supported match date column found. Expected Date, match_date, game_date or tourney_date.")
-                val homeCol = column("home_team", "hometeam", "team_home", "visitor_team", "winner_name")
-                val awayCol = column("away_team", "awayteam", "team_away", "opponent", "opponent_team", "loser_name")
+                val homeCol = column("home_team", "hometeam", "team_home", "winner_name")
+                val awayCol = column("away_team", "awayteam", "team_away", "visitor_team", "opponent", "opponent_team", "loser_name")
                 val teamCol = column("team_name", "team", "franchise")
                 val homeFlagCol = column("home", "is_home")
                 val matchupCol = column("matchup")
