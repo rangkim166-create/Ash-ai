@@ -40,7 +40,13 @@ object HistoricalSportsArchive {
                 val headers = parseCsvLine(headerLine).map { it.trim().removePrefix("\uFEFF") }
                 if (headers.isEmpty()) throw IllegalArgumentException("CSV header is missing")
                 val normalized = headers.map { normalize(it) }
-                fun column(vararg names: String): Int = names.map { normalize(it) }.firstNotNullOfOrNull { normalized.indexOf(it).takeIf { ix -> ix >= 0 } } ?: -1
+                fun column(vararg names: String): Int {
+                    for (name in names) {
+                        val index = normalized.indexOf(normalize(name))
+                        if (index >= 0) return index
+                    }
+                    return -1
+                }
 
                 val dateCol = column("date", "match_date", "game_date", "tourney_date", "date_event", "datetime", "fixture_date")
                 if (dateCol < 0) throw IllegalArgumentException("No supported match date column found. Expected Date, match_date, game_date or tourney_date.")
