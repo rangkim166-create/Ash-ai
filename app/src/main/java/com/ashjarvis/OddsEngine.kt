@@ -182,11 +182,7 @@ object OddsEngine {
         }
         val sorted = byId.values.sortedByDescending { it.optString("last_seen") }
         val saved = JSONArray()
-        sorted.forEach {
-            saved.put(it)
-            val id = it.optString("id")
-            if (id.isNotBlank()) LocalSportsDatabase.get(context).put("match", id, it)
-        }
+        sorted.forEach { saved.put(it) }
         // SharedPreferences remains a small compatibility cache; SQLite is the durable source of truth.
         val cache = JSONArray()
         sorted.take(1000).forEach { cache.put(it) }
