@@ -44,8 +44,11 @@ object HistoricalSportsArchive {
 
                 val dateCol = column("date", "match_date", "game_date", "tourney_date", "date_event", "datetime", "fixture_date")
                 if (dateCol < 0) throw IllegalArgumentException("No supported match date column found. Expected Date, match_date, game_date or tourney_date.")
-                val homeCol = column("home_team", "hometeam", "home", "winner_name", "team_home", "visitor_team")
-                val awayCol = column("away_team", "awayteam", "away", "loser_name", "team_away", "opponent")
+                val homeCol = column("home_team", "hometeam", "team_home", "visitor_team", "winner_name")
+                val awayCol = column("away_team", "awayteam", "team_away", "opponent", "opponent_team", "loser_name")
+                val teamCol = column("team_name", "team", "franchise")
+                val homeFlagCol = column("home", "is_home")
+                val matchupCol = column("matchup")
                 val homeScoreCol = column("home_score", "fthg", "home_goals", "pts_home", "home_pts", "winner_score")
                 val awayScoreCol = column("away_score", "ftag", "away_goals", "pts_away", "away_pts", "loser_score")
                 val resultCol = column("ftr", "result", "winner", "match_winner")
@@ -58,8 +61,30 @@ object HistoricalSportsArchive {
                     val rawDate = cells.getOrNull(dateCol).orEmpty().trim()
                     val date = parseDate(rawDate)
                     if (date == null || date.year !in 2000..2026) { skipped++; continue }
-                    val home = cells.getOrNull(homeCol).orEmpty().trim()
-                    val away = cells.getOrNull(awayCol).orEmpty().trim()
+                    var home = cells.getOrNull(homeCol).orEmpty().trim()
+                    var away = cells.getOrNull(awayCol).orEmpty().trim()
+                    val team = cells.getOrNull(teamCol).orEmpty().trim()
+                    val opponent = cells.getOrNull(awayCol).orEmpty().trim()
+                    if ((home.isBlank() || away.isBlank()) && team.isNotBlank() && opponent.isNotBlank()) {
+                        val flag = cells.getOrNull(homeFlagCol).orEmpty().trim().lowercase(Locale.ROOT)
+                        val teamIsHome = flag in setOf("true", "1", "yes", "home", "h")
+                        if (home.isBlank() || away.isBlank()) {
+                            home = if (teamIsHome) team else opponent
+                            away = if (teamIsHome) opponent else team
+                        }
+                    }
+                    if ((home.isBlank() || away.isBlank()) && team.isNotBlank() && matchupCol >= 0) {
+                        val matchup = cells.getOrNull(matchupCol).orEmpty().trim()
+                        val split = Regex("^(.+?)\\s+(vs\\.?|@)\\s+(.+)$", RegexOption.IGNORE_CASE).find(matchup)
+                        if (split != null) {
+                            val left = split.groupValues[1].trim()
+                            val right = split.groupValues[3].trim()
+                            val separator = split.groupValues[2]
+                            val teamIsLeft = left.equals(team, true)
+                            home = if (separator.startsWith("@")) right else if (teamIsLeft) left else right
+                            away = if (separator.startsWith("@")) left else if (teamIsLeft) right else left
+                        }
+                    }
                     if (home.isBlank() || away.isBlank()) { skipped++; continue }
 
                     val row = JSONObject()
