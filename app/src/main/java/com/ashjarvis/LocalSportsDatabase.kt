@@ -99,6 +99,44 @@ class LocalSportsDatabase private constructor(context: Context) :
         writableDatabase.delete("sports_records", "record_type=?", arrayOf(type))
     }
 
+
+    /** Export every stored record for backup outside app-private storage. */
+    @Synchronized
+    fun exportAll(): JSONObject {
+        val root = JSONObject().put("format", "ash-sports-backup-v1")
+            .put("exported_at", java.time.Instant.now().toString())
+        val records = JSONArray()
+        readableDatabase.rawQuery(
+            "SELECT record_type, record_key, payload, updated_at FROM sports_records ORDER BY record_type, record_key",
+            null
+        ).use { c ->
+            while (c.moveToNext()) records.put(JSONObject()
+                .put("type", c.getString(0))
+                .put("key", c.getString(1).substringAfter(":"))
+                .put("payload", JSONObject(c.getString(2)))
+                .put("updated_at", c.getString(3)))
+        }
+        return root.put("records", records)
+    }
+
+    /** Merge a validated backup without deleting records already on this phone. */
+    @Synchronized
+    fun restoreAll(root: JSONObject): Int {
+        require(root.optString("format") == "ash-sports-backup-v1") { "Unsupported Ash backup format" }
+        val records = root.optJSONArray("records") ?: throw IllegalArgumentException("Backup contains no records")
+        val grouped = linkedMapOf<String, MutableList<Pair<String, JSONObject>>>()
+        for (i in 0 until records.length()) {
+            val row = records.optJSONObject(i) ?: continue
+            val type = row.optString("type")
+            val key = row.optString("key")
+            val payload = row.optJSONObject("payload")
+            if (type.isBlank() || key.isBlank() || payload == null) continue
+            grouped.getOrPut(type) { mutableListOf() }.add(key to payload)
+        }
+        grouped.forEach { (type, rows) -> putBatch(type, rows) }
+        return grouped.values.sumOf { it.size }
+    }
+
     companion object {
         @Volatile private var instance: LocalSportsDatabase? = null
         fun get(context: Context): LocalSportsDatabase =
