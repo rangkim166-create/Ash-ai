@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-29T11:03:32.207596+00:00",
+  "generated_at_utc": "2026-10-30T11:01:54.187393+00:00",
   "completeness": "best_effort_not_exhaustive",
   "summary": {
     "total_matches": 1800931,
@@ -4883,7 +4883,7 @@
     }
   ],
   "pipeline_metadata": {
-    "built_at_utc": "2026-10-29T11:01:43.707515+00:00",
+    "built_at_utc": "2026-10-30T11:00:04.128771+00:00",
     "total_matches": "416052",
     "counts_by_sport": "{\"football\": 54481, \"tennis\": 361571}",
     "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
