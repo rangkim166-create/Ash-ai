@@ -33,6 +33,8 @@ class SportsOddsActivity : Activity() {
     private lateinit var body: LinearLayout
     private lateinit var status: TextView
     private var currentTab = "today"
+    private var pendingArchiveSport = "football"
+    private val archiveImportRequestCode = 9926
     private val bg = Color.rgb(8, 13, 27)
     private val panel = Color.rgb(20, 30, 52)
     private val accent = Color.rgb(96, 210, 255)
@@ -243,6 +245,50 @@ class SportsOddsActivity : Activity() {
         }
     }
 
+    private fun chooseHistoricalImport() {
+        val sports = arrayOf("Football / Soccer", "Basketball", "Tennis")
+        AlertDialog.Builder(this).setTitle("Import historical match CSV")
+            .setMessage("Choose the sport for this file. Ash will keep rows dated 2000–2026 in its private SQLite database. Use datasets you are allowed to store.")
+            .setItems(sports) { _, which ->
+                pendingArchiveSport = when (which) {
+                    1 -> "basketball"
+                    2 -> "tennis"
+                    else -> "football"
+                }
+                val intent = android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(android.content.Intent.CATEGORY_OPENABLE)
+                    type = "text/*"
+                }
+                startActivityForResult(intent, archiveImportRequestCode)
+            }
+            .setNegativeButton("CANCEL", null).show()
+    }
+
+    @Deprecated("Deprecated Android callback retained for broad device compatibility")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != archiveImportRequestCode || resultCode != RESULT_OK) return
+        val uri = data?.data ?: return
+        status.text = "Importing $pendingArchiveSport history into Ash's phone database…"
+        scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    HistoricalSportsArchive.importCsv(this@SportsOddsActivity, uri, pendingArchiveSport, uri.lastPathSegment ?: "selected CSV")
+                }
+                Toast.makeText(this@SportsOddsActivity,
+                    "Imported ${result.imported} ${result.sport} matches • skipped ${result.skipped} rows • years ${result.firstYear ?: "?"}–${result.lastYear ?: "?"}",
+                    Toast.LENGTH_LONG).show()
+                render()
+                status.text = "Historical import complete • ${result.imported} rows saved locally"
+            } catch (e: Exception) {
+                status.text = "Historical import failed"
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Could not import CSV")
+                    .setMessage((e.message ?: "Unsupported CSV file").take(800))
+                    .setPositiveButton("OK", null).show()
+            }
+        }
+    }
+
     private fun showHistory() {
         val db = LocalSportsDatabase.get(this)
         val history = OddsEngine.history(this)
@@ -258,6 +304,7 @@ class SportsOddsActivity : Activity() {
                 "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nFirst discovered: ${event.optString("first_seen")}\nLast checked: ${event.optString("last_seen")}\nOdds snapshots stored: ${snapshots.length()}\nTap to research match history online") { researchMatch(event) }
         }
         status.text = "History is stored locally on this device • ${history.length()} games"
+        body.addView(button("IMPORT HISTORICAL CSV (2000–2026)") { chooseHistoricalImport() })
         body.addView(button("CLEAR MATCH HISTORY") {
             AlertDialog.Builder(this).setTitle("Clear collected history?")
                 .setMessage("This only deletes the local match/odds history on this phone.")
