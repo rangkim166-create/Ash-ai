@@ -191,9 +191,15 @@ object OddsEngine {
         return SyncResult(found, added, sports.size, errors, remaining)
     }
 
-    fun savedDailyPicks(context: Context): JSONArray = try {
-        JSONArray(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString("ash_daily_picks_json", "[]") ?: "[]")
-    } catch (_: Exception) { JSONArray() }
+    fun savedDailyPicks(context: Context): JSONArray {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val date = prefs.getString("ash_daily_picks_date",
+            java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()).orEmpty()
+        val archived = LocalSportsDatabase.get(context).get("daily_picks", date)?.optJSONArray("picks")
+        if (archived != null) return archived
+        return try { JSONArray(prefs.getString("ash_daily_picks_json", "[]") ?: "[]") }
+        catch (_: Exception) { JSONArray() }
+    }
 
     /**
      * Build a small daily evidence shortlist from real upcoming API fixtures.
