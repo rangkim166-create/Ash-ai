@@ -386,7 +386,7 @@ object OddsEngine {
         val snapshots = prior?.optJSONArray("snapshots") ?: JSONArray()
         snapshots.put(JSONObject().put("seen_at", now).put("bookmakers", books.length())
             .put("best_candidate", bestName).put("average_price", if (bestAvg > 0) bestAvg else JSONObject.NULL))
-        while (snapshots.length() > 3) snapshots.remove(0)
+        // Keep every collected odds snapshot for long-term movement analysis.
         return JSONObject()
             .put("id", event.optString("id"))
             .put("sport_key", sportKey)
