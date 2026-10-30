@@ -55,6 +55,38 @@ class LocalSportsDatabase private constructor(context: Context) :
         return out
     }
 
+    /** Bulk insert in bounded transactions so large historical imports don't hold one huge transaction. */
+    @Synchronized
+    fun putBatch(type: String, records: List<Pair<String, JSONObject>>) {
+        val db = writableDatabase
+        records.chunked(500).forEach { batch ->
+            db.beginTransaction()
+            try {
+                batch.forEach { (key, payload) ->
+                    val values = android.content.ContentValues().apply {
+                        put("record_key", "$type:$key")
+                        put("record_type", type)
+                        put("payload", payload.toString())
+                        put("updated_at", java.time.Instant.now().toString())
+                    }
+                    db.insertWithOnConflict("sports_records", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+                }
+                db.setTransactionSuccessful()
+            } finally { db.endTransaction() }
+        }
+    }
+
+    @Synchronized
+    fun listPage(type: String, limit: Int = 500, offset: Int = 0): JSONArray {
+        val out = JSONArray()
+        readableDatabase.query("sports_records", arrayOf("payload"), "record_type=?",
+            arrayOf(type), null, null, "updated_at DESC",
+            "${limit.coerceIn(1, 5000)} OFFSET ${offset.coerceAtLeast(0)}").use { c ->
+            while (c.moveToNext()) runCatching { JSONObject(c.getString(0)) }.getOrNull()?.let(out::put)
+        }
+        return out
+    }
+
     @Synchronized
     fun count(type: String): Int {
         readableDatabase.rawQuery("SELECT COUNT(*) FROM sports_records WHERE record_type=?", arrayOf(type)).use {
