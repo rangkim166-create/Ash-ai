@@ -293,7 +293,7 @@ class SportsOddsActivity : Activity() {
         val db = LocalSportsDatabase.get(this)
         val history = OddsEngine.history(this)
         card("ASH'S ON-PHONE DATABASE",
-            "${db.count("match")} saved fixtures • ${db.count("match_research")} research reports • ${db.count("daily_picks")} dated pick records\n\nStored in the app's private SQLite database. The history list below shows the most recent records; older records remain stored.") {}
+            "${db.count("match")} odds fixtures • ${db.count("historical_match")} imported historical matches • ${db.count("match_research")} research reports • ${db.count("team_profile")} team profiles • ${db.count("player_profile")} player profiles • ${db.count("team_result")} team results • ${db.count("sports_news")} news records • ${db.count("daily_picks")} dated pick records\n\nStored in the app's private SQLite database. The history list below shows the most recent records; older records remain stored.") {}
         card("MATCH HISTORY", "${history.length()} recent games loaded from local SQLite. Each game stores when Ash first found it and recent odds snapshots.") {}
         val rows = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
             .sortedByDescending { it.optString("first_seen") }
@@ -424,8 +424,32 @@ class SportsOddsActivity : Activity() {
                     )
                 }
                 val eventId = event.optString("id")
-                if (eventId.isNotBlank()) {
-                    LocalSportsDatabase.get(this@SportsOddsActivity).put("match_research", eventId, report)
+                val memory = LocalSportsDatabase.get(this@SportsOddsActivity)
+                if (eventId.isNotBlank()) memory.put("match_research", eventId, report)
+                listOf("home" to event.optString("home_team"), "away" to event.optString("away_team")).forEach { side ->
+                    val label = side.first
+                    val teamName = side.second
+                    report.optJSONObject("${label}_profile")?.let { profile ->
+                        memory.put("team_profile", teamName.lowercase().replace(Regex("[^a-z0-9]"), ""), profile)
+                    }
+                    val recent = report.optJSONArray("${label}_recent") ?: JSONArray()
+                    for (index in 0 until recent.length()) {
+                        val row = recent.optJSONObject(index) ?: continue
+                        val key = "${teamName.lowercase()}|${row.optString("date")}|${row.optString("event")}"
+                        memory.put("team_result", key, row.put("tracked_team", teamName))
+                    }
+                    val players = report.optJSONArray("${label}_players") ?: JSONArray()
+                    for (index in 0 until players.length()) {
+                        val player = players.optJSONObject(index) ?: continue
+                        val playerName = player.optString("name")
+                        if (playerName.isNotBlank()) memory.put("player_profile", "${teamName.lowercase()}|${playerName.lowercase()}", player.put("team", teamName))
+                    }
+                }
+                val newsRows = report.optJSONArray("news") ?: JSONArray()
+                for (index in 0 until newsRows.length()) {
+                    val item = newsRows.optJSONObject(index) ?: continue
+                    val identity = item.optString("url").ifBlank { item.optString("team") + "|" + item.optString("title") }
+                    if (identity.isNotBlank()) memory.put("sports_news", identity, item)
                 }
                 fun formatRecent(label: String, rows: JSONArray): String {
                     if (rows.length() == 0) return "$label recent results: no verified results found online"
