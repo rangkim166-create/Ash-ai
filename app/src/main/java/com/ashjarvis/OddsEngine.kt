@@ -353,7 +353,6 @@ object OddsEngine {
         val pickDate = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
         db.put("daily_picks", pickDate, JSONObject().put("date", pickDate).put("picks", result))
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(HISTORY_KEY, history.toString().take(900000))
             .putString("ash_daily_picks_json", result.toString())
             .putString("ash_daily_picks_date", pickDate)
             .apply()
