@@ -87,7 +87,7 @@ async function runScheduledDailyPublisher(){
    return{sent:false,reason:"no_upcoming_fixtures",collection,localDate:localDay};
   }
   const ids=fixtures.map(row=>row.id);
-  const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND observed_at>now()-interval '24 hours' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
+  const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND observed_at>now()-interval '6 hours' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
   if(!oddsResult.rows.length){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No fresh head-to-head bookmaker prices are available."]);
    return{sent:false,reason:"no_fresh_bookmaker_odds",collection,localDate:localDay};
