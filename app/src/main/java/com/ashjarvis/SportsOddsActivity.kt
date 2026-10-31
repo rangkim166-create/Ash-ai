@@ -160,11 +160,22 @@ class SportsOddsActivity : Activity() {
                         val selection = pick.optString("selection", "Not available")
                         val price = pick.optDouble("price", 0.0)
                         val details = buildString {
+                            val edgeType = pick.optString("edge_type", "recent_form")
                             append("Pick: ").append(selection).append(" @ ").append(String.format(java.util.Locale.US, "%.2f", price)).append("\n")
                             append("Best bookmaker: ").append(pick.optString("best_bookmaker", "not listed")).append("\n")
                             append("Bookmakers: ").append(pick.optInt("bookmakers")).append(" • ").append(pick.optString("bookmaker_names", "")).append("\n")
-                            append("Evidence index: ").append(pick.optInt("evidence_index")).append("/100 • Form edge: ").append(pick.optString("form_edge_pct", "n/a")).append("%\n")
-                            append("Recent form: home ").append(pick.optString("home_form", "n/a")).append(" • away ").append(pick.optString("away_form", "n/a")).append("\n")
+                            append("Evidence index: ").append(pick.optInt("evidence_index")).append("/100")
+                            if (edgeType == "elo_rating") {
+                                val ratingEdge = pick.optInt("rating_edge_points")
+                                append(" • Elo edge: ").append(if (ratingEdge > 0) "+" else "").append(ratingEdge).append(" points\n")
+                                append("Historical Elo: home ").append(pick.optString("home_rating", "n/a"))
+                                    .append(" • away ").append(pick.optString("away_rating", "n/a"))
+                                    .append(" • archive ").append(pick.optInt("historical_match_count")).append(" matches\n")
+                            } else {
+                                append(" • Form edge: ").append(pick.optString("form_edge_pct", "n/a")).append("%\n")
+                                append("Recent form: home ").append(pick.optString("home_form", "n/a")).append(" • away ").append(pick.optString("away_form", "n/a")).append("\n")
+                            }
+                            append("Why: ").append(pick.optString("reason", "No additional reason supplied.")).append("\n")
                             append("Kick-off: ").append(pick.optString("commence_time", "not listed"))
                         }
                         val title = (index + 1).toString() + ". " + away + " vs " + home
