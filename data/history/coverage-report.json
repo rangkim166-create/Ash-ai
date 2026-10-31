@@ -1,9 +1,13 @@
 {
-  "generated_at_utc": "2026-10-31T16:01:54.044200+00:00",
+  "generated_at_utc": "2026-10-31T16:17:06.889327+00:00",
   "completeness": "best_effort_not_exhaustive",
   "summary": {
-    "total_matches": 1754371,
+    "total_matches": 1776261,
     "by_sport": [
+      {
+        "sport": "basketball",
+        "matches": 21890
+      },
       {
         "sport": "football",
         "matches": 1392800
@@ -13,7 +17,7 @@
         "matches": 361571
       }
     ],
-    "competition_groups": 11096,
+    "competition_groups": 11100,
     "reported_competitions": 500,
     "competition_counts_truncated": true
   },
@@ -296,6 +300,13 @@
       "matches": 22521,
       "first_date": "1919-08-31",
       "last_date": "2025-09-21"
+    },
+    {
+      "sport": "basketball",
+      "competition": "NBA regular season",
+      "matches": 20429,
+      "first_date": "2009-10-27",
+      "last_date": "2026-10-30"
     },
     {
       "sport": "football",
@@ -1899,6 +1910,13 @@
       "matches": 1424,
       "first_date": "20021014",
       "last_date": "20260422"
+    },
+    {
+      "sport": "basketball",
+      "competition": "NBA playoffs",
+      "matches": 1421,
+      "first_date": "2010-04-17",
+      "last_date": "2026-06-13"
     },
     {
       "sport": "tennis",
@@ -3719,23 +3737,99 @@
       "matches": 380,
       "first_date": "2025-08-15",
       "last_date": "2026-05-24"
-    },
-    {
-      "sport": "football",
-      "competition": "French Ligue 1 2014/15",
-      "matches": 380,
-      "first_date": "2014-08-08",
-      "last_date": "2015-05-23"
-    },
-    {
-      "sport": "football",
-      "competition": "French Ligue 1 2015/16",
-      "matches": 380,
-      "first_date": "2015-08-07",
-      "last_date": "2016-05-14"
     }
   ],
   "match_counts_by_sport_and_year": [
+    {
+      "sport": "basketball",
+      "year": "2010",
+      "matches": 1312
+    },
+    {
+      "sport": "basketball",
+      "year": "2011",
+      "matches": 1311
+    },
+    {
+      "sport": "basketball",
+      "year": "2012",
+      "matches": 1074
+    },
+    {
+      "sport": "basketball",
+      "year": "2013",
+      "matches": 1314
+    },
+    {
+      "sport": "basketball",
+      "year": "2014",
+      "matches": 1319
+    },
+    {
+      "sport": "basketball",
+      "year": "2015",
+      "matches": 1311
+    },
+    {
+      "sport": "basketball",
+      "year": "2016",
+      "matches": 1316
+    },
+    {
+      "sport": "basketball",
+      "year": "2017",
+      "matches": 1309
+    },
+    {
+      "sport": "basketball",
+      "year": "2018",
+      "matches": 1312
+    },
+    {
+      "sport": "basketball",
+      "year": "2019",
+      "matches": 1312
+    },
+    {
+      "sport": "basketball",
+      "year": "2020",
+      "matches": 1143
+    },
+    {
+      "sport": "basketball",
+      "year": "2021",
+      "matches": 1171
+    },
+    {
+      "sport": "basketball",
+      "year": "2022",
+      "matches": 1323
+    },
+    {
+      "sport": "basketball",
+      "year": "2023",
+      "matches": 1320
+    },
+    {
+      "sport": "basketball",
+      "year": "2024",
+      "matches": 1319
+    },
+    {
+      "sport": "basketball",
+      "year": "2025",
+      "matches": 1321
+    },
+    {
+      "sport": "basketball",
+      "year": "2026",
+      "matches": 1322
+    },
+    {
+      "sport": "basketball",
+      "year": "2027",
+      "matches": 81
+    },
     {
       "sport": "football",
       "year": "1888",
@@ -4728,10 +4822,12 @@
     }
   ],
   "pipeline_metadata": {
-    "built_at_utc": "2026-10-31T16:00:32.634288+00:00",
+    "built_at_utc": "2026-10-31T16:15:12.852545+00:00",
     "total_matches": "416052",
     "counts_by_sport": "{\"football\": 54481, \"tennis\": 361571}",
     "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
+    "nba_team_results_imported": "21890",
+    "nba_team_results_skipped": "1588",
     "global_football_matches_imported": "1296462",
     "global_football_duplicates_or_penalties_skipped": "7062",
     "global_football_invalid_rows": "5977",
