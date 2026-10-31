@@ -2,7 +2,7 @@ name: Build Ash Jarvis APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, ash-neon-backend]
     paths:
       - "app/**"
       - "*.gradle.kts"
@@ -43,6 +43,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ash-jarvis-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
           retention-days: 30

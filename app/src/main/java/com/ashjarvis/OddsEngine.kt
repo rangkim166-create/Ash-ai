@@ -241,6 +241,47 @@ object OddsEngine {
         return db.list("match", 10000)
     }
 
+    fun loadBackendSports(): JSONArray {
+        val payload = requestJson("https://ash-sports-api.onrender.com/v1/public/odds/sports").first
+        return payload.optJSONArray("data") ?: JSONArray()
+    }
+
+    fun syncFromBackend(context: Context): SyncResult {
+        val payload = requestJson("https://ash-sports-api.onrender.com/v1/public/odds/events").first
+        val events = payload.optJSONArray("data") ?: JSONArray()
+        val old = history(context)
+        val byId = linkedMapOf<String, JSONObject>()
+        for (i in 0 until old.length()) {
+            val item = old.optJSONObject(i) ?: continue
+            val id = item.optString("id")
+            if (id.isNotBlank()) byId[id] = item
+        }
+        var found = 0
+        var added = 0
+        val errors = mutableListOf<String>()
+        for (i in 0 until events.length()) {
+            val event = events.optJSONObject(i) ?: continue
+            val id = event.optString("id")
+            if (id.isBlank()) continue
+            val prior = byId[id]
+            val sportKey = event.optString("sport_key")
+            val sportTitle = event.optString("sport_title")
+            val summary = summarize(event, sportKey, sportTitle, Instant.now().toString(), prior)
+            if (prior == null) added++
+            byId[id] = summary
+            LocalSportsDatabase.get(context).put("match", id, summary)
+            found++
+        }
+        val sorted = byId.values.sortedByDescending { it.optString("last_seen") }
+        val cache = JSONArray()
+        sorted.take(1000).forEach { cache.put(it) }
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(HISTORY_KEY, cache.toString())
+            .putString("odds_last_sync", Instant.now().toString())
+            .apply()
+        return SyncResult(found, added, 0, errors, null)
+    }
+
     fun sync(context: Context, apiKey: String): SyncResult {
         val allSports = loadSports(apiKey)
         val active = (0 until allSports.length()).mapNotNull { allSports.optJSONObject(it) }

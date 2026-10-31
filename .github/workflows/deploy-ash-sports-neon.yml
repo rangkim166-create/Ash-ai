@@ -1,0 +1,95 @@
+name: Deploy Ash Sports Neon Function
+
+on:
+  push:
+    branches: [ash-neon-backend]
+    paths:
+      - "neon-functions/ashsports/**"
+      - ".github/workflows/deploy-ash-sports-neon.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      NEON_PROJECT_ID: ancient-block-46823136
+      NEON_BRANCH_ID: br-mute-waterfall-a557thwv
+      FUNCTION_SLUG: ashsports
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: neon-functions/ashsports/package.json
+      - name: Require deployment credential
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+        run: |
+          if [ -z "$NEON_API_KEY" ]; then
+            echo "::error::Add NEON_API_KEY in GitHub repository Settings > Secrets and variables > Actions, then rerun this workflow."
+            exit 1
+          fi
+      - name: Build deployable ZIP
+        working-directory: neon-functions/ashsports
+        run: |
+          npm install --no-audit --no-fund
+          node --check index.mjs
+          npx esbuild index.mjs --bundle --platform=node --target=node24 --format=esm --minify --legal-comments=none --outfile=dist/index.mjs
+          node --check dist/index.mjs
+          cd dist
+          zip -9 -j function.zip index.mjs
+          unzip -t function.zip
+      - name: Deploy ZIP with official Neon SDK (multipart binary upload)
+        working-directory: neon-functions/ashsports
+        env:
+          NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+          NEON_PROJECT_ID: ${{ env.NEON_PROJECT_ID }}
+          NEON_BRANCH_ID: ${{ env.NEON_BRANCH_ID }}
+          FUNCTION_SLUG: ${{ env.FUNCTION_SLUG }}
+        run: |
+          npm install --no-save @neon/sdk
+          cat > deploy.mjs <<'EOF'
+          import { readFile } from "node:fs/promises";
+          import { createNeonClient } from "@neon/sdk";
+
+          const neon = createNeonClient({
+            apiKey: process.env.NEON_API_KEY,
+            throwOnError: true,
+          });
+          const bytes = await readFile("dist/function.zip");
+          const zip = new File([bytes], "function.zip", { type: "application/zip" });
+
+          const deployment = await neon.functions.deploy({
+            projectId: process.env.NEON_PROJECT_ID,
+            branchId: process.env.NEON_BRANCH_ID,
+            slug: process.env.FUNCTION_SLUG,
+            zip,
+            runtime: "nodejs24",
+          });
+          console.log("Deployment accepted:", JSON.stringify(deployment));
+
+          for (let i = 0; i < 30; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 10000));
+            const current = await neon.functions.get({
+              projectId: process.env.NEON_PROJECT_ID,
+              branchId: process.env.NEON_BRANCH_ID,
+              slug: process.env.FUNCTION_SLUG,
+            });
+            const status = current.current_deployment?.status;
+            console.log("Deployment status:", status || "pending");
+            if (status === "completed") {
+              console.log("Invocation URL:", current.invocation_url);
+              process.exit(0);
+            }
+            if (status === "failed") {
+              console.error("Neon deployment failed:", JSON.stringify(current.current_deployment));
+              process.exit(1);
+            }
+          }
+          throw new Error("Timed out waiting for Neon deployment readiness.");
+          EOF
+          node deploy.mjs
