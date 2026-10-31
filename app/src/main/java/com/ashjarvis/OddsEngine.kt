@@ -271,6 +271,7 @@ object OddsEngine {
         }
         var found = 0
         var added = 0
+        var checkedSports = 0
         var remaining: String? = null
         val errors = mutableListOf<String>()
         val requestDay = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
@@ -286,6 +287,7 @@ object OddsEngine {
             val sportKey = sport.optString("key")
             try {
                 requestsUsed++
+                checkedSports++
                 prefs.edit().putInt("ash_odds_request_count", requestsUsed).apply()
                 val key = URLEncoder.encode(apiKey, "UTF-8")
                 val sportParam = URLEncoder.encode(sportKey, "UTF-8")
@@ -322,7 +324,7 @@ object OddsEngine {
         sorted.take(1000).forEach { cache.put(it) }
         prefs.edit().putString(HISTORY_KEY, cache.toString()).putString("odds_last_sync", Instant.now().toString()).apply()
         if (found == 0 && errors.isNotEmpty()) throw IllegalStateException(errors.take(3).joinToString("\n"))
-        return SyncResult(found, added, sports.size, errors, remaining)
+        return SyncResult(found, added, checkedSports, errors, remaining)
     }
 
     fun savedDailyPicks(context: Context): JSONArray {
