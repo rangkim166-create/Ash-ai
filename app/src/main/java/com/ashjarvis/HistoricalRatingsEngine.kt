@@ -7,6 +7,7 @@ import java.net.URL
 import java.time.Instant
 import java.text.Normalizer
 import java.util.Locale
+import java.util.zip.GZIPInputStream
 
 /**
  * Downloads the published historical Elo snapshot and caches individual ratings
@@ -74,14 +75,31 @@ object HistoricalRatingsEngine {
                 connectTimeout = 12000
                 readTimeout = 30000
                 setRequestProperty("Accept", "application/json")
+                setRequestProperty("Accept-Encoding", "gzip")
                 setRequestProperty("User-Agent", "AshJarvis-Android/1.0")
                 setRequestProperty("Cache-Control", "no-cache")
+                meta?.optString("etag")?.takeIf { it.isNotBlank() }?.let { setRequestProperty("If-None-Match", it) }
             }
+            val responseEtag: String?
+            val responseLastModified: String?
             val root = try {
                 val code = connection.responseCode
-                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
+                if (code == HttpURLConnection.HTTP_NOT_MODIFIED && meta != null) {
+                    val checked = Instant.now().toString()
+                    db.put(META_TYPE, META_KEY, JSONObject(meta.toString()).put("checked_at", checked))
+                    return RefreshResult(false, generatedAt,
+                        meta.optJSONObject("match_counts") ?: JSONObject(),
+                        meta.optJSONObject("participant_counts") ?: JSONObject(),
+                        "Historical ratings are unchanged; using the cached snapshot.")
+                }
+                val rawStream = if (code in 200..299) connection.inputStream else connection.errorStream
+                val stream = if (connection.contentEncoding.equals("gzip", ignoreCase = true) && rawStream != null) {
+                    GZIPInputStream(rawStream)
+                } else rawStream
                 val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
                 if (code !in 200..299) throw IllegalStateException("Historical ratings HTTP $code: ${body.take(180)}")
+                responseEtag = connection.getHeaderField("ETag")
+                responseLastModified = connection.getHeaderField("Last-Modified")
                 JSONObject(body)
             } finally {
                 connection.disconnect()
@@ -126,8 +144,11 @@ object HistoricalRatingsEngine {
                 .put("schema_version", root.optInt("schema_version"))
                 .put("match_counts", matchCounts)
                 .put("participant_counts", participantCounts)
+                .put("recent_form_window_days", root.optInt("recent_form_window_days"))
                 .put("participant_records_cached", batch.size)
                 .put("source_url", SOURCE_URL)
+            responseEtag?.let { newMeta.put("etag", it) }
+            responseLastModified?.let { newMeta.put("last_modified", it) }
             db.put(META_TYPE, META_KEY, newMeta)
             RefreshResult(true, snapshotTime, matchCounts, participantCounts,
                 "Updated ${batch.size} participant ratings from the published historical results.")
