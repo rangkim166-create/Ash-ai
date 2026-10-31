@@ -244,11 +244,11 @@ object OddsEngine {
                     ?: active.firstOrNull(predicate)
                 match?.optString("key")?.takeIf { it.isNotBlank() }?.let(chosen::add)
             }
-            pick({ it.optString("group").contains("soccer", true) || it.optString("title").contains("Premier League", true) },
+            pick({ it.optString("key").startsWith("soccer_") || it.optString("group").contains("soccer", true) || it.optString("title").contains("Premier League", true) },
                 listOf("soccer_epl", "soccer_uefa_champs_league", "soccer_spain_la_liga"))
-            pick({ it.optString("group").contains("basket", true) || it.optString("title").contains("basket", true) },
+            pick({ it.optString("key").startsWith("basketball_") || it.optString("group").contains("basket", true) || it.optString("title").contains("basket", true) },
                 listOf("basketball_nba"))
-            pick({ it.optString("group").contains("tennis", true) || it.optString("title").contains("tennis", true) }, emptyList())
+            pick({ it.optString("key").startsWith("tennis_") || it.optString("group").contains("tennis", true) || it.optString("title").contains("tennis", true) }, emptyList())
             prefs.edit().putString(FAVORITES_KEY, chosen.joinToString(",")).apply()
             chosen
         }
