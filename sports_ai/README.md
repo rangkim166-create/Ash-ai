@@ -30,7 +30,7 @@ The database is built on the GitHub Actions runner and attached as an artifact; 
 
 Ash now keeps a prioritized league profile in `sports_ai/league_profiles.json`. The first data-quality priorities are the English Premier League, Championship, Bundesliga, La Liga, Serie A, Ligue 1, Eredivisie, Primeira Liga and Scottish Premiership because public historical results are relatively discoverable. This is a data-coverage priority, not a claim that matches are easy to predict.
 
-The workflow also downloads the public-domain OpenFootball world archive using `sports_ai/collect_arab_football.py`. It targets African/Asian league data including Egypt, Morocco and Algeria where present. The archive is currently preserved and inventoried separately; its text files are **not yet normalized into the match database**, so Ash must not claim those matches are already included in its ratings. Saudi Pro League, Qatar Stars League and UAE Pro League still need a verified, legally usable source before their history can be advertised as available.
+The workflow also downloads the public-domain OpenFootball world archive using `sports_ai/collect_arab_football.py`. It targets African/Asian league data including Egypt, Morocco and Algeria where present. The archive is preserved and inventoried separately. A conservative Football.TXT parser now normalizes dated, completed results from regional text files into the match database; it skips unclear dates, unscored fixtures and ambiguous score lines. Coverage is only confirmed after the history workflow succeeds and the coverage report shows non-zero counts for a target league. Saudi Pro League, Qatar Stars League and UAE Pro League still need a verified, legally usable source before their history can be advertised as available.
 
 For recommendations, Ash should prefer leagues with a large recent sample, verified fixtures, stable data coverage and probabilities validated on held-out past seasons. It must show low/medium/high confidence and missing-data warnings rather than call any match a sure win. A popular league is not necessarily easier to predict, and odds can already reflect public information.
 
@@ -53,7 +53,7 @@ The data pipeline must never describe itself as literally complete: no public so
 The daily GitHub Actions job now attempts these additional imports:
 
 - A global ODC-BY football results dataset containing 1.2M+ match records across 207 domestic leagues and 20 international competitions, reported upstream from 1888–2023. Attribution is retained; old records may contain errors and team identities may vary.
-- OpenFootball's world archive for regional football text files. The parser imports only score lines it can recognize; the audit report lists target leagues that were not detected.
+- OpenFootball's world archive for regional football text files. The parser imports only clearly dated, completed score lines it can recognize; parser unit tests run in CI and the audit report lists target leagues that were not detected.
 - Saudi Pro League CSV archive where available. Its upstream reuse licence is unclear, so treat it as research-only until permission is confirmed.
 - NBA, EuroLeague, EuroCup, ABA League and Slovenian league parquet tables where available. Their upstream reuse licence is also unclear; do not redistribute commercially without permission.
 - A coverage audit in `data/history/coverage-report.json` records imported match counts, competitions/seasons and Arab league targets not found.
