@@ -66,10 +66,13 @@ async function runScheduledDailyPublisher(){
   picks_count integer NOT NULL DEFAULT 0,
   attempts integer NOT NULL DEFAULT 0,
   message_preview text,
+  message_text text,
+  picks_json jsonb NOT NULL DEFAULT '[]'::jsonb,
   error_summary text,
   started_at timestamptz NOT NULL DEFAULT now(),
   sent_at timestamptz
  )`);
+ await db.query("ALTER TABLE ash_daily_publications ADD COLUMN IF NOT EXISTS message_text text, ADD COLUMN IF NOT EXISTS picks_json jsonb NOT NULL DEFAULT '[]'::jsonb");
  const prior=await db.query("SELECT status,started_at FROM ash_daily_publications WHERE local_date=$1::date",[localDay]);
  if(prior.rowCount&&prior.rows[0].status==="sent")return{sent:false,skipped:true,reason:"already_sent_today",localDate:localDay};
  if(prior.rowCount&&prior.rows[0].status==="sending"&&Date.now()-new Date(prior.rows[0].started_at).getTime()<20*60*1000)return{sent:false,skipped:true,reason:"publish_already_running",localDate:localDay};
@@ -80,13 +83,13 @@ async function runScheduledDailyPublisher(){
   const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND source='the_odds_api' AND starts_at>now() AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 250");
   const fixtures=fixturesResult.rows;
   if(!fixtures.length){
-   await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,error_summary=$2 WHERE local_date=$1::date",[localDay,"No upcoming bookmaker fixtures are available yet."]);
+   await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No upcoming bookmaker fixtures are available yet."]);
    return{sent:false,reason:"no_upcoming_fixtures",collection,localDate:localDay};
   }
   const ids=fixtures.map(row=>row.id);
   const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND observed_at>now()-interval '24 hours' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
   if(!oddsResult.rows.length){
-   await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,error_summary=$2 WHERE local_date=$1::date",[localDay,"No fresh head-to-head bookmaker prices are available."]);
+   await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No fresh head-to-head bookmaker prices are available."]);
    return{sent:false,reason:"no_fresh_bookmaker_odds",collection,localDate:localDay};
   }
   const formResult=await db.query(`WITH upcoming AS(
@@ -112,13 +115,15 @@ async function runScheduledDailyPublisher(){
   const picks=selectDailyPicks(fixtures,oddsResult.rows,formResult.rows,{now:new Date(),maxPicks:3});
   const dayLabel=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",day:"2-digit",month:"short",year:"numeric"}).format(new Date());
   const message=formatDailyPicks(dayLabel,picks);
+  // Persist the complete ticket and structured selections even before Telegram is configured.
+  await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,picks.length,message.slice(0,500),message,JSON.stringify(picks)]);
   const bot=await read("telegram_bot");
   if(!bot?.botToken||!bot?.chatId){
-   await db.query("UPDATE ash_daily_publications SET status='waiting_for_telegram_config',picks_count=$2,message_preview=$3,error_summary=$4 WHERE local_date=$1::date",[localDay,picks.length,message.slice(0,500),"Telegram bot token and chat ID are not configured."]);
+   await db.query("UPDATE ash_daily_publications SET status='waiting_for_telegram_config',error_summary=$2 WHERE local_date=$1::date",[localDay,"Telegram bot token and chat ID are not configured."]);
    return{sent:false,reason:"telegram_not_configured",picks:picks.length,localDate:localDay};
   }
   const delivery=await telegram(message);
-  await db.query("UPDATE ash_daily_publications SET status='sent',picks_count=$2,message_preview=$3,error_summary=NULL,sent_at=now() WHERE local_date=$1::date",[localDay,picks.length,message.slice(0,500)]);
+  await db.query("UPDATE ash_daily_publications SET status='sent',error_summary=NULL,sent_at=now() WHERE local_date=$1::date",[localDay]);
   return{sent:true,picks:picks.length,localDate:localDay,delivery,collection};
  }catch(error){
   const detail=String(error?.message||error).slice(0,300);
@@ -153,6 +158,10 @@ const books=byMatch.get(row.id);
 return {id:row.id,sport_key:String(row.id).split(":")[0],sport_title:row.competition,home_team:row.home_or_player_one,away_team:row.away_or_player_two,commence_time:row.starts_at,bookmakers:books?[...books.values()].map(b=>({key:b.key,title:b.title,markets:[...b.markets.values()]})):[]};
 });
 return reply({data,observedAt:new Date().toISOString()});
+}
+if(p==="/v1/public/odds/daily"&&req.method==="GET"){
+const daily=await db.query("SELECT local_date,status,picks_count,picks_json,message_text,sent_at,started_at FROM ash_daily_publications WHERE local_date=(now() AT TIME ZONE 'Africa/Kampala')::date LIMIT 1");
+return reply({daily:daily.rows[0]||null});
 }
 
 if(p==="/v1/public/history/summary"&&req.method==="GET"){
