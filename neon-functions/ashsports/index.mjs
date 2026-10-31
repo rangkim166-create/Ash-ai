@@ -27,7 +27,7 @@ async function collectOdds(maxSports=8){
  if(last.rowCount){
   const prior=last.rows[0];
   const age=Date.now()-new Date(prior.started_at).getTime();
-  const cooldown=prior.status==="failed"?60*1000:prior.status==="partial"?5*60*1000:prior.status==="running"?10*60*1000:3*60*60*1000;
+  const cooldown=prior.status==="failed"?60*1000:prior.status==="partial"?5*60*1000:prior.status==="running"?5*60*1000:3*60*60*1000;
   if(Number.isFinite(age)&&age<cooldown)return{skipped:true,reason:"recent_scout_run",lastStatus:prior.status,lastStartedAt:prior.started_at};
   // A process can restart while a provider request is in flight. Recover stale
   // "running" rows after the maximum expected collection window so scouting resumes.
