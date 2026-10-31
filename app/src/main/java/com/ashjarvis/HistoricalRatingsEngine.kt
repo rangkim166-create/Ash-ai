@@ -117,9 +117,7 @@ object HistoricalRatingsEngine {
                 .put("source_url", SOURCE_URL)
             db.put(META_TYPE, META_KEY, newMeta)
             RefreshResult(true, snapshotTime, matchCounts, participantCounts,
-                "Updated ${
-                    batch.size
-                } participant ratings from the published historical results.")
+                "Updated ${batch.size} participant ratings from the published historical results.")
         } catch (error: Exception) {
             RefreshResult(
                 false, generatedAt,
