@@ -304,6 +304,10 @@ class SportsOddsActivity : Activity() {
                 "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nFirst discovered: ${event.optString("first_seen")}\nLast checked: ${event.optString("last_seen")}\nOdds snapshots stored: ${snapshots.length()}\nTap to research match history online") { researchMatch(event) }
         }
         status.text = "History is stored locally on this device • ${history.length()} games"
+        card("ONLINE HISTORICAL DATA • POWERED BY SPORTScore",
+            "When Ash researches a match, it searches SportScore for both teams/players, fetches available past and upcoming fixtures, and saves returned records in SQLite. Historical coverage depends on the source; missing seasons are never invented. Data source: sportscore.com") {
+            startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://sportscore.com/")))
+        }
         body.addView(button("IMPORT HISTORICAL CSV (2000–2026)") { chooseHistoricalImport() })
         body.addView(button("CLEAR MATCH HISTORY") {
             AlertDialog.Builder(this).setTitle("Clear collected history?")
@@ -416,12 +420,46 @@ class SportsOddsActivity : Activity() {
         status.text = "Ash is researching team form, squads, player profiles and current news…"
         scope.launch {
             try {
-                val report = withContext(Dispatchers.IO) {
-                    OddsEngine.researchMatch(
+                val collected = withContext(Dispatchers.IO) {
+                    val history = runCatching {
+                        HistoricalDataEngine.collectMatchHistory(
+                            this@SportsOddsActivity,
+                            event.optString("home_team"),
+                            event.optString("away_team"),
+                            event.optString("sport_title")
+                        )
+                    }.getOrNull()
+                    val report = OddsEngine.researchMatch(
                         event.optString("home_team"),
                         event.optString("away_team"),
                         event.optString("sport_title")
                     )
+                    history to report
+                }
+                val historyCollection = collected.first
+                val report = collected.second
+                if (historyCollection != null) {
+                    listOf(
+                        "home" to historyCollection.home,
+                        "away" to historyCollection.away
+                    ).forEach { side ->
+                        val label = side.first
+                        val teamHistory = HistoricalDataEngine.teamHistory(
+                            this@SportsOddsActivity,
+                            side.second.teamName,
+                            event.optString("sport_title"),
+                            100
+                        )
+                        report.put("${label}_historical_results", teamHistory)
+                        report.put("${label}_historical_source", side.second.source)
+                        report.put("${label}_historical_records_saved", side.second.recordsSaved)
+                        report.put("${label}_historical_checked_at", side.second.checkedAt)
+                    }
+                    val sourceList = report.optJSONArray("sources") ?: JSONArray()
+                    if ((0 until sourceList.length()).none { sourceList.optString(it).contains("SportScore") }) {
+                        sourceList.put("SportScore historical fixtures API")
+                    }
+                    report.put("sources", sourceList)
                 }
                 val eventId = event.optString("id")
                 val memory = LocalSportsDatabase.get(this@SportsOddsActivity)
