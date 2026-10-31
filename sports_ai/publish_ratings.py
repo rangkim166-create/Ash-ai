@@ -47,6 +47,11 @@ def main():
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "model": "Chronological Elo baseline; equal starting ratings; K=24; no injuries, lineups, surface or venue adjustments",
         "match_counts": counts,
+        "data_license_notes": {
+            "football": "OpenFootball datasets are CC0; the global football-data archive is ODC-BY 1.0 and requires attribution.",
+            "tennis": "Jeff Sackmann ATP/WTA results are CC BY-NC-SA 4.0: non-commercial use only, attribution and share-alike required.",
+            "basketball": "NBA team-game results are derived from the Shufinskiy archive; retain its applicable Apache-2.0 notice and attribution."
+        },
         "participant_counts": {sport: len(table) for sport, table in ratings.items()},
         "appearances": {
             sport: {name: played for name, played in sorted(table.items())}
