@@ -470,6 +470,12 @@ object OddsEngine {
             price < 10.0 -> "5.00–9.99"
             else -> "10+"
         }
+        fun sportCategory(event: JSONObject): String = when {
+            event.optString("sport_key").startsWith("soccer_") || event.optString("sport_title").contains("football", true) || event.optString("sport_title").contains("soccer", true) -> "Football"
+            event.optString("sport_key").startsWith("basketball_") || event.optString("sport_title").contains("basket", true) -> "Basketball"
+            event.optString("sport_key").startsWith("tennis_") || event.optString("sport_title").contains("tennis", true) -> "Tennis"
+            else -> event.optString("sport_title", "Other")
+        }
 
         val ranked = candidates.mapNotNull { event ->
             val homeRows = event.optJSONArray("research_home_recent")
@@ -490,7 +496,7 @@ object OddsEngine {
             val books = event.optInt("candidate_bookmakers")
             val price = event.optDouble("candidate_price", 0.0)
             val flags = event.optJSONArray("research_availability_flags")?.length() ?: 0
-            val segmentKey = "${event.optString("sport_title")}|${oddsBand(price)}"
+            val segmentKey = "${sportCategory(event)}|${oddsBand(price)}"
             val pastSegment = experienceSegments.optJSONObject(segmentKey)
             val pastSettled = pastSegment?.optInt("settled") ?: 0
             val pastYield = pastSegment?.optDouble("yield_pct", 0.0) ?: 0.0
@@ -526,8 +532,8 @@ object OddsEngine {
                 add("selected side's recency-weighted win-rate edge: %.1f percentage points".format(java.util.Locale.US, edge * 100.0))
                 add("recent form: ${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L vs ${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
                 if (price >= 5.0) add("high-variance price band; stricter sample and bookmaker requirements applied")
-                if (pastSettled >= 30) add("Ash's tracked history in this sport/odds band: $pastSettled settled tips, ${"%.1f".format(java.util.Locale.US, pastYield)}% yield")
-                else add("Ash has $pastSettled/30 settled tips in this sport/odds band; experience adjustment not yet enabled")
+                if (pastSettled >= 30) add("Ash's tracked ${sportCategory(event)} history in this odds band: $pastSettled settled tips, ${"%.1f".format(java.util.Locale.US, pastYield)}% yield")
+                else add("Ash has $pastSettled/30 settled ${sportCategory(event)} tips in this odds band; experience adjustment not yet enabled")
                 if (flags > 0) add("possible team/player availability news needs manual confirmation")
             }.joinToString("; ")
 
