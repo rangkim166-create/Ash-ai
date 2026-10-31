@@ -19,4 +19,25 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: "internal_server_error" }));
   }
 });
-server.listen(port, "0.0.0.0", () => console.log(`Ash Sports API listening on ${port}`));
+server.listen(port, "0.0.0.0", () => {
+  console.log(`Ash Sports API listening on ${port}`);
+  const runDailyScout = async () => {
+    if (!process.env.ASH_APP_TOKEN || !process.env.THE_ODDS_API_KEY) {
+      console.log("[ash-scout] skipped: app token or Odds API key is not configured");
+      return;
+    }
+    try {
+      const request = new Request(`http://127.0.0.1:${port}/v1/odds/collect`, {
+        method: "POST",
+        headers: { authorization: "Bearer " + process.env.ASH_APP_TOKEN, "content-type": "application/json" },
+        body: JSON.stringify({ maxSports: 6 })
+      });
+      const response = await handler.fetch(request);
+      console.log("[ash-scout] daily collection", response.status, await response.text());
+    } catch (error) {
+      console.error("[ash-scout] daily collection failed", error);
+    }
+  };
+  setTimeout(() => void runDailyScout(), 20000).unref();
+  setInterval(() => void runDailyScout(), 24 * 60 * 60 * 1000).unref();
+});
