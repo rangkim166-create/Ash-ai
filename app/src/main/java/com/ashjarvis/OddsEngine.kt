@@ -462,6 +462,15 @@ object OddsEngine {
             return FormSummary(valid.size, if (weightTotal > 0.0) weighted / weightTotal else 0.0, wins, losses, draws)
         }
 
+        val experienceSegments = TipResultsTracker.stats(context, 3650).optJSONObject("performance_segments") ?: JSONObject()
+        fun oddsBand(price: Double): String = when {
+            price < 2.0 -> "1.50–1.99"
+            price < 3.0 -> "2.00–2.99"
+            price < 5.0 -> "3.00–4.99"
+            price < 10.0 -> "5.00–9.99"
+            else -> "10+"
+        }
+
         val ranked = candidates.mapNotNull { event ->
             val homeRows = event.optJSONArray("research_home_recent")
             val awayRows = event.optJSONArray("research_away_recent")
@@ -481,6 +490,12 @@ object OddsEngine {
             val books = event.optInt("candidate_bookmakers")
             val price = event.optDouble("candidate_price", 0.0)
             val flags = event.optJSONArray("research_availability_flags")?.length() ?: 0
+            val segmentKey = "${event.optString("sport_title")}|${oddsBand(price)}"
+            val pastSegment = experienceSegments.optJSONObject(segmentKey)
+            val pastSettled = pastSegment?.optInt("settled") ?: 0
+            val pastYield = pastSegment?.optDouble("yield_pct", 0.0) ?: 0.0
+            // Only let long-run experience influence ranking after at least 30 settled tips in this segment.
+            val experienceAdjustment = if (pastSettled >= 30) (pastYield / 5.0).toInt().coerceIn(-8, 8) else 0
 
             // Sport-neutral win-rate comparison; high-odds selections need more evidence.
             val highRisk = price >= 5.0
@@ -502,14 +517,17 @@ object OddsEngine {
                 price >= 3.0 -> 6
                 else -> 0
             }
-            val evidenceIndex = (minOf(books, 8) * 6 + formDepth * 2 + edgePoints +
+            val baseEvidenceIndex = (minOf(books, 8) * 6 + formDepth * 2 + edgePoints +
                 (if (flags == 0) 8 else 0) - oddsRiskPenalty).coerceIn(0, 100)
+            val evidenceIndex = (baseEvidenceIndex + experienceAdjustment).coerceIn(0, 100)
             val reason = buildList {
                 add("$books bookmakers return this selection")
                 add("recent results available for both teams ($homePlayed home-team records, $awayPlayed away-team records)")
                 add("selected side's recency-weighted win-rate edge: %.1f percentage points".format(java.util.Locale.US, edge * 100.0))
                 add("recent form: ${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L vs ${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
                 if (price >= 5.0) add("high-variance price band; stricter sample and bookmaker requirements applied")
+                if (pastSettled >= 30) add("Ash's tracked history in this sport/odds band: $pastSettled settled tips, ${"%.1f".format(java.util.Locale.US, pastYield)}% yield")
+                else add("Ash has $pastSettled/30 settled tips in this sport/odds band; experience adjustment not yet enabled")
                 if (flags > 0) add("possible team/player availability news needs manual confirmation")
             }.joinToString("; ")
 
@@ -536,6 +554,9 @@ object OddsEngine {
                 .put("home_form", "${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L")
                 .put("away_form", "${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
                 .put("form_method", "Recency-weighted win rate over up to 10 verified team/player results; draws count as half")
+                .put("experience_adjustment", experienceAdjustment)
+                .put("experience_sample", pastSettled)
+                .put("experience_yield_pct", if (pastSettled >= 30) pastYield else JSONObject.NULL)
                 .put("research_has_results", homePlayed > 0 && awayPlayed > 0)
                 .put("home_profile", event.optJSONObject("research_home_profile") ?: JSONObject())
                 .put("away_profile", event.optJSONObject("research_away_profile") ?: JSONObject())
