@@ -129,6 +129,15 @@ object OddsEngine {
         }
 
         val event = candidates.first()
+        val requestDay = prefs.getString("ash_odds_request_day", null)
+        var requestsUsed = if (requestDay == day) prefs.getInt("ash_odds_request_count", 0) else 0
+        if (requestsUsed >= 14) {
+            prefs.edit().putString("ash_odd_even_checked_date", day).apply()
+            db.put("daily_odd_even", day, JSONObject().put("date", day).put("status", "daily_request_cap_reached"))
+            return null
+        }
+        requestsUsed++
+        prefs.edit().putString("ash_odds_request_day", day).putInt("ash_odds_request_count", requestsUsed).apply()
         return try {
             val payload = checkOddEven(apiKey, event.optString("sport_key"), event.optString("id"))
             val eventData = payload.optJSONArray("data")?.optJSONObject(0)
@@ -264,9 +273,20 @@ object OddsEngine {
         var added = 0
         var remaining: String? = null
         val errors = mutableListOf<String>()
+        val requestDay = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
+        if (prefs.getString("ash_odds_request_day", null) != requestDay) {
+            prefs.edit().putString("ash_odds_request_day", requestDay).putInt("ash_odds_request_count", 0).apply()
+        }
+        var requestsUsed = prefs.getInt("ash_odds_request_count", 0)
         for (sport in sports) {
+            if (requestsUsed >= 13) {
+                errors.add("Daily odds-request safety cap reached (13 market requests). Refresh tomorrow to protect the monthly quota.")
+                break
+            }
             val sportKey = sport.optString("key")
             try {
+                requestsUsed++
+                prefs.edit().putInt("ash_odds_request_count", requestsUsed).apply()
                 val key = URLEncoder.encode(apiKey, "UTF-8")
                 val sportParam = URLEncoder.encode(sportKey, "UTF-8")
                 val url = "$BASE/sports/$sportParam/odds/?apiKey=$key&regions=uk,eu&markets=h2h&oddsFormat=decimal"
