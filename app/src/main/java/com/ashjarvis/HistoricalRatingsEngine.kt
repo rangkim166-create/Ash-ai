@@ -81,7 +81,7 @@ object HistoricalRatingsEngine {
             } finally {
                 connection.disconnect()
             }
-            require(root.optInt("schema_version") >= 2) { "Historical ratings file is an unsupported schema version." }
+            require(root.optInt("schema_version") >= 3) { "Historical ratings file is an unsupported schema version." }
             val ratings = root.optJSONObject("ratings") ?: throw IllegalStateException("Ratings section missing.")
             val appearances = root.optJSONObject("appearances") ?: throw IllegalStateException("Sample counts missing.")
             val recentFormRoot = root.optJSONObject("recent_form") ?: JSONObject()
