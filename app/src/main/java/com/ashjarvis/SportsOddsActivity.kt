@@ -143,7 +143,7 @@ class SportsOddsActivity : Activity() {
                 .setMessage(picksText)
                 .setPositiveButton("OK", null).show()
         }
-        showAccumulatorTargets(candidates)
+        showAccumulatorTargets(dailyPicks)
         val oddEvenDay = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
         val oddEvenRecord = LocalSportsDatabase.get(this).get("daily_odd_even", oddEvenDay)
         val oddEvenTip = oddEvenRecord?.optJSONObject("tip")
@@ -212,50 +212,56 @@ class SportsOddsActivity : Activity() {
         body.addView(actions, 0)
     }
 
-    private fun showAccumulatorTargets(candidates: List<JSONObject>) {
+    private fun showAccumulatorTargets(researchedPicks: JSONArray) {
         val targets = listOf(1.5, 2.0, 3.0, 4.0, 5.0, 6.0, 10.0, 20.0, 50.0, 100.0)
-        val row = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        val researched = (0 until researchedPicks.length()).mapNotNull { researchedPicks.optJSONObject(it) }
+            .filter { it.optDouble("price", 0.0) > 1.0 }
         targets.forEach { target ->
-            val picks = mutableListOf<JSONObject>()
+            val remaining = researched.toMutableList()
+            val selected = mutableListOf<JSONObject>()
             var combined = 1.0
-            candidates.filter {
-                val price = it.optDouble("candidate_price", 0.0)
-                price >= 1.20 && price <= 2.50 && it.optString("candidate").isNotBlank()
-            }.sortedBy { it.optDouble("candidate_price", 99.0) }.forEach { event ->
-                if (combined < target && picks.none { it.optString("id") == event.optString("id") }) {
-                    picks.add(event)
-                    combined *= event.optDouble("candidate_price", 1.0)
-                }
+            while (combined < target && remaining.isNotEmpty() && selected.size < 8) {
+                val need = target / combined
+                val next = remaining.minByOrNull { pick ->
+                    val price = pick.optDouble("price", 1.0)
+                    kotlin.math.abs(kotlin.math.ln(price / need))
+                } ?: break
+                val price = next.optDouble("price", 1.0)
+                if (selected.isNotEmpty() && price > need * 2.0) break
+                selected.add(next)
+                remaining.remove(next)
+                combined *= price
             }
-            val ready = combined >= target && picks.isNotEmpty()
-            val title = "TARGET ${target.toInt()} ODDS" + if (ready) "  •  ${picks.size} PICKS" else "  •  NOT ENOUGH GAMES"
+            val ready = selected.isNotEmpty() && combined >= target && combined <= target * 1.75
+            val highRisk = target > 10.0
+            val title = "TARGET ${target.toInt()} ODDS" +
+                if (ready) " • ${selected.size} RESEARCHED PICKS" else " • NOT ENOUGH EVIDENCE"
             val details = if (ready) {
-                "Approx. combined decimal odds: %.2f".format(java.util.Locale.US, combined) +
-                    "\n" + picks.joinToString("\n") { event ->
-                        val pct = event.optDouble("candidate_market_probability", Double.NaN) * 100.0
-                        "• ${event.optString("away_team")} vs ${event.optString("home_team")} — ${event.optString("candidate")} @ ${"%.2f".format(java.util.Locale.US, event.optDouble("candidate_price", 0.0))} • market chance ${if (pct.isFinite()) "%.1f%%".format(java.util.Locale.US, pct) else "n/a"}"
+                "Combined decimal odds: %.2f".format(java.util.Locale.US, combined) +
+                    if (highRisk) "\nHIGH RISK • this is not a main daily recommendation." else "" +
+                    "\n" + selected.joinToString("\n") { pick ->
+                        val probability = pick.optDouble("market_probability_pct", Double.NaN)
+                        "• ${pick.optString("away_team")} vs ${pick.optString("home_team")} — ${pick.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, pick.optDouble("price"))} • market chance ${if (probability.isFinite()) "%.1f%%".format(java.util.Locale.US, probability) else "n/a"} • ${pick.optString("best_bookmaker")}"
                     } +
-                    "\nApprox. combined chance (product of market-implied leg probabilities): ${run {
-                        val probabilities = picks.map { it.optDouble("candidate_market_probability", Double.NaN) }
-                        if (probabilities.all { it.isFinite() && it in 0.0..1.0 }) "%.2f%%".format(java.util.Locale.US, probabilities.fold(1.0) { acc, p -> acc * p } * 100.0) else "not available"
-                    }}" +
-                    "\nThis estimate assumes independent legs; real matches may not be independent. Market probabilities are bookmaker-derived, not a guarantee. Prices can change."
+                    "\nApprox. combined market chance (assuming independent matches): " + run {
+                        val probabilities = selected.map { it.optDouble("market_probability_pct", Double.NaN) / 100.0 }
+                        if (probabilities.all { it.isFinite() && it in 0.0..1.0 })
+                            "%.2f%%".format(java.util.Locale.US, probabilities.fold(1.0) { acc, p -> acc * p } * 100.0)
+                        else "not available"
+                    } +
+                    "\nOnly previously researched selections are used. Combined probabilities assume independence and are bookmaker-derived, not Ash-validated forecasts. Odds can move."
             } else {
-                "Ash has not found enough distinct upcoming games with usable prices to reach this target. Refresh later or select more leagues. No games are added just to force the target."
+                "Ash does not have enough distinct researched selections to build this target responsibly. Refresh or choose more competitions. It will not add unresearched matches just to reach the number."
             }
             card(title, details) {
                 if (!ready) {
-                    Toast.makeText(this, "Not enough qualifying games for target ${target.toInt()}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, "Not enough researched selections for target ${target.toInt()}", Toast.LENGTH_LONG).show()
                 } else {
-                    AlertDialog.Builder(this).setTitle("Daily ${target.toInt()}-odds shortlist")
+                    AlertDialog.Builder(this).setTitle("Researched ${target.toInt()}-odds slip")
                         .setMessage(details)
                         .setPositiveButton("OK", null).show()
                 }
             }
-            row.addView(View(this).apply { setBackgroundColor(Color.rgb(36, 49, 73)) },
-                LinearLayout.LayoutParams(-1, (resources.displayMetrics.density).toInt().coerceAtLeast(1)).apply {
-                    topMargin = 2; bottomMargin = 8
-                })
         }
     }
 
