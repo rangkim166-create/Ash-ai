@@ -1,5 +1,6 @@
 import http from "node:http";
 import handler from "./neon-functions/ashsports/index.mjs";
+import { importPublicFootballHistory } from "./neon-functions/ashsports/public-history.mjs";
 const port = Number(process.env.PORT || 10000);
 const server = http.createServer(async (req, res) => {
   try {
@@ -36,5 +37,10 @@ server.listen(port, "0.0.0.0", () => {
     }
   };
   setTimeout(() => void runScout(), 20000).unref();
+  setTimeout(() => {
+    importPublicFootballHistory()
+      .then(result => console.log("[ash-history] import finished", JSON.stringify(result)))
+      .catch(error => console.error("[ash-history] import failed", error));
+  }, 45000).unref();
   setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
 });
