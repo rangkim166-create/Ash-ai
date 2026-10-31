@@ -7,6 +7,56 @@ const masterKey=Buffer.from(process.env.ASH_CREDENTIALS_KEY||"","base64");
 const appToken=process.env.ASH_APP_TOKEN||"";
 const cors={"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"authorization,content-type","content-type":"application/json"};
 const reply=(v,s=200)=>new Response(JSON.stringify(v),{status:s,headers:cors});
+const RATING_SOURCE="https://raw.githubusercontent.com/rangkim166-create/Ash-ai/main/data/history/ratings.json";
+const normalizeTeamName=(value)=>String(value??"").normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("en-US").replace(/[^a-z0-9]+/g," ").trim();
+async function ensureHistoricalRatingsTables(){
+ await db.query(`CREATE TABLE IF NOT EXISTS historical_team_ratings(
+  sport text NOT NULL,team_name text NOT NULL,normalized_name text NOT NULL,rating double precision NOT NULL,
+  source_generated_at timestamptz NOT NULL,imported_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(sport,normalized_name)
+ )`);
+ await db.query(`CREATE TABLE IF NOT EXISTS historical_ratings_meta(
+  source text PRIMARY KEY,generated_at timestamptz NOT NULL,imported_at timestamptz NOT NULL DEFAULT now(),
+  team_count integer NOT NULL,match_counts jsonb NOT NULL DEFAULT '{}'::jsonb
+ )`);
+}
+async function importHistoricalRatings(){
+ await ensureHistoricalRatingsTables();
+ const prior=await db.query("SELECT generated_at,imported_at,team_count FROM historical_ratings_meta WHERE source='ash_elo_baseline'");
+ if(prior.rowCount&&Date.now()-new Date(prior.rows[0].imported_at).getTime()<24*60*60*1000){
+  return{skipped:true,teamCount:Number(prior.rows[0].team_count),generatedAt:prior.rows[0].generated_at};
+ }
+ const response=await fetch(RATING_SOURCE,{signal:AbortSignal.timeout(30000)});
+ if(!response.ok)throw Error("Historical Elo archive HTTP "+response.status);
+ const payload=await response.json();
+ const generatedAt=payload.generated_at_utc;
+ if(!generatedAt||!payload.ratings||typeof payload.ratings!=="object")throw Error("Historical Elo archive has an invalid format");
+ if(prior.rowCount&&new Date(prior.rows[0].generated_at).getTime()>=new Date(generatedAt).getTime()){
+  await db.query("UPDATE historical_ratings_meta SET imported_at=now() WHERE source='ash_elo_baseline'");
+  return{skipped:true,teamCount:Number(prior.rows[0].team_count),generatedAt};
+ }
+ const unique=new Map();
+ for(const [sport,teams] of Object.entries(payload.ratings)){
+  for(const [team,rawRating] of Object.entries(teams||{})){
+   const normalizedName=normalizeTeamName(team),rating=Number(rawRating);
+   if(!normalizedName||!Number.isFinite(rating))continue;
+   const key=sport+"|"+normalizedName,existing=unique.get(key);
+   if(!existing||String(team).length>existing.team_name.length)unique.set(key,{sport,team_name:team,normalized_name:normalizedName,rating});
+  }
+ }
+ const rows=[...unique.values()];
+ await db.query(`INSERT INTO historical_team_ratings(sport,team_name,normalized_name,rating,source_generated_at)
+  SELECT x.sport,x.team_name,x.normalized_name,x.rating,$2::timestamptz
+  FROM jsonb_to_recordset($1::jsonb) AS x(sport text,team_name text,normalized_name text,rating double precision)
+  ON CONFLICT(sport,normalized_name) DO UPDATE SET team_name=EXCLUDED.team_name,rating=EXCLUDED.rating,
+   source_generated_at=EXCLUDED.source_generated_at,imported_at=now()`,[JSON.stringify(rows),generatedAt]);
+ await db.query(`INSERT INTO historical_ratings_meta(source,generated_at,imported_at,team_count,match_counts)
+  VALUES('ash_elo_baseline',$1::timestamptz,now(),$2,$3::jsonb)
+  ON CONFLICT(source) DO UPDATE SET generated_at=EXCLUDED.generated_at,imported_at=now(),
+   team_count=EXCLUDED.team_count,match_counts=EXCLUDED.match_counts`,
+  [generatedAt,rows.length,JSON.stringify(payload.match_counts||{})]);
+ return{imported:true,teamCount:rows.length,matchCounts:payload.match_counts||{},generatedAt};
+}
 function encrypt(v){if(masterKey.length!==32)throw Error("ASH_CREDENTIALS_KEY must be base64 for 32 random bytes");const iv=randomBytes(12),c=createCipheriv("aes-256-gcm",masterKey,iv),d=Buffer.concat([c.update(JSON.stringify(v),"utf8"),c.final()]);return{encrypted_value:d.toString("base64"),iv:iv.toString("base64"),auth_tag:c.getAuthTag().toString("base64")};}
 function decrypt(r){const d=createDecipheriv("aes-256-gcm",masterKey,Buffer.from(r.iv,"base64"));d.setAuthTag(Buffer.from(r.auth_tag,"base64"));return JSON.parse(Buffer.concat([d.update(Buffer.from(r.encrypted_value,"base64")),d.final()]).toString("utf8"));}
 async function save(p,v){const e=encrypt(v);await db.query("INSERT INTO provider_credentials(provider,encrypted_value,iv,auth_tag) VALUES($1,$2,$3,$4) ON CONFLICT(provider) DO UPDATE SET encrypted_value=EXCLUDED.encrypted_value,iv=EXCLUDED.iv,auth_tag=EXCLUDED.auth_tag,updated_at=now()",[p,e.encrypted_value,e.iv,e.auth_tag]);}
@@ -124,7 +174,15 @@ async function runScheduledDailyPublisher(){
       AND (LOWER(m.home_or_player_one)=LOWER(t.team) OR LOWER(m.away_or_player_two)=LOWER(t.team))
     ORDER BY m.starts_at DESC LIMIT 10
    ) r`,[ids]);
-  const picks=selectDailyPicks(fixtures,oddsResult.rows,formResult.rows,{now:new Date(),maxPicks:3});
+  await ensureHistoricalRatingsTables();
+  const teamNames=[...new Set(fixtures.flatMap(row=>[normalizeTeamName(row.home),normalizeTeamName(row.away)]).filter(Boolean))];
+  const sports=[...new Set(fixtures.map(row=>String(row.sport||"").toLowerCase()).filter(Boolean))];
+  const ratingRows=await db.query("SELECT sport,normalized_name,rating FROM historical_team_ratings WHERE sport=ANY($1::text[]) AND normalized_name=ANY($2::text[])",[sports,teamNames]);
+  const ratings={};
+  for(const row of ratingRows.rows){if(!ratings[row.sport])ratings[row.sport]={};ratings[row.sport][row.normalized_name]=Number(row.rating);}
+  const ratingMetaResult=await db.query("SELECT match_counts,generated_at FROM historical_ratings_meta WHERE source='ash_elo_baseline'");
+  const ratingMatchCounts=ratingMetaResult.rowCount?(ratingMetaResult.rows[0].match_counts||{}):{};
+  const picks=selectDailyPicks(fixtures,oddsResult.rows,formResult.rows,{now:new Date(),maxPicks:3,ratings,ratingMatchCounts});
   const dayLabel=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",day:"2-digit",month:"short",year:"numeric"}).format(new Date());
   const message=formatDailyPicks(dayLabel,picks);
   // Persist the complete ticket and structured selections even before Telegram is configured.
@@ -144,7 +202,7 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-export default {async runScheduledCollection(){return await collectOdds(6);},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
+export default {async runScheduledCollection(){return await collectOdds(6);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
