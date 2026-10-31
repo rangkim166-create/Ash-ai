@@ -56,6 +56,63 @@ object TipResultsTracker {
         return true
     }
 
+    /**
+     * Recheck pending fixtures against refreshed historical records and settle only
+     * when the source explicitly labels the match complete and returns numeric scores.
+     */
+    fun settleFinishedFromHistory(context: Context): Int {
+        val now = Instant.now()
+        val due = all(context).let { rows ->
+            (0 until rows.length()).mapNotNull { rows.optJSONObject(it) }
+        }.filter { tip ->
+            tip.optString("status") == "pending" &&
+                runCatching { Instant.parse(tip.optString("commence_time")).isBefore(now) }.getOrDefault(false)
+        }
+        fun norm(value: String) = value.lowercase().replace(Regex("[^a-z0-9]"), "")
+        fun findRow(rows: JSONArray, home: String, away: String): JSONObject? {
+            for (i in 0 until rows.length()) {
+                val row = rows.optJSONObject(i) ?: continue
+                if (norm(row.optString("home_team")) == norm(home) &&
+                    norm(row.optString("away_team")) == norm(away)) return row
+            }
+            return null
+        }
+        var settled = 0
+        for (tip in due) {
+            val home = tip.optString("home_team")
+            val away = tip.optString("away_team")
+            val sport = tip.optString("sport_title")
+            val refreshed = runCatching {
+                HistoricalDataEngine.collectMatchHistory(context, home, away, sport, forceRefresh = true)
+            }.isSuccess
+            if (!refreshed) continue
+            val homeRow = findRow(HistoricalDataEngine.teamHistory(context, home, sport, 100), home, away) ?: continue
+            val awayRow = findRow(HistoricalDataEngine.teamHistory(context, away, sport, 100), home, away)
+            val statusText = homeRow.optString("status").lowercase()
+            if (listOf("finished", "complete", "final", "full time", "ft", "ended").none { statusText.contains(it) }) continue
+            val homeScore = homeRow.optString("home_score").toDoubleOrNull() ?: continue
+            val awayScore = homeRow.optString("away_score").toDoubleOrNull() ?: continue
+            if (awayRow != null) {
+                val otherHome = awayRow.optString("home_score").toDoubleOrNull()
+                val otherAway = awayRow.optString("away_score").toDoubleOrNull()
+                if (otherHome != null && otherAway != null && (otherHome != homeScore || otherAway != awayScore)) continue
+            }
+            val selection = tip.optString("selection")
+            val outcome = if (tip.optString("market_type") == "odd_even") {
+                val actual = if ((homeScore + awayScore).toInt() % 2 == 0) "even" else "odd"
+                if (selection.lowercase().contains(actual)) "won" else "lost"
+            } else when {
+                selection.equals(home, true) -> if (homeScore > awayScore) "won" else "lost"
+                selection.equals(away, true) -> if (awayScore > homeScore) "won" else "lost"
+                selection.equals("draw", true) || selection.equals("tie", true) ->
+                    if (homeScore == awayScore) "won" else "lost"
+                else -> continue
+            }
+            if (settle(context, tip.optString("tip_id"), outcome, homeScore.toInt(), awayScore.toInt())) settled++
+        }
+        return settled
+    }
+
     fun stats(context: Context, days: Int): JSONObject {
         val cutoff = Instant.now().minusSeconds(days.coerceAtLeast(1).toLong() * 86400L)
         var won = 0
