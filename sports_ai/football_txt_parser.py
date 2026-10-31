@@ -8,13 +8,13 @@ import re
 from datetime import date
 from pathlib import Path
 
-SCORE = r"(\\d{1,2})\\s*[-:]\\s*(\\d{1,2})"
+SCORE = r"(\d{1,2})\s*[-:]\s*(\d{1,2})"
 DATE_PATTERNS = (
-    re.compile(r"(?P<y>20\\d{2})-(?P<m>\\d{1,2})-(?P<d>\\d{1,2})"),
-    re.compile(r"(?P<d>\\d{1,2})[./](?P<m>\\d{1,2})[./](?P<y>20\\d{2})"),
-    re.compile(r"\\b(?P<d>\\d{1,2})\\s+(?P<mon>[A-Za-z]{3,9})\\s+(?P<y>20\\d{2})\\b", re.I),
-    re.compile(r"\\b(?P<mon>[A-Za-z]{3,9})\\s+(?P<d>\\d{1,2}),?\\s+(?P<y>20\\d{2})\\b", re.I),
-    re.compile(r"\\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s+(?P<mon>[A-Za-z]{3,9})\\s+(?P<d>\\d{1,2})\\b", re.I),
+    re.compile(r"(?P<y>20\d{2})-(?P<m>\d{1,2})-(?P<d>\d{1,2})"),
+    re.compile(r"(?P<d>\d{1,2})[./](?P<m>\d{1,2})[./](?P<y>20\d{2})"),
+    re.compile(r"\b(?P<d>\d{1,2})\s+(?P<mon>[A-Za-z]{3,9})\s+(?P<y>20\d{2})\b", re.I),
+    re.compile(r"\b(?P<mon>[A-Za-z]{3,9})\s+(?P<d>\d{1,2}),?\s+(?P<y>20\d{2})\b", re.I),
+    re.compile(r"\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?P<mon>[A-Za-z]{3,9})\s+(?P<d>\d{1,2})\b", re.I),
 )
 MONTHS = {name.lower()[:3]: number for number, name in enumerate(
     ("January", "February", "March", "April", "May", "June", "July",
@@ -23,10 +23,10 @@ MONTHS = {name.lower()[:3]: number for number, name in enumerate(
 
 def _season_year(path: Path) -> int | None:
     for part in reversed(path.parts):
-        match = re.fullmatch(r"(20\\d{2})-(\\d{2})", part)
+        match = re.fullmatch(r"(20\d{2})-(\d{2})", part)
         if match:
             return int(match.group(1))
-        if re.fullmatch(r"20\\d{2}", part):
+        if re.fullmatch(r"20\d{2}", part):
             return int(part)
     return None
 
@@ -41,7 +41,7 @@ def _date_and_remainder(line: str, path: Path):
         month = int(values["m"]) if values.get("m") else MONTHS.get(values["mon"].lower()[:3])
         if not year or not month:
             continue
-        season = re.search(r"(20\\d{2})-(\\d{2})", str(path))
+        season = re.search(r"(20\d{2})-(\d{2})", str(path))
         if not values.get("y") and season and month <= 6:
             year = int(season.group(1)) + 1
         try:
@@ -49,14 +49,14 @@ def _date_and_remainder(line: str, path: Path):
         except ValueError:
             return None, line
         remainder = line[:match.start()] + " " + line[match.end():]
-        remainder = re.sub(r"^\\s*(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s+", "", remainder, flags=re.I)
+        remainder = re.sub(r"^\s*(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+", "", remainder, flags=re.I)
         return parsed, remainder.strip(" ,|")
     return None, line
 
 
 def _clean_team(value: str) -> str:
-    value = re.sub(r"\\s+", " ", value).strip(" \\t|▪")
-    value = re.sub(r"^\\d{1,2}:\\d{2}\\s+", "", value)
+    value = re.sub(r"\s+", " ", value).strip(" \t|▪")
+    value = re.sub(r"^\d{1,2}:\d{2}\s+", "", value)
     return value.strip()
 
 
@@ -64,11 +64,10 @@ def _parse_result(line: str):
     text = line.strip()
     if not text or text.startswith(("(", "#", ";", "=", "▪", "::")):
         return None
-    text = re.sub(r"^(?:\\d{1,2}:\\d{2})\\s+", "", text)
-    # Explicitly distinguish the two supported result layouts.
+    text = re.sub(r"^\d{1,2}:\d{2}\s+", "", text)
     patterns = [
-        (re.compile(rf"^(.*?)\\s+(?:v|vs\\.?|–|—|-)\\s+(.*?)\\s+{SCORE}(?:\\s+\\([^)]*\\))?$", re.I), "home-away-score"),
-        (re.compile(rf"^(.*?)\\s+{SCORE}\\s+(.*?)$"), "home-score-away"),
+        (re.compile(rf"^(.*?)\s+(?:v|vs\.?|–|—|-)\s+(.*?)\s+{SCORE}(?:\s+\([^)]*\))?$", re.I), "home-away-score"),
+        (re.compile(rf"^(.*?)\s+{SCORE}\s+(.*?)$"), "home-score-away"),
     ]
     for pattern, layout in patterns:
         match = pattern.match(text)
