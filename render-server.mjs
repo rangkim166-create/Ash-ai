@@ -56,11 +56,40 @@ server.listen(port, "0.0.0.0", () => {
       scoutRunning = false;
     }
   };
+  let referenceDataPromise = null;
+  const ensureReferenceData = () => {
+    if (!referenceDataPromise) {
+      referenceDataPromise = Promise.allSettled([
+        importPublicFootballHistory(),
+        handler.runHistoricalRatingsImport()
+      ]).then(results => {
+        const [history, ratings] = results;
+        if (history.status === "fulfilled") {
+          console.log("[ash-history] import finished", JSON.stringify(history.value));
+        } else {
+          console.error("[ash-history] import failed", history.reason);
+        }
+        if (ratings.status === "fulfilled") {
+          console.log("[ash-ratings] import finished", JSON.stringify(ratings.value));
+        } else {
+          console.error("[ash-ratings] import failed", ratings.reason);
+        }
+        // Retry a failed source on the next publication attempt without blocking
+        // today's ticket from using whichever reference data did load.
+        if (history.status === "rejected" || ratings.status === "rejected") {
+          referenceDataPromise = null;
+        }
+        return results;
+      });
+    }
+    return referenceDataPromise;
+  };
   let dailyPublishRunning = false;
   const runDailyPublish = async () => {
     if (dailyPublishRunning) return console.log("[ash-daily] skipped: previous publish attempt still running");
     dailyPublishRunning = true;
     try {
+      await ensureReferenceData();
       const result = await handler.runScheduledDailyPublisher();
       console.log("[ash-daily] Odds of the Day", JSON.stringify(result));
     } catch (error) {
@@ -69,13 +98,8 @@ server.listen(port, "0.0.0.0", () => {
       dailyPublishRunning = false;
     }
   };
-  setTimeout(() => void runScout(), 20000).unref();
-  setTimeout(() => {
-    importPublicFootballHistory()
-      .then(result => console.log("[ash-history] import finished", JSON.stringify(result)))
-      .catch(error => console.error("[ash-history] import failed", error));
-  }, 45000).unref();
-  setTimeout(() => void runDailyPublish(), 60000).unref();
+  setTimeout(() => void runScout(), 20000);
+  setTimeout(() => void runDailyPublish(), 60000);
   setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
   // Retry hourly until today's sheet is delivered; the database publication row prevents duplicates.
   setInterval(() => void runDailyPublish(), 60 * 60 * 1000).unref();
