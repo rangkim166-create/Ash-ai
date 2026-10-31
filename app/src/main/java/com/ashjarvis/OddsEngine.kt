@@ -135,10 +135,27 @@ object OddsEngine {
         val allSports = loadSports(apiKey)
         val active = (0 until allSports.length()).mapNotNull { allSports.optJSONObject(it) }
             .filter { it.optBoolean("active", true) && it.optString("key").isNotBlank() }
-        // Daily discovery mode: scan every active sport/competition exposed by this API key.
-        // The Odds API requires a separate odds request per sport, so quota depends on plan and coverage.
-        val sports = active
+        // Scan only user-selected competitions; each odds endpoint consumes quota.
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val storedSelection = prefs.getString(FAVORITES_KEY, null)
+        val selectedKeys = if (storedSelection != null) {
+            storedSelection.split(",").map { it.trim() }.filter { it.isNotBlank() }.toSet()
+        } else {
+            val chosen = linkedSetOf<String>()
+            fun pick(predicate: (JSONObject) -> Boolean, preferred: List<String>) {
+                val match = preferred.firstNotNullOfOrNull { key -> active.firstOrNull { it.optString("key") == key } }
+                    ?: active.firstOrNull(predicate)
+                match?.optString("key")?.takeIf { it.isNotBlank() }?.let(chosen::add)
+            }
+            pick({ it.optString("group").contains("soccer", true) || it.optString("title").contains("Premier League", true) },
+                listOf("soccer_epl", "soccer_uefa_champs_league", "soccer_spain_la_liga"))
+            pick({ it.optString("group").contains("basket", true) || it.optString("title").contains("basket", true) },
+                listOf("basketball_nba"))
+            pick({ it.optString("group").contains("tennis", true) || it.optString("title").contains("tennis", true) }, emptyList())
+            prefs.edit().putString(FAVORITES_KEY, chosen.joinToString(",")).apply()
+            chosen
+        }
+        val sports = active.filter { it.optString("key") in selectedKeys }.take(12)
         val old = history(context)
         val byId = linkedMapOf<String, JSONObject>()
         for (i in 0 until old.length()) {
@@ -218,10 +235,10 @@ object OddsEngine {
         val candidates = upcoming.filter {
             it.optString("candidate").isNotBlank() &&
                 it.optInt("candidate_bookmakers") >= 3 &&
-                it.optDouble("candidate_price", 0.0) in 1.25..1.75
+                it.optDouble("candidate_price", 0.0) in 1.50..10.00
         }.sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
             .thenBy { kotlin.math.abs(it.optDouble("candidate_price", 9.0) - 1.50) })
-            .take(5)
+            .take(12)
 
         candidates.forEach { event ->
             val checkedAt = event.optString("research_checked_at")
@@ -276,58 +293,79 @@ object OddsEngine {
             }
         }
 
-        fun formStats(rows: JSONArray?): Pair<Int, Int> {
-            if (rows == null) return 0 to 0
-            var points = 0
-            var played = 0
-            for (i in 0 until rows.length()) {
-                val row = rows.optJSONObject(i) ?: continue
-                when (row.optString("outcome")) {
-                    "W" -> { points += 3; played++ }
-                    "D" -> { points += 1; played++ }
-                    "L" -> { played++ }
+        data class FormSummary(val played: Int, val weightedWinRate: Double, val wins: Int, val losses: Int, val draws: Int)
+        fun formStats(rows: JSONArray?): FormSummary {
+            if (rows == null) return FormSummary(0, 0.0, 0, 0, 0)
+            val valid = (0 until rows.length()).mapNotNull { index ->
+                val row = rows.optJSONObject(index) ?: return@mapNotNull null
+                if (row.optString("outcome").uppercase() !in setOf("W", "L", "D")) null else row
+            }.take(10)
+            var weighted = 0.0
+            var weightTotal = 0.0
+            var wins = 0
+            var losses = 0
+            var draws = 0
+            valid.forEachIndexed { index, row ->
+                val weight = 1.0 / (1.0 + index * 0.18)
+                val score = when (row.optString("outcome").uppercase()) {
+                    "W" -> { wins++; 1.0 }
+                    "D" -> { draws++; 0.5 }
+                    else -> { losses++; 0.0 }
                 }
+                weighted += score * weight
+                weightTotal += weight
             }
-            return points to played
+            return FormSummary(valid.size, if (weightTotal > 0.0) weighted / weightTotal else 0.0, wins, losses, draws)
         }
 
         val ranked = candidates.mapNotNull { event ->
             val homeRows = event.optJSONArray("research_home_recent")
             val awayRows = event.optJSONArray("research_away_recent")
-            val (homePoints, homePlayed) = formStats(homeRows)
-            val (awayPoints, awayPlayed) = formStats(awayRows)
+            val homeForm = formStats(homeRows)
+            val awayForm = formStats(awayRows)
+            val homePlayed = homeForm.played
+            val awayPlayed = awayForm.played
             val selection = event.optString("candidate")
             val homeName = event.optString("home_team")
             val awayName = event.optString("away_team")
-            val homePerGame = if (homePlayed > 0) homePoints.toDouble() / homePlayed else 0.0
-            val awayPerGame = if (awayPlayed > 0) awayPoints.toDouble() / awayPlayed else 0.0
             val edge = when {
-                selection.equals(homeName, ignoreCase = true) -> homePerGame - awayPerGame
-                selection.equals(awayName, ignoreCase = true) -> awayPerGame - homePerGame
-                else -> 0.0
+                selection.equals(homeName, ignoreCase = true) -> homeForm.weightedWinRate - awayForm.weightedWinRate
+                selection.equals(awayName, ignoreCase = true) -> awayForm.weightedWinRate - homeForm.weightedWinRate
+                else -> -1.0
             }
+            val selectedIsKnownSide = selection.equals(homeName, true) || selection.equals(awayName, true)
             val books = event.optInt("candidate_bookmakers")
             val price = event.optDouble("candidate_price", 0.0)
             val flags = event.optJSONArray("research_availability_flags")?.length() ?: 0
 
-            // Conservative evidence gate: both teams need recent scored results, odds need
-            // multi-book support, and the selected side must have a positive recent-form edge.
-            val strong = books >= 4 && homePlayed >= 4 && awayPlayed >= 4 &&
-                edge >= 0.60 && price in 1.25..1.65 && flags == 0
-            val moderate = books >= 3 && homePlayed >= 3 && awayPlayed >= 3 &&
-                edge >= 0.25 && price in 1.25..1.75 && flags <= 1
+            // Sport-neutral win-rate comparison; high-odds selections need more evidence.
+            val highRisk = price >= 5.0
+            val requiredGames = if (highRisk) 8 else 5
+            val requiredBooks = if (highRisk) 5 else 3
+            val strong = selectedIsKnownSide && books >= maxOf(4, requiredBooks) &&
+                homePlayed >= requiredGames && awayPlayed >= requiredGames &&
+                edge >= (if (highRisk) 0.20 else 0.12) && flags == 0
+            val moderate = selectedIsKnownSide && books >= requiredBooks &&
+                homePlayed >= requiredGames && awayPlayed >= requiredGames &&
+                edge >= (if (highRisk) 0.12 else 0.06) && flags <= 1
             if (!strong && !moderate) return@mapNotNull null
 
-            val evidenceIndex = (
-                minOf(books, 5) * 8 +
-                (minOf(homePlayed, 5) + minOf(awayPlayed, 5)) * 3 +
-                ((edge + 1.0) * 10).toInt().coerceIn(0, 20) +
-                if (price <= 1.50) 10 else 6
-            ).coerceIn(0, 100)
+            val formDepth = minOf(homePlayed, 10) + minOf(awayPlayed, 10)
+            val edgePoints = (edge * 35.0).toInt().coerceIn(0, 25)
+            val oddsRiskPenalty = when {
+                price >= 8.0 -> 18
+                price >= 5.0 -> 12
+                price >= 3.0 -> 6
+                else -> 0
+            }
+            val evidenceIndex = (minOf(books, 8) * 6 + formDepth * 2 + edgePoints +
+                (if (flags == 0) 8 else 0) - oddsRiskPenalty).coerceIn(0, 100)
             val reason = buildList {
                 add("$books bookmakers return this selection")
                 add("recent results available for both teams ($homePlayed home-team records, $awayPlayed away-team records)")
-                add("selected team's recent points-per-game edge: %.2f".format(java.util.Locale.US, edge))
+                add("selected side's recency-weighted win-rate edge: %.1f percentage points".format(java.util.Locale.US, edge * 100.0))
+                add("recent form: ${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L vs ${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
+                if (price >= 5.0) add("high-variance price band; stricter sample and bookmaker requirements applied")
                 if (flags > 0) add("possible team/player availability news needs manual confirmation")
             }.joinToString("; ")
 
@@ -348,6 +386,9 @@ object OddsEngine {
                 .put("home_recent_count", homePlayed)
                 .put("away_recent_count", awayPlayed)
                 .put("form_edge_per_game", edge)
+                .put("home_form", "${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L")
+                .put("away_form", "${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
+                .put("form_method", "Recency-weighted win rate over up to 10 verified team/player results; draws count as half")
                 .put("research_has_results", homePlayed > 0 && awayPlayed > 0)
                 .put("home_profile", event.optJSONObject("research_home_profile") ?: JSONObject())
                 .put("away_profile", event.optJSONObject("research_away_profile") ?: JSONObject())
