@@ -25,6 +25,16 @@ def main():
     seen = set()
     competition_counts = {}
     with sqlite3.connect(DB) as db:
+        # Avoid double-counting results present in football.json or the global archive.
+        # Competition labels differ between sources, so compare date, teams and score.
+        for date, home, away, home_score, away_score in db.execute(
+            "SELECT match_date,participant_a,participant_b,score_a,score_b FROM matches WHERE sport='football'"
+        ):
+            date_key = str(date or "")[:10]
+            home_key = " ".join(str(home or "").casefold().split())
+            away_key = " ".join(str(away or "").casefold().split())
+            seen.add((date_key, home_key, away_key, home_score, away_score))
+            seen.add((date_key, away_key, home_key, away_score, home_score))
         for path in files:
             relative = path.relative_to(BASE)
             parts = list(relative.parts)
@@ -35,11 +45,16 @@ def main():
             for match in parse_football_txt(path):
                 home, away = match["home"], match["away"]
                 home_score, away_score = match["home_score"], match["away_score"]
-                key = (competition.casefold(), match["date"], home.casefold(), away.casefold(), home_score, away_score)
-                if key in seen:
+                date_key = str(match["date"])[:10]
+                home_key = " ".join(home.casefold().split())
+                away_key = " ".join(away.casefold().split())
+                key = (date_key, home_key, away_key, home_score, away_score)
+                reverse_key = (date_key, away_key, home_key, away_score, home_score)
+                if key in seen or reverse_key in seen:
                     skipped += 1
                     continue
                 seen.add(key)
+                seen.add(reverse_key)
                 winner = home if home_score > away_score else away if away_score > home_score else "draw"
                 db.execute(
                     "INSERT INTO matches(sport,competition,season,match_date,participant_a,participant_b,score_a,score_b,winner,source,raw_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
