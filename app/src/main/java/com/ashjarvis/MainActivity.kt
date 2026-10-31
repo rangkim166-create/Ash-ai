@@ -48,6 +48,12 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import kotlin.concurrent.thread
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 
 class MainActivity : Activity() {
     private lateinit var messages: LinearLayout
@@ -102,10 +108,25 @@ class MainActivity : Activity() {
                 applySavedVoice()
             }
         }
+        scheduleAshSportsRefresh()
         buildUi()
         restoreHistory()
         if (history.length() == 0) addMessage("Ash Jarvis", "Welcome. Set up your OpenRouter API key and model to start real AI chat.")
         updateStatus()
+    }
+
+    private fun scheduleAshSportsRefresh() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val request = PeriodicWorkRequestBuilder<OddsRefreshWorker>(6, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "ash-sports-odds-refresh",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
     }
 
     private fun buildUi() {
