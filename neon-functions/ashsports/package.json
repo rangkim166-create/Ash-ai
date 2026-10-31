@@ -1,1 +1,15 @@
-{"name":"ash-sports-neon-function","private":true,"version":"1.0.0","type":"module","dependencies":{"postgres":"^3.4.7"},"devDependencies":{"esbuild":"^0.25.0"}}
+{
+  "name": "ash-sports-neon-function",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "postgres": "^3.4.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  },
+  "scripts": {
+    "test": "node --test daily-picks.test.mjs"
+  }
+}
