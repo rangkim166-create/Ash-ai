@@ -427,13 +427,21 @@ class SportsOddsActivity : Activity() {
                 if (sports.length() == 0) throw IllegalStateException("API key connected, but no sports are currently available for this plan.")
                 val active = (0 until sports.length()).mapNotNull { sports.optJSONObject(it) }
                     .filter { it.optBoolean("active", true) && it.optString("key").isNotBlank() }
-                val defaults = OddsEngine.favoriteKeys(this@SportsOddsActivity)
-                val availableKeys = active.map { it.optString("key") }.toSet()
-                if (defaults.none { it in availableKeys }) {
-                    val preferred = active.filter { s ->
-                        val k = s.optString("key")
-                        k == "soccer_epl" || k == "basketball_nba"
-                    }.map { it.optString("key") }.toSet()
+                val selectionPrefs = getSharedPreferences("ash_jarvis", MODE_PRIVATE)
+                if (!selectionPrefs.contains("ash_odds_favorites")) {
+                    val football = active.filter {
+                        it.optString("group").contains("soccer", true) ||
+                            it.optString("title").contains("football", true) ||
+                            it.optString("title").contains("premier league", true)
+                    }.sortedWith(compareBy<JSONObject>({ if (it.optString("key") == "soccer_epl") 0 else 1 }, { it.optString("title") }))
+                        .take(4)
+                    val basketball = active.filter {
+                        it.optString("group").contains("basket", true) || it.optString("title").contains("basket", true)
+                    }.take(1)
+                    val tennis = active.filter {
+                        it.optString("group").contains("tennis", true) || it.optString("title").contains("tennis", true)
+                    }.take(1)
+                    val preferred = (football + basketball + tennis).map { it.optString("key") }.toSet()
                     OddsEngine.saveFavorites(this@SportsOddsActivity, preferred)
                 }
                 Toast.makeText(this@SportsOddsActivity, "Connected • ${active.size} sports/competitions available", Toast.LENGTH_LONG).show()
