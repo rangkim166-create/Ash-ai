@@ -25,6 +25,21 @@ android {
         }
     }
 
+    // LLMEdge's AAR also carries legacy/SVE SmolLM variants that its Android
+    // NativeLibraryCatalog never selects. Keep only the runtime's supported
+    // baseline, ARMv8.2+dotprod, and ARMv8.4+i8mm candidates.
+    packaging {
+        jniLibs {
+            excludes += setOf(
+                "**/libsmollm_v8.so",
+                "**/libsmollm_v8_2_fp16.so",
+                "**/libsmollm_v8_4_fp16_dotprod.so",
+                "**/libsmollm_v8_4_fp16_dotprod_sve.so",
+                "**/libsmollm_v8_4_fp16_dotprod_i8mm_sve.so"
+            )
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
