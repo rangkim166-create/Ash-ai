@@ -385,6 +385,11 @@ object OddsEngine {
         }
         val pickDate = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
         db.put("daily_picks", pickDate, JSONObject().put("date", pickDate).put("picks", result))
+        // Snapshot each published shortlist selection in the permanent results ledger.
+        for (index in 0 until result.length()) {
+            val pick = result.optJSONObject(index) ?: continue
+            TipResultsTracker.publish(context, pick, "h2h")
+        }
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString("ash_daily_picks_json", result.toString())
             .putString("ash_daily_picks_date", pickDate)
