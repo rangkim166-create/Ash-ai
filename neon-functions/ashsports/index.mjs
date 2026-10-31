@@ -84,6 +84,24 @@ return {id:row.id,sport_key:String(row.id).split(":")[0],sport_title:row.competi
 return reply({data,observedAt:new Date().toISOString()});
 }
 
+if(p==="/v1/public/history/summary"&&req.method==="GET"){
+const totals=await db.query("SELECT COUNT(*) AS results,COUNT(DISTINCT competition) AS competitions,MIN(starts_at) AS earliest,MAX(starts_at) AS latest FROM sports_matches WHERE source IN ('openfootball','openfootball_world') AND status='completed'");
+const sources=await db.query("SELECT source,COUNT(*) AS results FROM sports_matches WHERE source IN ('openfootball','openfootball_world') AND status='completed' GROUP BY source ORDER BY source");
+const leagues=await db.query("SELECT competition,COUNT(*) AS results,MIN(starts_at) AS earliest,MAX(starts_at) AS latest FROM sports_matches WHERE source IN ('openfootball','openfootball_world') AND status='completed' GROUP BY competition ORDER BY results DESC LIMIT 40");
+return reply({totals:totals.rows[0],sources:sources.rows,competitions:leagues.rows});
+}
+if(p==="/v1/public/history/team"&&req.method==="GET"){
+const url=new URL(req.url),team=(url.searchParams.get("team")||"").trim(),sport=(url.searchParams.get("sport")||"football").trim();
+if(team.length<2||team.length>90||!["football","basketball","tennis"].includes(sport))return reply({error:"team_and_valid_sport_required"},400);
+const rows=await db.query("SELECT competition,home_or_player_one AS home,away_or_player_two AS away,starts_at,home_score,away_score,CASE WHEN LOWER(home_or_player_one) LIKE LOWER($1) THEN home_or_player_one ELSE away_or_player_two END AS matched_team,CASE WHEN LOWER(home_or_player_one) LIKE LOWER($1) THEN CASE WHEN home_score>away_score THEN 'W' WHEN home_score<away_score THEN 'L' ELSE 'D' END ELSE CASE WHEN away_score>home_score THEN 'W' WHEN away_score<home_score THEN 'L' ELSE 'D' END END AS team_result FROM sports_matches WHERE source IN ('openfootball','openfootball_world') AND status='completed' AND sport=$2 AND (LOWER(home_or_player_one) LIKE LOWER($1) OR LOWER(away_or_player_two) LIKE LOWER($1)) ORDER BY starts_at DESC LIMIT 20",["%"+team+"%",sport]);
+return reply({team,sport,matches:rows.rows});
+}
+if(p==="/v1/public/history/h2h"&&req.method==="GET"){
+const url=new URL(req.url),a=(url.searchParams.get("team_a")||"").trim(),b=(url.searchParams.get("team_b")||"").trim();
+if(a.length<2||a.length>90||b.length<2||b.length>90||a.toLowerCase()===b.toLowerCase())return reply({error:"two_distinct_teams_required"},400);
+const rows=await db.query("SELECT competition,home_or_player_one AS home,away_or_player_two AS away,starts_at,home_score,away_score FROM sports_matches WHERE source IN ('openfootball','openfootball_world') AND status='completed' AND sport='football' AND ((LOWER(home_or_player_one) LIKE LOWER($1) AND LOWER(away_or_player_two) LIKE LOWER($2)) OR (LOWER(home_or_player_one) LIKE LOWER($2) AND LOWER(away_or_player_two) LIKE LOWER($1))) ORDER BY starts_at DESC LIMIT 20",["%"+a+"%","%"+b+"%"]);
+return reply({team_a:a,team_b:b,meetings:rows.rows});
+}
 }catch(e){console.error("[ash-sports-public]",e);return reply({error:"public_feed_unavailable"},500);}
 }
 const auth=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!appToken||auth.length!==appToken.length||!timingSafeEqual(Buffer.from(auth),Buffer.from(appToken)))return reply({error:"unauthorized"},401);
