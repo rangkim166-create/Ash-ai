@@ -89,7 +89,9 @@ object TipResultsTracker {
             val homeRow = findRow(HistoricalDataEngine.teamHistory(context, home, sport, 100), home, away) ?: continue
             val awayRow = findRow(HistoricalDataEngine.teamHistory(context, away, sport, 100), home, away)
             val statusText = homeRow.optString("status").lowercase()
-            if (listOf("finished", "complete", "final", "full time", "ft", "ended").none { statusText.contains(it) }) continue
+            val completed = statusText in setOf("finished", "complete", "completed", "final", "ft", "full time", "ended") ||
+                statusText.contains("finished") || statusText.contains("full time") || statusText.contains("completed")
+            if (!completed) continue
             val homeScore = homeRow.optString("home_score").toDoubleOrNull() ?: continue
             val awayScore = homeRow.optString("away_score").toDoubleOrNull() ?: continue
             if (awayRow != null) {
