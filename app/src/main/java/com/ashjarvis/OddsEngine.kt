@@ -782,8 +782,17 @@ object OddsEngine {
         try { loadRecent(away, awayRecent, awayTeam) } catch (_: Exception) { }
         try { loadPlayers(home, homePlayers) } catch (_: Exception) { }
         try { loadPlayers(away, awayPlayers) } catch (_: Exception) { }
-        try { searchNews("\"$homeTeam\" $sportTitle latest news injuries unavailable lineup recent form player stats goals assists top scorer", homeTeam) } catch (_: Exception) { }
-        try { searchNews("\"$awayTeam\" $sportTitle latest news injuries unavailable lineup recent form player stats goals assists top scorer", awayTeam) } catch (_: Exception) { }
+        val sportResearchTerms = when {
+            sportTitle.contains("tennis", true) ->
+                "tennis ranking surface court head-to-head recent matches form fatigue injury withdrawal fitness tournament"
+            sportTitle.contains("basket", true) ->
+                "basketball injury report probable starters minutes restriction back-to-back rest days pace offensive defensive rating recent form"
+            else ->
+                "football soccer expected lineup injuries suspensions xG expected goals recent form head-to-head fixture congestion manager team news"
+        }
+        try { searchNews("\"$homeTeam\" $sportTitle $sportResearchTerms", homeTeam) } catch (_: Exception) { }
+        try { searchNews("\"$awayTeam\" $sportTitle $sportResearchTerms", awayTeam) } catch (_: Exception) { }
+        try { searchNews("\"$homeTeam\" vs \"$awayTeam\" $sportTitle head-to-head match preview prediction team news", "Match preview") } catch (_: Exception) { }
         // On-demand deep research also checks recent public news about a few rostered players.
         // Daily background refresh skips these extra calls to protect free-source rate limits.
         if (includePlayerNews) {
