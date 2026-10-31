@@ -361,7 +361,7 @@ object OddsEngine {
                 it.optDouble("candidate_price", 0.0) in 1.50..10.00
         }.sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
             .thenBy { kotlin.math.abs(it.optDouble("candidate_price", 9.0) - 1.50) })
-            .take(12)
+            .take(6)
 
         candidates.forEach { event ->
             val checkedAt = event.optString("research_checked_at")
