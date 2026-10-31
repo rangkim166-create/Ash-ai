@@ -475,6 +475,9 @@ object OddsEngine {
                 .put("commence_time", event.optString("commence_time"))
                 .put("selection", selection)
                 .put("price", price)
+                .put("best_bookmaker", event.optString("candidate_best_bookmaker"))
+                .put("bookmaker_names", event.optString("candidate_bookmaker_names"))
+                .put("average_market_price", event.optDouble("candidate_average_price", price))
                 .put("raw_implied_probability_pct", if (price > 1.0) 100.0 / price else JSONObject.NULL)
                 .put("market_probability_pct", event.optDouble("candidate_market_probability", Double.NaN).takeIf { it.isFinite() }?.times(100.0) ?: JSONObject.NULL)
                 .put("probability_method", event.optString("candidate_probability_method", "Not available"))
@@ -537,8 +540,8 @@ object OddsEngine {
 
     private fun summarize(event: JSONObject, sportKey: String, sportTitle: String, now: String, prior: JSONObject?): JSONObject {
         val prices = mutableMapOf<String, MutableList<Double>>()
-        // For each bookmaker, remove that bookmaker's overround (vig) by normalising
-        // the implied probabilities across every h2h outcome, then average across books.
+        val bookNames = mutableMapOf<String, MutableList<String>>()
+        // Remove each bookmaker's overround before averaging market probabilities.
         val fairProbabilities = mutableMapOf<String, MutableList<Double>>()
         val books = event.optJSONArray("bookmakers") ?: JSONArray()
         for (b in 0 until books.length()) {
@@ -558,6 +561,7 @@ object OddsEngine {
                 if (overround <= 0.0) continue
                 valid.forEach { (name, price, implied) ->
                     prices.getOrPut(name) { mutableListOf() }.add(price)
+                    bookNames.getOrPut(name) { mutableListOf() }.add(book.optString("title", book.optString("key")))
                     fairProbabilities.getOrPut(name) { mutableListOf() }.add(implied / overround)
                 }
             }
@@ -573,7 +577,10 @@ object OddsEngine {
             }
         }
         val candidateProbability = fairProbabilities[bestName]?.average()?.takeIf { bestName.isNotBlank() }
-        val rawImpliedProbability = if (bestAvg > 1.0) 1.0 / bestAvg else null
+        val bestPrice = prices[bestName]?.maxOrNull() ?: bestAvg
+        val bestPriceIndex = prices[bestName]?.indexOf(bestPrice) ?: -1
+        val bestBookmaker = bookNames[bestName]?.getOrNull(bestPriceIndex).orEmpty()
+        val rawImpliedProbability = if (bestPrice > 1.0) 1.0 / bestPrice else null
         val snapshots = prior?.optJSONArray("snapshots") ?: JSONArray()
         snapshots.put(JSONObject().put("seen_at", now).put("bookmakers", books.length())
             .put("best_candidate", bestName).put("average_price", if (bestAvg > 0) bestAvg else JSONObject.NULL)
@@ -590,7 +597,10 @@ object OddsEngine {
             .put("last_seen", now)
             .put("bookmaker_count", books.length())
             .put("candidate", bestName)
-            .put("candidate_price", if (bestAvg > 0) bestAvg else JSONObject.NULL)
+            .put("candidate_price", if (bestPrice > 0) bestPrice else JSONObject.NULL)
+            .put("candidate_average_price", if (bestAvg > 0) bestAvg else JSONObject.NULL)
+            .put("candidate_best_bookmaker", bestBookmaker)
+            .put("candidate_bookmaker_names", bookNames[bestName]?.distinct()?.joinToString(", ") ?: "")
             .put("candidate_bookmakers", bestBooks)
             .put("candidate_market_probability", candidateProbability ?: JSONObject.NULL)
             .put("candidate_raw_implied_probability", rawImpliedProbability ?: JSONObject.NULL)
