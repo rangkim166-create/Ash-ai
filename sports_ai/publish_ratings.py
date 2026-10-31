@@ -80,7 +80,7 @@ def main():
     if not any(counts.values()):
         raise SystemExit("No match records available to build ratings.")
     payload = {
-        "schema_version": 2,
+        "schema_version": 3,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "model": "Chronological Elo baseline; equal starting ratings; K=24; no injuries, lineups, surface or venue adjustments",
         "match_counts": counts,
