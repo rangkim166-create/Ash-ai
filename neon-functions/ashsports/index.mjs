@@ -8,7 +8,7 @@ const appToken=process.env.ASH_APP_TOKEN||"";
 const cors={"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"authorization,content-type","content-type":"application/json"};
 const reply=(v,s=200)=>new Response(JSON.stringify(v),{status:s,headers:cors});
 const RATING_SOURCE="https://raw.githubusercontent.com/rangkim166-create/Ash-ai/main/data/history/ratings.json";
-const normalizeTeamName=(value)=>String(value??"").normalize("NFKD").replace(/[\\u0300-\\u036f]/g,"").toLocaleLowerCase("en-US").replace(/[^a-z0-9]+/g," ").trim();
+const normalizeTeamName=(value)=>String(value??"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("en-US").replace(/[^a-z0-9]+/g," ").trim();
 async function ensureHistoricalRatingsTables(){
  await db.query(`CREATE TABLE IF NOT EXISTS historical_team_ratings(
   sport text NOT NULL,team_name text NOT NULL,normalized_name text NOT NULL,rating double precision NOT NULL,
