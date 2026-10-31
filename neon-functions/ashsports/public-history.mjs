@@ -89,16 +89,29 @@ export async function importPublicFootballHistory() {
     CREATE TABLE IF NOT EXISTS public_history_imports (
       source_path text PRIMARY KEY,
       imported_matches integer NOT NULL DEFAULT 0,
+      import_status text NOT NULL DEFAULT 'imported',
       imported_at timestamptz NOT NULL DEFAULT now()
     )
   `;
-  const doneRows = await sql`SELECT source_path FROM public_history_imports WHERE imported_matches > 0 OR imported_at > now() - interval '7 days'`;
+  await sql`ALTER TABLE public_history_imports
+    ADD COLUMN IF NOT EXISTS import_status text NOT NULL DEFAULT 'imported'`;
+  // Older versions recorded 404s as zero-match rows. Preserve that signal instead
+  // of treating a cached missing source as a successful, complete import.
+  await sql`UPDATE public_history_imports SET import_status = 'missing'
+    WHERE imported_matches = 0 AND import_status = 'imported'`;
+  const doneRows = await sql`
+    SELECT source_path, import_status
+    FROM public_history_imports
+    WHERE import_status = 'imported'
+       OR (import_status = 'missing' AND imported_at > now() - interval '7 days')
+  `;
   const done = new Set(doneRows.map(r => r.source_path));
+  const cachedMissing = doneRows.filter(r => r.import_status === 'missing').map(r => r.source_path);
   const jobs = seasonNames().flatMap(season =>
     LEAGUES.map(([code]) => `${season}/${code}.json`)
   ).filter(path => !done.has(path));
 
-  let filesImported = 0, matchesImported = 0, filesMissing = 0, errors = [], missingPaths = [];
+  let filesImported = 0, matchesImported = 0, filesMissing = cachedMissing.length, errors = [], missingPaths = [...cachedMissing];
   for (let i = 0; i < jobs.length; i += 4) {
     const batch = jobs.slice(i, i + 4);
     const results = await Promise.all(batch.map(async path => {
@@ -133,8 +146,8 @@ export async function importPublicFootballHistory() {
         filesMissing++;
         missingPaths.push(result.path);
         await sql`INSERT INTO public_history_imports(source_path, imported_matches)
-          VALUES (${result.path}, 0)
-          ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, imported_at = now()`;
+          VALUES (${result.path}, 0, 'missing')
+          ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, import_status = 'missing', imported_at = now()`;
         continue;
       }
       if (result.error) { errors.push({ path: result.path, error: result.error }); continue; }
@@ -161,9 +174,9 @@ export async function importPublicFootballHistory() {
         `;
       }
       await sql`INSERT INTO public_history_imports(source_path, imported_matches)
-        VALUES (${result.path}, ${rows.length})
+        VALUES (${result.path}, ${rows.length}, 'imported')
         ON CONFLICT (source_path) DO UPDATE SET
-          imported_matches = EXCLUDED.imported_matches, imported_at = now()`;
+          imported_matches = EXCLUDED.imported_matches, import_status = 'imported', imported_at = now()`;
       filesImported++;
       matchesImported += rows.length;
     }
@@ -192,8 +205,8 @@ export async function importPublicFootballHistory() {
         filesMissing++;
         missingPaths.push('world/' + result.path);
         await sql`INSERT INTO public_history_imports(source_path, imported_matches)
-          VALUES (${'world/' + result.path}, 0)
-          ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, imported_at = now()`;
+          VALUES (${'world/' + result.path}, 0, 'missing')
+          ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, import_status = 'missing', imported_at = now()`;
         continue;
       }
       if (result.error) { errors.push({ path: result.path, error: result.error }); continue; }
@@ -225,9 +238,9 @@ export async function importPublicFootballHistory() {
         `;
       }
       await sql`INSERT INTO public_history_imports(source_path, imported_matches)
-        VALUES (${"world/" + result.path}, ${rows.length})
+        VALUES (${"world/" + result.path}, ${rows.length}, 'imported')
         ON CONFLICT (source_path) DO UPDATE SET
-          imported_matches = EXCLUDED.imported_matches, imported_at = now()`;
+          imported_matches = EXCLUDED.imported_matches, import_status = 'imported', imported_at = now()`;
       worldFilesImported++;
       worldMatchesImported += rows.length;
     }
