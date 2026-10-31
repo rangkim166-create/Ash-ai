@@ -135,7 +135,7 @@ def main():
             if len(parts) < 2:
                 continue
             competition = " / ".join(parts[:-1])
-            season_match = __import__("re").search(r"(20\\d{2}(?:-\\d{2})?)", str(relative))
+            season_match = re.search(r"(20\\d{2}(?:-\\d{2})?)", str(relative))
             season = season_match.group(1) if season_match else "unknown"
             for match in parse_football_txt(p):
                 home_score, away_score = match["home_score"], match["away_score"]
