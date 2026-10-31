@@ -26,6 +26,11 @@ class FootballTxtParserTests(unittest.TestCase):
         self.assertEqual(rows[0]["date"], "2025-01-12")
         self.assertEqual(rows[0]["home_score"], 3)
 
+    def test_day_month_date_heading(self):
+        rows = self.parse("Sat 17 Aug\n12:30 Arsenal 1-0 Wolves\n")
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["date"], "2024-08-17")
+
     def test_iso_date_inline(self):
         rows = self.parse("2024-10-05 15:00 Team A 0-0 Team B\n")
         self.assertEqual(len(rows), 1)
