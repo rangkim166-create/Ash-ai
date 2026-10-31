@@ -14,7 +14,7 @@ from football_txt_parser import parse_football_txt
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "data" / "history" / "raw" / "football_world" / "unpacked"
 DB = ROOT / "data" / "history" / "ash_sports_history.sqlite"
-SEASON_RE = re.compile(r"(?:19|20)\\d{2}-\\d{2}|20\\d{2}")
+SEASON_RE = re.compile(r"(?:19|20)\d{2}-\d{2}|20\d{2}")
 
 
 def main():
