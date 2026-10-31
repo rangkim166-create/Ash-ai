@@ -157,6 +157,40 @@ class SportsOddsActivity : Activity() {
                     .setPositiveButton("OK", null).show()
             } else chooseOddEvenGame(upcoming)
         }
+        body.addView(button("SHARE DAILY TIP SHEET") {
+            val shareText = buildString {
+                append("ASH SPORTS TIPS • ").append(java.time.LocalDate.now()).append("\n\n")
+                if (dailyPicks.length() == 0) {
+                    append("No selections passed today's evidence checks. No forced bets.\n")
+                } else {
+                    for (i in 0 until dailyPicks.length()) {
+                        val pick = dailyPicks.optJSONObject(i) ?: continue
+                        append(i + 1).append(". ").append(pick.optString("sport_title")).append("\n")
+                        append(pick.optString("away_team")).append(" vs ").append(pick.optString("home_team")).append("\n")
+                        append("Pick: ").append(pick.optString("selection")).append(" @ ")
+                            .append("%.2f".format(java.util.Locale.US, pick.optDouble("price"))).append("\n")
+                        append("Bookmakers: ").append(pick.optInt("bookmakers")).append("\n")
+                        val probability = pick.optDouble("market_probability_pct", Double.NaN)
+                        if (probability.isFinite()) append("Market-implied probability: ")
+                            .append("%.1f%%".format(java.util.Locale.US, probability)).append("\n")
+                        append("Research: ").append(pick.optString("reason")).append("\n\n")
+                    }
+                }
+                if (oddEvenTip != null) {
+                    append("ODD / EVEN SPECIAL\n")
+                    append(oddEvenTip.optString("away_team")).append(" vs ").append(oddEvenTip.optString("home_team")).append("\n")
+                    append(oddEvenTip.optString("selection")).append(" @ ")
+                        .append("%.2f".format(java.util.Locale.US, oddEvenTip.optDouble("price"))).append("\n")
+                    append("Bookmakers: ").append(oddEvenTip.optInt("bookmakers")).append("\n\n")
+                }
+                append("Odds can change. Probabilities shown are bookmaker-derived, not guaranteed outcomes. Bet responsibly.")
+            }
+            val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+            }
+            startActivity(android.content.Intent.createChooser(intent, "Share Ash daily tips"))
+        })
         if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
         candidates.take(20).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
