@@ -50,7 +50,7 @@ async function importHistoricalRatings(){
   const tuples=batch.map((row,index)=>{
    const offset=index*4;
    values.push(row.sport,row.team_name,row.normalized_name,row.rating);
-   return `($${offset+1},${offset+2},${offset+3},${offset+4},${batch.length*4+1}::timestamptz)`;
+   return `($${offset+1},$${offset+2},$${offset+3},$${offset+4},$${batch.length*4+1}::timestamptz)`;
   });
   values.push(generatedAt);
   await db.query(`INSERT INTO historical_team_ratings(sport,team_name,normalized_name,rating,source_generated_at)
