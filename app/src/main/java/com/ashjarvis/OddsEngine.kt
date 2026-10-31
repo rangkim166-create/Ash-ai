@@ -611,7 +611,7 @@ object OddsEngine {
                 add("selected side's recency-weighted win-rate edge: %.1f percentage points".format(java.util.Locale.US, edge * 100.0))
                 add("recent form: ${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L vs ${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
                 if (historicalRatingReady) {
-                    add("historical Elo prior: $homeName ${"%.0f".format(java.util.Locale.US, homeRating!!.rating)} (${homeRating.matches} matches) vs $awayName ${"%.0f".format(java.util.Locale.US, awayRating!!.rating)} (${awayRating.matches} matches)")
+                    add("historical Elo prior: $homeName ${"%.0f".format(java.util.Locale.US, homeRating!!.rating)} (${homeRating!!.matches} matches) vs $awayName ${"%.0f".format(java.util.Locale.US, awayRating!!.rating)} (${awayRating!!.matches} matches)")
                     add("historical Elo supports selected side by ${"%.0f".format(java.util.Locale.US, ratingEdge)} points; used only as a small ranking adjustment, not a calibrated probability")
                 } else add("historical Elo unavailable or under 8 matches for one side; no rating adjustment applied")
                 if (price >= 5.0) add("high-variance price band; stricter sample and bookmaker requirements applied")
