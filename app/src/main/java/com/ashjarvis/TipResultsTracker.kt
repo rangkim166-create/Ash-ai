@@ -116,6 +116,14 @@ object TipResultsTracker {
         return settled
     }
 
+    private fun oddsBand(price: Double): String = when {
+        price < 2.0 -> "1.50–1.99"
+        price < 3.0 -> "2.00–2.99"
+        price < 5.0 -> "3.00–4.99"
+        price < 10.0 -> "5.00–9.99"
+        else -> "10+"
+    }
+
     fun stats(context: Context, days: Int): JSONObject {
         val cutoff = Instant.now().minusSeconds(days.coerceAtLeast(1).toLong() * 86400L)
         var won = 0
@@ -125,6 +133,8 @@ object TipResultsTracker {
         var profit = 0.0
         var brierTotal = 0.0
         var brierCount = 0
+        data class Segment(var won: Int = 0, var lost: Int = 0, var profit: Double = 0.0)
+        val segments = linkedMapOf<String, Segment>()
         val tips = all(context)
         for (i in 0 until tips.length()) {
             val tip = tips.optJSONObject(i) ?: continue
@@ -133,7 +143,12 @@ object TipResultsTracker {
             when (tip.optString("status")) {
                 "won" -> {
                     won++
-                    profit += tip.optDouble("profit_units", 0.0)
+                    val tipProfit = tip.optDouble("profit_units", 0.0)
+                    profit += tipProfit
+                    val segmentKey = "${tip.optString("sport_title", "Other")}|${oddsBand(tip.optDouble("price", 0.0))}"
+                    val segment = segments.getOrPut(segmentKey) { Segment() }
+                    segment.won++
+                    segment.profit += tipProfit
                     val probability = tip.optDouble("market_probability_pct", Double.NaN) / 100.0
                     if (probability.isFinite() && probability in 0.0..1.0) {
                         brierTotal += (probability - 1.0) * (probability - 1.0)
@@ -142,7 +157,12 @@ object TipResultsTracker {
                 }
                 "lost" -> {
                     lost++
-                    profit += tip.optDouble("profit_units", -1.0)
+                    val tipProfit = tip.optDouble("profit_units", -1.0)
+                    profit += tipProfit
+                    val segmentKey = "${tip.optString("sport_title", "Other")}|${oddsBand(tip.optDouble("price", 0.0))}"
+                    val segment = segments.getOrPut(segmentKey) { Segment() }
+                    segment.lost++
+                    segment.profit += tipProfit
                     val probability = tip.optDouble("market_probability_pct", Double.NaN) / 100.0
                     if (probability.isFinite() && probability in 0.0..1.0) {
                         brierTotal += probability * probability
@@ -155,6 +175,17 @@ object TipResultsTracker {
         }
         val settled = won + lost
         val staked = settled.toDouble()
+        val segmentJson = JSONObject()
+        segments.forEach { (key, value) ->
+            val segmentSettled = value.won + value.lost
+            segmentJson.put(key, JSONObject()
+                .put("won", value.won)
+                .put("lost", value.lost)
+                .put("settled", segmentSettled)
+                .put("hit_rate_pct", if (segmentSettled > 0) value.won.toDouble() / segmentSettled * 100.0 else JSONObject.NULL)
+                .put("profit_units", value.profit)
+                .put("yield_pct", if (segmentSettled > 0) value.profit / segmentSettled * 100.0 else JSONObject.NULL))
+        }
         return JSONObject()
             .put("period_days", days)
             .put("won", won)
@@ -167,5 +198,6 @@ object TipResultsTracker {
             .put("yield_pct", if (staked > 0.0) profit / staked * 100.0 else JSONObject.NULL)
             .put("market_brier_score", if (brierCount > 0) brierTotal / brierCount else JSONObject.NULL)
             .put("market_brier_samples", brierCount)
+            .put("performance_segments", segmentJson)
     }
 }
