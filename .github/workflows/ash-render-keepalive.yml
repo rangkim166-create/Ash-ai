@@ -5,7 +5,7 @@ on:
     - cron: "*/10 * * * *"
   workflow_dispatch:
   push:
-    branches: [ash-neon-backend]
+    branches: [main, ash-neon-backend]
     paths:
       - ".github/workflows/ash-render-keepalive.yml"
 
@@ -15,7 +15,7 @@ permissions:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Wake and verify Render API
         shell: bash
