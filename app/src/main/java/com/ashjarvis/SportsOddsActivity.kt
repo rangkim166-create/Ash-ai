@@ -398,9 +398,10 @@ class SportsOddsActivity : Activity() {
                     val home = tip.optString("home_team")
                     val away = tip.optString("away_team")
                     val sport = tip.optString("sport_title")
-                    runCatching {
+                    val refreshed = runCatching {
                         HistoricalDataEngine.collectMatchHistory(this@SportsOddsActivity, home, away, sport, forceRefresh = true)
-                    }.getOrElse { continue }
+                    }.isSuccess
+                    if (!refreshed) continue
                     val homeRows = HistoricalDataEngine.teamHistory(this@SportsOddsActivity, home, sport, 100)
                     val awayRows = HistoricalDataEngine.teamHistory(this@SportsOddsActivity, away, sport, 100)
                     val homeRow = findRow(homeRows, home, away) ?: continue
