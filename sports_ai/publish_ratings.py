@@ -87,7 +87,7 @@ def main():
         "data_license_notes": {
             "football": "OpenFootball datasets are CC0; the global football-data archive is ODC-BY 1.0 and requires attribution.",
             "tennis": "Jeff Sackmann ATP/WTA results are CC BY-NC-SA 4.0: non-commercial use only, attribution and share-alike required.",
-            "basketball": "NBA team-game results are derived from the Shufinskiy archive; retain its applicable Apache-2.0 notice and attribution."
+            "basketball": "NBA team-game results are from the llimllib stats.nba.com mirror (2009/10 onward); the repository does not publish an explicit dataset reuse license, so this source is not commercially cleared."
         },
         "participant_counts": {sport: len(table) for sport, table in ratings.items()},
         "recent_form_window_days": FORM_WINDOW_DAYS,
