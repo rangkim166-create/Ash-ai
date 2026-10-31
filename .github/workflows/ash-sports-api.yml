@@ -30,4 +30,4 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
       - name: Check function syntax
-        run: node --check index.mjs && node --check public-history.mjs
+        run: node --check index.mjs && node --check public-history.mjs && node --check daily-picks.mjs && node --test daily-picks.test.mjs
