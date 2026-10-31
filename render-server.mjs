@@ -24,7 +24,11 @@ server.listen(port, "0.0.0.0", () => {
   console.log(`Ash Sports API listening on ${port}`);
   let scoutRunning = false;
   const runScout = async () => {
-    if (scoutRunning) return console.log("[ash-scout] skipped: previous run still active");
+    if (scoutRunning) {
+      console.log("[ash-scout] skipped: previous run still active; retrying shortly");
+      setTimeout(() => void runScout(), 60 * 1000).unref();
+      return;
+    }
     if (!process.env.THE_ODDS_API_KEY) return console.log("[ash-scout] skipped: Odds API key is not configured");
     scoutRunning = true;
     try {
@@ -35,8 +39,19 @@ server.listen(port, "0.0.0.0", () => {
       if (result && (result.status === "success" || result.status === "partial")) {
         await runDailyPublish();
       }
+      // Retry interrupted, failed, or partial collection runs. The database
+      // cooldown prevents repeated provider calls when a run is healthy.
+      const retryDelay = result?.status === "failed" || result?.lastStatus === "failed"
+        ? 2 * 60 * 1000
+        : result?.status === "partial" || result?.lastStatus === "partial"
+          ? 6 * 60 * 1000
+          : result?.lastStatus === "running"
+            ? 2 * 60 * 1000
+            : 0;
+      if (retryDelay > 0) setTimeout(() => void runScout(), retryDelay).unref();
     } catch (error) {
       console.error("[ash-scout] scheduled collection failed", error);
+      setTimeout(() => void runScout(), 2 * 60 * 1000).unref();
     } finally {
       scoutRunning = false;
     }
