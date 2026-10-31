@@ -1,34 +1,61 @@
 # Ash Jarvis — Native Android AI Assistant
 
-Ash Jarvis is being built as a **native Android application**. It is not a PWA or a website wrapped in an APK.
+Ash Jarvis is a native Android app for chat, voice, phone assistance, offline GGUF inference, and sports intelligence.
 
-## Goals
+## Android build
 
-- Native Android UI and local conversation storage
-- AI chat with a configurable online provider
-- A path to on-device, offline inference using a compatible GGUF model runtime
-- Coding assistance and a safe ethical cybersecurity learning lab
-- Build and test an installable APK through Android tooling/CI
+- Kotlin Android app, package: `com.ashjarvis`
+- Minimum Android: 11 (API 30)
+- ARM64 APK target for modern Android phones, including the Samsung Galaxy A70
+- Online AI: OpenRouter, with the API key encrypted using Android Keystore
+- Offline AI: `LLMEdge 0.3.9` (llama.cpp/JNI) with local GGUF model files
 
-## Honest status
+Build with GitHub Actions: **Actions → Build Ash Jarvis APK**. The workflow compiles and uploads an ARM64 debug APK artifact. The APK is not a Play Store release.
 
-This repository is the starting point. The APK and offline Dolphin model integration are **not yet built or verified**. A model file alone is not an Android runtime; the app needs a compatible inference engine and enough available memory/storage. Keep API keys out of source control.
+## Offline AI — important device notes
 
-## Development
+The app contains the GGUF import/download and local inference path. Model weights are downloaded separately and are not bundled in the APK.
 
-The Android project will use Kotlin and Jetpack Compose. Build it with a compatible Android SDK and Gradle installation, or use the repository's CI workflow once added.
+For an 8 GB Android phone, start with **Qwen 2.5 0.5B Q4_K_M**. Qwen 2.5 1.5B Q4 may work depending on free RAM. A 3B model is heavier, and Dolphin 8B Q4 is not a reliable target on an 8 GB phone because the model needs additional memory for runtime and context.
 
+A successful CI build verifies compilation, not real on-device inference. The final runtime check must be done on a physical Android device after downloading a compatible model.
 
-## Sports Intelligence (new foundation)
+## Sports intelligence
 
-A free-first historical data collector and Elo prediction baseline for football and tennis, plus NBA historical team-game data collection, lives in [sports_ai/README.md](sports_ai/README.md). A scheduled GitHub Actions workflow refreshes available source data daily. Data availability depends on upstream sources; this is an early baseline, not a verified profitable prediction system.
+The native SPORTS screen provides:
+- Live/upcoming bookmaker odds from The Odds API
+- Football, basketball, and tennis competition selection
+- Local match/odds history and saved research
+- A server-generated **Odds of the Day** ticket with individual and full-ticket copy actions
 
-## Live bookmaker odds integration
+The daily ticket is read from the Render API at:
 
-Ash's **SPORTS** button opens a separate native **Ash Sports Intelligence** screen with Today, History and Setup tabs. Each customer can paste their own The Odds API key into the app. The key is encrypted using Android Keystore on that device and is not committed to source control or embedded in the APK.
+`https://ash-sports-api.onrender.com/v1/public/odds/daily`
 
-Customers can select leagues/competitions available to their API plan. Ash retrieves current/upcoming head-to-head odds, creates a clearly labelled shortlist using a simple price-range and multi-bookmaker availability filter, and stores newly discovered games plus recent snapshots locally. WorkManager schedules a background refresh every 24 hours after the Sports screen has been opened. The first refresh starts after a key is connected. API availability and quota depend on the customer's Odds API subscription; some sports may not be available on a free plan.
+The backend stores the Kampala-day ticket in its database and only publishes selections that pass its current odds/form checks. It must return no pick rather than force a bet when evidence is insufficient. This is a research filter, not a guarantee of profit.
 
-The shortlist is a filtering aid, **not a guarantee of a winning bet**. Odd/even is not a standard market in The Odds API's published list, so Ash must not invent bookmaker odd/even prices from over/under data. The local history stores games/odds snapshots seen by this app; it is not a substitute for the provider's paid historical-odds archive.
+Historical match results and bookmaker odds are different datasets. Local odds history records snapshots observed by this app; it does not create a paid historical-odds archive.
 
-A GitHub Actions workflow builds a debug APK after app changes; check the latest Actions run before installing.
+## Render backend and Telegram
+
+The production API service is `ash-sports-api` on Render:
+
+`https://ash-sports-api.onrender.com`
+
+It runs from the `ash-neon-backend` branch and exposes a public health check, public daily ticket/history reads, and authenticated provider/Telegram management routes.
+
+Telegram delivery requires both Render environment variables:
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_CHAT_ID`
+
+Until those are configured, the daily ticket can still be stored and viewed in the app, but it cannot be sent to Telegram. The backend retries the daily publication on its schedule.
+
+## Neon deployment
+
+The Render API is the active backend deployment. The optional Neon Function workflow is disabled unless explicitly enabled with repository variable `ASH_ENABLE_NEON_FUNCTION_DEPLOY=true` and dedicated `ASH_NEON_PROJECT_ID` / `ASH_NEON_BRANCH_ID` variables plus `NEON_API_KEY`. Do not point it at another app's database.
+
+## Security
+
+- Never commit API keys, bot tokens, or database URLs.
+- Keep provider credentials in Render environment variables or the app's encrypted local storage.
+- Do not describe an unverified model or prediction as working or guaranteed.
