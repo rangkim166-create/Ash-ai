@@ -28,9 +28,9 @@ const WORLD_FILES = [
 ];
 
 function parseWorldDate(line, seasonStart) {
-  const iso = line.match(/^(20\\d{2})-(\\d{1,2})-(\\d{1,2})$/);
+  const iso = line.match(/^(20\d{2})-(\d{1,2})-(\d{1,2})$/);
   if (iso) return iso[1] + "-" + String(iso[2]).padStart(2, "0") + "-" + String(iso[3]).padStart(2, "0");
-  const named = line.match(/^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s+)?([A-Za-z]{3,9})\\s+(\\d{1,2})(?:,?\\s+((?:19|20)\\d{2}))?$/i);
+  const named = line.match(/^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+)?([A-Za-z]{3,9})\s+(\d{1,2})(?:,?\s+((?:19|20)\d{2}))?$/i);
   if (named) {
     const months = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
     const month = months[named[1].slice(0,3).toLowerCase()];
@@ -38,7 +38,7 @@ function parseWorldDate(line, seasonStart) {
     const year = named[3] ? Number(named[3]) : seasonStart + (month <= 6 ? 1 : 0);
     return String(year) + "-" + String(month).padStart(2, "0") + "-" + String(Number(named[2])).padStart(2, "0");
   }
-  const numeric = line.match(/^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\\s+)?(\\d{1,2})[./](\\d{1,2})\\.?$/i);
+  const numeric = line.match(/^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+)?(\d{1,2})[./](\d{1,2})\.?$/i);
   if (numeric) {
     const day = Number(numeric[1]), month = Number(numeric[2]);
     if (month < 1 || month > 12 || day < 1 || day > 31) return null;
@@ -49,12 +49,12 @@ function parseWorldDate(line, seasonStart) {
 }
 
 function parseWorldText(body, sourcePath) {
-  const lines = body.split(/\\r?\\n/);
+  const lines = body.split(/\r?\n/);
   const parts = sourcePath.split("/");
-  const country = (parts[1] || "unknown").replace(/-/g, " ").replace(/\\b\\w/g, x => x.toUpperCase());
-  const seasonMatch = sourcePath.match(/((?:19|20)\\d{2})-(\\d{2})/);
+  const country = (parts[1] || "unknown").replace(/-/g, " ").replace(/\b\w/g, x => x.toUpperCase());
+  const seasonMatch = sourcePath.match(/((?:19|20)\d{2})-(\d{2})/);
   const seasonStart = seasonMatch ? Number(seasonMatch[1]) : 2024;
-  const header = lines.find(line => line.trim().startsWith("="))?.trim().replace(/^=\\s*/, "") || "";
+  const header = lines.find(line => line.trim().startsWith("="))?.trim().replace(/^=\s*/, "") || "";
   let league = header;
   if (header.includes("|")) league = header.split("|").slice(1).join("|").trim();
   else if (header.toLowerCase().startsWith(country.toLowerCase())) league = header.slice(country.length).trim();
@@ -67,10 +67,10 @@ function parseWorldText(body, sourcePath) {
     const parsedDate = parseWorldDate(line, seasonStart);
     if (parsedDate) { currentDate = parsedDate; continue; }
     if (!currentDate) continue;
-    const match = line.match(/^(?:(\\d{1,2}:\\d{2})\\s+)?(.+?)\\s+v(?:s\\.?)?\\s+(.+?)\\s+(\\d{1,2})-(\\d{1,2})(?:\\s+\\([^)]*\\))?(?:\\s+@.*)?$/i);
+    const match = line.match(/^(?:(\d{1,2}:\d{2})\s+)?(.+?)\s+v(?:s\.?)?\s+(.+?)\s+(\d{1,2})-(\d{1,2})(?:\s+\([^)]*\))?(?:\s+@.*)?$/i);
     if (!match) continue;
-    const home = match[2].replace(/\\s+/g, " ").trim();
-    const away = match[3].replace(/\\s+/g, " ").trim();
+    const home = match[2].replace(/\s+/g, " ").trim();
+    const away = match[3].replace(/\s+/g, " ").trim();
     if (!home || !away || home.toLowerCase() === away.toLowerCase()) continue;
     matches.push({competition, home:home.slice(0,180), away:away.slice(0,180),
       starts:currentDate + "T12:00:00Z", home_score:Number(match[4]), away_score:Number(match[5])});
