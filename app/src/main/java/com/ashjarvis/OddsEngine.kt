@@ -354,14 +354,35 @@ object OddsEngine {
                 val kickoff = it.optString("commence_time")
                 kickoff.isNotBlank() && try { Instant.parse(kickoff).isAfter(now) } catch (_: Exception) { false }
             }
-        // Research a few more than the final shortlist, then reject matches without enough evidence.
-        val candidates = upcoming.filter {
+        // Diversify the research slate across football, basketball and tennis,
+        // then sample the requested price bands instead of researching only short favourites.
+        val candidatePool = upcoming.filter {
             it.optString("candidate").isNotBlank() &&
                 it.optInt("candidate_bookmakers") >= 3 &&
                 it.optDouble("candidate_price", 0.0) in 1.50..10.00
         }.sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
-            .thenBy { kotlin.math.abs(it.optDouble("candidate_price", 9.0) - 1.50) })
-            .take(6)
+            .thenBy { it.optDouble("candidate_price", 99.0) })
+        val candidates = mutableListOf<JSONObject>()
+        fun addFirst(predicate: (JSONObject) -> Boolean) {
+            candidatePool.firstOrNull { candidate -> predicate(candidate) &&
+                candidates.none { it.optString("id") == candidate.optString("id") } }?.let(candidates::add)
+        }
+        addFirst { it.optString("sport_key").startsWith("soccer_") || it.optString("sport_title").contains("football", true) }
+        addFirst { it.optString("sport_key").startsWith("basketball_") || it.optString("sport_title").contains("basket", true) }
+        addFirst { it.optString("sport_key").startsWith("tennis_") || it.optString("sport_title").contains("tennis", true) }
+        listOf(1.50..2.00, 2.01..3.00, 3.01..5.00, 5.01..10.00).forEach { band ->
+            candidatePool.filter { it.optDouble("candidate_price", 0.0) in band }
+                .forEach { candidate ->
+                    if (candidates.size < 6 && candidates.none { it.optString("id") == candidate.optString("id") }) {
+                        candidates.add(candidate)
+                    }
+                }
+        }
+        candidatePool.forEach { candidate ->
+            if (candidates.size < 6 && candidates.none { it.optString("id") == candidate.optString("id") }) {
+                candidates.add(candidate)
+            }
+        }
 
         candidates.forEach { event ->
             val checkedAt = event.optString("research_checked_at")
