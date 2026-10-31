@@ -470,8 +470,8 @@ object OddsEngine {
         var bestBooks = 0
         for ((name, list) in prices) {
             val avg = list.average()
-            if (list.size >= 2 && avg in 1.20..1.90 &&
-                (list.size > bestBooks || (list.size == bestBooks && kotlin.math.abs(avg - 1.55) < kotlin.math.abs(bestAvg - 1.55)))) {
+            if (list.size >= 2 && avg in 1.50..10.00 &&
+                (list.size > bestBooks || (list.size == bestBooks && kotlin.math.abs(avg - 2.50) < kotlin.math.abs(bestAvg - 2.50)))) {
                 bestName = name; bestAvg = avg; bestBooks = list.size
             }
         }
