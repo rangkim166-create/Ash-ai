@@ -42,9 +42,9 @@ async function collectOdds(maxSports=8){
     for(const b of(e.bookmakers||[]))for(const m of(b.markets||[]))for(const v of(m.outcomes||[])){
      const price=Number(v.price);if(!v.name||!Number.isFinite(price)||price<=1)continue;
      const point=v.point==null?null:Number(v.point);
-     await db.query("INSERT INTO bookmaker_odds(match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at,source) VALUES($1,$2,$3,$4,$5,$6,$7::timestamptz,'the_odds_api') ON CONFLICT DO NOTHING",
+     const inserted=await db.query("INSERT INTO bookmaker_odds(match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at,source) VALUES($1,$2,$3,$4,$5,$6,$7::timestamptz,'the_odds_api') ON CONFLICT DO NOTHING RETURNING id",
      [id,b.key||b.title||"unknown",m.key||"unknown",v.name,price,Number.isFinite(point)?point:null,observedAt]);
-     saved++;o++;
+     saved+=inserted.rowCount;o+=inserted.rowCount;
     }
    }
    results.push({sport:sport.key,fixtures:n,odds:o});
