@@ -1,0 +1,33 @@
+name: Keep Ash Sports API awake
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+  push:
+    branches: [ash-neon-backend]
+    paths:
+      - ".github/workflows/ash-render-keepalive.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wake and verify Render API
+        shell: bash
+        run: |
+          for attempt in 1 2 3 4 5; do
+            if curl --fail --silent --show-error --max-time 90 https://ash-sports-api.onrender.com/health; then
+              echo
+              echo "Ash Sports API is healthy."
+              exit 0
+            fi
+            echo "Health check attempt $attempt failed; retrying."
+            sleep 10
+          done
+          echo "Ash Sports API did not become healthy."
+          exit 1
