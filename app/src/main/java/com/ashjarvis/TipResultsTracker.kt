@@ -166,7 +166,7 @@ object TipResultsTracker {
                     lost++
                     val tipProfit = tip.optDouble("profit_units", -1.0)
                     profit += tipProfit
-                    val segmentKey = "${tip.optString("sport_title", "Other")}|${oddsBand(tip.optDouble("price", 0.0))}"
+                    val segmentKey = "${sportCategory(tip.optString("sport_key"), tip.optString("sport_title"))}|${oddsBand(tip.optDouble("price", 0.0))}"
                     val segment = segments.getOrPut(segmentKey) { Segment() }
                     segment.lost++
                     segment.profit += tipProfit
