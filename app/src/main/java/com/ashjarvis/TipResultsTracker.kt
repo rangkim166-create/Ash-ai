@@ -116,6 +116,13 @@ object TipResultsTracker {
         return settled
     }
 
+    private fun sportCategory(sportKey: String, sportTitle: String): String = when {
+        sportKey.startsWith("soccer_") || sportTitle.contains("football", true) || sportTitle.contains("soccer", true) -> "Football"
+        sportKey.startsWith("basketball_") || sportTitle.contains("basket", true) -> "Basketball"
+        sportKey.startsWith("tennis_") || sportTitle.contains("tennis", true) -> "Tennis"
+        else -> sportTitle.ifBlank { "Other" }
+    }
+
     private fun oddsBand(price: Double): String = when {
         price < 2.0 -> "1.50–1.99"
         price < 3.0 -> "2.00–2.99"
@@ -145,7 +152,7 @@ object TipResultsTracker {
                     won++
                     val tipProfit = tip.optDouble("profit_units", 0.0)
                     profit += tipProfit
-                    val segmentKey = "${tip.optString("sport_title", "Other")}|${oddsBand(tip.optDouble("price", 0.0))}"
+                    val segmentKey = "${sportCategory(tip.optString("sport_key"), tip.optString("sport_title"))}|${oddsBand(tip.optDouble("price", 0.0))}"
                     val segment = segments.getOrPut(segmentKey) { Segment() }
                     segment.won++
                     segment.profit += tipProfit
