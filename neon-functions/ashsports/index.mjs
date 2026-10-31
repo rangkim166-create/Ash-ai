@@ -18,7 +18,7 @@ async function collectOdds(maxSports=8){
  if(!key)throw Error("The Odds API is not configured");
  const sr=await fetch("https://api.the-odds-api.com/v4/sports?apiKey="+encodeURIComponent(key),{signal:AbortSignal.timeout(15000)});
  const st=await sr.text(); if(!sr.ok)throw Error("Odds sports list HTTP "+sr.status+": "+st.slice(0,160));
- const sports=JSON.parse(st).filter(s=>s.active&&/^(soccer_|basketball_|tennis_)/.test(s.key||""));
+ const sports=JSON.parse(st).filter(s=>s.active&&/^(soccer_|basketball_|tennis_)/.test(s.key||"")&&!/(championship_winner|outright|winner$)/i.test(s.key||""));
  const priority=["saudi","egypt","morocco","qatar","uae","tunisia","algeria","soccer_epl","championship","bundesliga","la_liga","serie_a","ligue_one","basketball_nba","euroleague","tennis_atp","tennis_wta"];
  sports.sort((a,b)=>{const rank=x=>{const i=priority.findIndex(p=>x.key.includes(p));return i<0?99:i;};return rank(a)-rank(b);});
  const limit=Math.min(12,Math.max(1,maxSports));const arab=sports.filter(s=>["saudi","egypt","morocco","qatar","uae","tunisia","algeria"].some(x=>s.key.includes(x)));const football=sports.filter(s=>s.key.startsWith("soccer_")&&!arab.includes(s));const basketball=sports.filter(s=>s.key.startsWith("basketball_"));const tennis=sports.filter(s=>s.key.startsWith("tennis_"));const selected=[...arab.slice(0,2),...football.slice(0,1),...basketball.slice(0,2),...tennis.slice(0,1)];for(const s of sports){if(selected.length>=limit)break;if(!selected.includes(s))selected.push(s);}
@@ -60,6 +60,30 @@ export default {async runScheduledCollection(){return await collectOdds(6);},asy
 const auth=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!appToken||auth.length!==appToken.length||!timingSafeEqual(Buffer.from(auth),Buffer.from(appToken)))return reply({error:"unauthorized"},401);
 try{
 if(p==="/v1/odds/collect"&&req.method==="POST"){const b=await req.json().catch(()=>({}));const n=Number(b.maxSports||6);if(!Number.isInteger(n)||n<1||n>12)return reply({error:"maxSports must be 1 to 12"},400);return reply(await collectOdds(n));}
+if(p==="/v1/public/odds/sports"&&req.method==="GET"){
+const r=await db.query("SELECT id,competition,sport FROM sports_matches WHERE starts_at>now()-interval '1 day' ORDER BY starts_at DESC LIMIT 500");
+const seen=new Set(),data=[];
+for(const row of r.rows){const key=String(row.id).split(":")[0];if(seen.has(key))continue;seen.add(key);data.push({key,title:row.competition,group:row.sport,active:true});}
+return reply({data});
+}
+if(p==="/v1/public/odds/events"&&req.method==="GET"){
+const matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source_updated_at FROM sports_matches WHERE starts_at>now()-interval '1 day' ORDER BY starts_at ASC LIMIT 400");
+const ids=matches.rows.map(x=>x.id);
+if(!ids.length)return reply({data:[],observedAt:new Date().toISOString()});
+const odds=await db.query("SELECT DISTINCT ON (match_id,bookmaker_key,market_key,outcome_name,COALESCE(line,0)) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) ORDER BY match_id,bookmaker_key,market_key,outcome_name,COALESCE(line,0),observed_at DESC", [ids]);
+const byMatch=new Map();
+for(const row of odds.rows){
+let event=byMatch.get(row.match_id);if(!event){event=new Map();byMatch.set(row.match_id,event);}
+let book=event.get(row.bookmaker_key);if(!book){book={key:row.bookmaker_key,title:row.bookmaker_key,markets:new Map()};event.set(row.bookmaker_key,book);}
+let market=book.markets.get(row.market_key);if(!market){market={key:row.market_key,outcomes:[]};book.markets.set(row.market_key,market);}
+market.outcomes.push({name:row.outcome_name,price:Number(row.decimal_odds),...(row.line==null?{}:{point:Number(row.line)})});
+}
+const data=matches.rows.map(row=>{
+const books=byMatch.get(row.id);
+return {id:row.id,sport_key:String(row.id).split(":")[0],sport_title:row.competition,home_team:row.home_or_player_one,away_team:row.away_or_player_two,commence_time:row.starts_at,bookmakers:books?[...books.values()].map(b=>({key:b.key,title:b.title,markets:[...b.markets.values()]})):[]};
+});
+return reply({data,observedAt:new Date().toISOString()});
+}
 if(p==="/v1/odds/summary"&&req.method==="GET"){const r=await db.query("SELECT (SELECT COUNT(*) FROM sports_matches) AS matches,(SELECT COUNT(*) FROM bookmaker_odds) AS odds_snapshots,(SELECT COUNT(DISTINCT bookmaker_key) FROM bookmaker_odds) AS bookmakers,(SELECT MIN(observed_at) FROM bookmaker_odds) AS first_snapshot,(SELECT MAX(observed_at) FROM bookmaker_odds) AS latest_snapshot");const runs=await db.query("SELECT id,started_at,finished_at,status,fixtures_seen,odds_snapshots_saved,error_summary FROM daily_scout_runs ORDER BY started_at DESC LIMIT 10");return reply({totals:r.rows[0],recentRuns:r.rows});}
 if(p==="/v1/providers/status"&&req.method==="GET"){const r=await db.query("SELECT provider,updated_at FROM provider_credentials");return reply({providers:["the_odds_api","openrouter","groq","telegram_bot"].map(x=>({provider:x,configured:(x==="the_odds_api"?!!process.env.THE_ODDS_API_KEY:x==="openrouter"?!!process.env.OPENROUTER_API_KEY:x==="groq"?!!process.env.GROQ_API_KEY:x==="telegram_bot"?!!(process.env.TELEGRAM_BOT_TOKEN&&process.env.TELEGRAM_CHAT_ID):false)||r.rows.some(y=>y.provider===x),updatedAt:r.rows.find(y=>y.provider===x)?.updated_at||null}))});}
 const m=p.match(/^\/v1\/providers\/(the_odds_api|openrouter|groq)$/);if(m&&req.method==="POST"){const k=String((await req.json()).apiKey||"").trim();if(k.length<12||k.length>500)return reply({error:"invalid_api_key"},400);await save(m[1],k);try{return reply({saved:true,test:await test(m[1],k)});}catch(e){return reply({saved:true,test:{ok:false,error:String(e.message).slice(0,250)}});}}
