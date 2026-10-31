@@ -107,13 +107,29 @@ class SportsOddsActivity : Activity() {
         val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
         card("DAILY SHORTLIST", "Ash scans active sports exposed by your API key, then ranks a small daily research shortlist. Each sport requires a separate odds request, so your API quota/plan limits coverage. Target odds are combined prices, not win probabilities or guarantees.") {}
         val dailyPicks = OddsEngine.savedDailyPicks(this)
-        val picksText = if (dailyPicks.length() == 0) {
-            "Ash has not found a match that passes its current evidence checks yet. Tap REFRESH NOW later or check another league. No pick is better than forcing a weak one."
-        } else {
-            (0 until dailyPicks.length()).mapNotNull { i ->
-                val pick = dailyPicks.optJSONObject(i) ?: return@mapNotNull null
-                "${i + 1}. ${pick.optString(\"away_team\")} vs ${pick.optString(\"home_team\")}\\n   Pick: ${pick.optString(\"selection\")} @ ${\"%.2f\".format(java.util.Locale.US, pick.optDouble(\"price\", 0.0))}\\n   Market-implied chance: ${if (pick.optDouble(\"market_probability_pct\", Double.NaN).isFinite()) \"%.1f%%\".format(java.util.Locale.US, pick.optDouble(\"market_probability_pct\")) else \"not available\"}\\n   Raw odds-implied chance: ${if (pick.optDouble(\"raw_implied_probability_pct\", Double.NaN).isFinite()) \"%.1f%%\".format(java.util.Locale.US, pick.optDouble(\"raw_implied_probability_pct\")) else \"not available\"}\\n   Evidence index: ${pick.optInt(\"evidence_index\")}/100 (separate from probability)\\n   Bookmakers: ${pick.optInt(\"bookmakers\")} • Recent results: ${pick.optInt(\"home_recent_count\")} + ${pick.optInt(\"away_recent_count\")} • ${pick.optString(\"confidence\")}\\n   Probability method: ${pick.optString(\"probability_method\")}\\n   Why shortlisted: ${pick.optString(\"reason\")}"
-            }.joinToString("\\n\\n") + "\\n\\nEvidence index is a heuristic, not a measured chance of winning. Prices and team news can change; no outcome is guaranteed."
+        val picksText = buildString {
+            if (dailyPicks.length() == 0) {
+                append("Ash has not found a match that passes its current evidence checks yet. No pick is better than forcing a weak one.")
+            } else {
+                for (i in 0 until dailyPicks.length()) {
+                    val pick = dailyPicks.optJSONObject(i) ?: continue
+                    if (isNotEmpty()) append("\\n\\n")
+                    append(i + 1).append(". ").append(pick.optString("away_team"))
+                        .append(" vs ").append(pick.optString("home_team"))
+                    append("\\nPick: ").append(pick.optString("selection"))
+                        .append(" @ ").append("%.2f".format(java.util.Locale.US, pick.optDouble("price", 0.0)))
+                    append("\\nMarket-implied chance: ")
+                    val marketPct = pick.optDouble("market_probability_pct", Double.NaN)
+                    append(if (marketPct.isFinite()) "%.1f%%".format(java.util.Locale.US, marketPct) else "not available")
+                    append("\\nRaw odds-implied chance: ")
+                    val rawPct = pick.optDouble("raw_implied_probability_pct", Double.NaN)
+                    append(if (rawPct.isFinite()) "%.1f%%".format(java.util.Locale.US, rawPct) else "not available")
+                    append("\\nEvidence index: ").append(pick.optInt("evidence_index"))
+                        .append("/100 • Bookmakers: ").append(pick.optInt("bookmakers"))
+                    append("\\nWhy: ").append(pick.optString("reason"))
+                }
+                append("\\n\\nEvidence index is a heuristic, not a measured chance of winning. Odds can change.")
+            }
         }
         card("ASH DAILY MATCHES TO WATCH", picksText) {
             AlertDialog.Builder(this).setTitle("Daily researched shortlist")
