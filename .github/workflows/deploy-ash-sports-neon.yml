@@ -13,10 +13,14 @@ permissions:
 
 jobs:
   deploy:
+    # Optional alternative deployment only. The checked-in historical project ID
+    # belonged to another app, so never deploy until the owner supplies the
+    # correct Ash Sports Neon project and branch explicitly.
+    if: ${{ vars.ASH_ENABLE_NEON_FUNCTION_DEPLOY == 'true' }}
     runs-on: ubuntu-latest
     env:
-      NEON_PROJECT_ID: ancient-block-46823136
-      NEON_BRANCH_ID: br-mute-waterfall-a557thwv
+      NEON_PROJECT_ID: ${{ vars.ASH_NEON_PROJECT_ID }}
+      NEON_BRANCH_ID: ${{ vars.ASH_NEON_BRANCH_ID }}
       FUNCTION_SLUG: ashsports
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +34,11 @@ jobs:
           NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
         run: |
           if [ -z "$NEON_API_KEY" ]; then
-            echo "::error::Add NEON_API_KEY in GitHub repository Settings > Secrets and variables > Actions, then rerun this workflow."
+            echo "::error::Add NEON_API_KEY in GitHub repository Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "$NEON_PROJECT_ID" ] || [ -z "$NEON_BRANCH_ID" ]; then
+            echo "::error::Set ASH_NEON_PROJECT_ID and ASH_NEON_BRANCH_ID to the dedicated Ash Sports database target."
             exit 1
           fi
       - name: Build deployable ZIP
