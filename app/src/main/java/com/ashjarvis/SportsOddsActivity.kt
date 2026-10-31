@@ -238,7 +238,7 @@ class SportsOddsActivity : Activity() {
                 if (ready) " • ${selected.size} RESEARCHED PICKS" else " • NOT ENOUGH EVIDENCE"
             val details = if (ready) {
                 "Combined decimal odds: %.2f".format(java.util.Locale.US, combined) +
-                    if (highRisk) "\nHIGH RISK • this is not a main daily recommendation." else "" +
+                    (if (highRisk) "\nHIGH RISK • this is not a main daily recommendation." else "") +
                     "\n" + selected.joinToString("\n") { pick ->
                         val probability = pick.optDouble("market_probability_pct", Double.NaN)
                         "• ${pick.optString("away_team")} vs ${pick.optString("home_team")} — ${pick.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, pick.optDouble("price"))} • market chance ${if (probability.isFinite()) "%.1f%%".format(java.util.Locale.US, probability) else "n/a"} • ${pick.optString("best_bookmaker")}"
