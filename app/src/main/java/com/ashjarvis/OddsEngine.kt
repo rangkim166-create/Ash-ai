@@ -340,6 +340,9 @@ object OddsEngine {
                 .put("commence_time", event.optString("commence_time"))
                 .put("selection", selection)
                 .put("price", price)
+                .put("raw_implied_probability_pct", if (price > 1.0) 100.0 / price else JSONObject.NULL)
+                .put("market_probability_pct", event.optDouble("candidate_market_probability", Double.NaN).takeIf { it.isFinite() }?.times(100.0) ?: JSONObject.NULL)
+                .put("probability_method", event.optString("candidate_probability_method", "Not available"))
                 .put("bookmakers", books)
                 .put("research_results_count", homePlayed + awayPlayed)
                 .put("home_recent_count", homePlayed)
@@ -391,6 +394,9 @@ object OddsEngine {
 
     private fun summarize(event: JSONObject, sportKey: String, sportTitle: String, now: String, prior: JSONObject?): JSONObject {
         val prices = mutableMapOf<String, MutableList<Double>>()
+        // For each bookmaker, remove that bookmaker's overround (vig) by normalising
+        // the implied probabilities across every h2h outcome, then average across books.
+        val fairProbabilities = mutableMapOf<String, MutableList<Double>>()
         val books = event.optJSONArray("bookmakers") ?: JSONArray()
         for (b in 0 until books.length()) {
             val book = books.optJSONObject(b) ?: continue
@@ -399,11 +405,17 @@ object OddsEngine {
                 val market = markets.optJSONObject(m) ?: continue
                 if (market.optString("key") != "h2h") continue
                 val outcomes = market.optJSONArray("outcomes") ?: JSONArray()
-                for (o in 0 until outcomes.length()) {
-                    val outcome = outcomes.optJSONObject(o) ?: continue
+                val valid = (0 until outcomes.length()).mapNotNull { index ->
+                    val outcome = outcomes.optJSONObject(index) ?: return@mapNotNull null
                     val name = outcome.optString("name")
                     val price = outcome.optDouble("price", 0.0)
-                    if (name.isNotBlank() && price > 1.0) prices.getOrPut(name) { mutableListOf() }.add(price)
+                    if (name.isBlank() || price <= 1.0) null else Triple(name, price, 1.0 / price)
+                }
+                val overround = valid.sumOf { it.third }
+                if (overround <= 0.0) continue
+                valid.forEach { (name, price, implied) ->
+                    prices.getOrPut(name) { mutableListOf() }.add(price)
+                    fairProbabilities.getOrPut(name) { mutableListOf() }.add(implied / overround)
                 }
             }
         }
@@ -417,9 +429,12 @@ object OddsEngine {
                 bestName = name; bestAvg = avg; bestBooks = list.size
             }
         }
+        val candidateProbability = fairProbabilities[bestName]?.average()?.takeIf { bestName.isNotBlank() }
+        val rawImpliedProbability = if (bestAvg > 1.0) 1.0 / bestAvg else null
         val snapshots = prior?.optJSONArray("snapshots") ?: JSONArray()
         snapshots.put(JSONObject().put("seen_at", now).put("bookmakers", books.length())
-            .put("best_candidate", bestName).put("average_price", if (bestAvg > 0) bestAvg else JSONObject.NULL))
+            .put("best_candidate", bestName).put("average_price", if (bestAvg > 0) bestAvg else JSONObject.NULL)
+            .put("market_probability_pct", candidateProbability?.times(100.0) ?: JSONObject.NULL))
         // Keep every collected odds snapshot for long-term movement analysis.
         return JSONObject()
             .put("id", event.optString("id"))
@@ -434,6 +449,9 @@ object OddsEngine {
             .put("candidate", bestName)
             .put("candidate_price", if (bestAvg > 0) bestAvg else JSONObject.NULL)
             .put("candidate_bookmakers", bestBooks)
+            .put("candidate_market_probability", candidateProbability ?: JSONObject.NULL)
+            .put("candidate_raw_implied_probability", rawImpliedProbability ?: JSONObject.NULL)
+            .put("candidate_probability_method", "Average bookmaker implied probabilities after removing each bookmaker's overround (h2h market)")
             .put("snapshots", snapshots)
     }
 
