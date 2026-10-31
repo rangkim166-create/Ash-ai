@@ -140,7 +140,7 @@ export async function importPublicFootballHistory() {
           SELECT x.id, 'football', x.competition, x.home, x.away,
                  x.starts::timestamptz, 'completed', x.home_score, x.away_score,
                  'openfootball', now(), now()
-          FROM jsonb_to_recordset(${JSON.stringify(rows)}::jsonb) AS x(
+          FROM jsonb_to_recordset(${sql.json(rows)}::jsonb) AS x(
             id text, competition text, home text, away text, starts text,
             home_score integer, away_score integer
           )
@@ -197,7 +197,7 @@ export async function importPublicFootballHistory() {
           SELECT x.id, 'football', x.competition, x.home, x.away,
                  x.starts::timestamptz, 'completed', x.home_score, x.away_score,
                  'openfootball_world', now(), now()
-          FROM jsonb_to_recordset(${JSON.stringify(enriched)}::jsonb) AS x(
+          FROM jsonb_to_recordset(${sql.json(enriched)}::jsonb) AS x(
             id text, competition text, home text, away text, starts text,
             home_score integer, away_score integer
           )
