@@ -104,6 +104,103 @@ object OddsEngine {
         return requestJson("$BASE/sports/$sport/events/$event/odds/?apiKey=$key&regions=uk,eu&markets=odd_even&oddsFormat=decimal").first
     }
 
+    /**
+     * One real odd/even market check per local day. This deliberately spends at most
+     * one extra event-market request and never manufactures a price when the feed lacks it.
+     */
+    fun dailyOddEvenTip(context: Context, apiKey: String): JSONObject? {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val day = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
+        val db = LocalSportsDatabase.get(context)
+        db.get("daily_odd_even", day)?.optJSONObject("tip")?.let { return it }
+        if (prefs.getString("ash_odd_even_checked_date", null) == day) return null
+
+        val events = history(context)
+        val candidates = (0 until events.length()).mapNotNull { events.optJSONObject(it) }
+            .filter { event ->
+                val sport = (event.optString("sport_key") + " " + event.optString("sport_title")).lowercase()
+                (sport.contains("soccer") || sport.contains("football")) &&
+                    runCatching { Instant.parse(event.optString("commence_time")).isAfter(Instant.now()) }.getOrDefault(false)
+            }.sortedBy { it.optString("commence_time") }
+        if (candidates.isEmpty()) {
+            prefs.edit().putString("ash_odd_even_checked_date", day).apply()
+            db.put("daily_odd_even", day, JSONObject().put("date", day).put("status", "no_upcoming_football"))
+            return null
+        }
+
+        val event = candidates.first()
+        return try {
+            val payload = checkOddEven(apiKey, event.optString("sport_key"), event.optString("id"))
+            val eventData = payload.optJSONArray("data")?.optJSONObject(0)
+            val books = payload.optJSONArray("bookmakers")
+                ?: eventData?.optJSONArray("bookmakers")
+                ?: payload.optJSONObject("data")?.optJSONArray("bookmakers")
+                ?: JSONArray()
+            val pricesByOutcome = linkedMapOf<String, MutableList<Double>>()
+            val fairByOutcome = linkedMapOf<String, MutableList<Double>>()
+            val bookNames = linkedMapOf<String, MutableList<String>>()
+            for (i in 0 until books.length()) {
+                val book = books.optJSONObject(i) ?: continue
+                val markets = book.optJSONArray("markets") ?: JSONArray()
+                for (j in 0 until markets.length()) {
+                    val market = markets.optJSONObject(j) ?: continue
+                    if (market.optString("key") !in setOf("odd_even", "odd_even_goals", "total_goals_odd_even")) continue
+                    val outcomes = market.optJSONArray("outcomes") ?: JSONArray()
+                    val valid = (0 until outcomes.length()).mapNotNull { k ->
+                        val outcome = outcomes.optJSONObject(k) ?: return@mapNotNull null
+                        val name = outcome.optString("name").trim()
+                        val price = outcome.optDouble("price", 0.0)
+                        if (name.isBlank() || price !in 1.35..1.65) null else name to price
+                    }
+                    if (valid.size < 2) continue
+                    val overround = valid.sumOf { 1.0 / it.second }
+                    if (overround <= 0.0) continue
+                    valid.forEach { (name, price) ->
+                        pricesByOutcome.getOrPut(name) { mutableListOf() }.add(price)
+                        fairByOutcome.getOrPut(name) { mutableListOf() }.add((1.0 / price) / overround)
+                        bookNames.getOrPut(name) { mutableListOf() }.add(book.optString("title", book.optString("key")))
+                    }
+                }
+            }
+            val selected = pricesByOutcome.entries
+                .filter { it.value.size >= 2 }
+                .maxWithOrNull(compareBy<Map.Entry<String, MutableList<Double>>> { it.value.size }
+                    .thenBy { -kotlin.math.abs(it.value.average() - 1.50) })
+            val tip = selected?.let { entry ->
+                val averagePrice = entry.value.average()
+                JSONObject()
+                    .put("id", event.optString("id"))
+                    .put("sport_key", event.optString("sport_key"))
+                    .put("sport_title", event.optString("sport_title"))
+                    .put("home_team", event.optString("home_team"))
+                    .put("away_team", event.optString("away_team"))
+                    .put("commence_time", event.optString("commence_time"))
+                    .put("selection", entry.key)
+                    .put("price", averagePrice)
+                    .put("bookmaker", bookNames[entry.key]?.distinct()?.joinToString(", ").orEmpty())
+                    .put("bookmakers", entry.value.size)
+                    .put("market_probability_pct", fairByOutcome[entry.key]?.average()?.times(100.0) ?: JSONObject.NULL)
+                    .put("probability_method", "Average de-vigged bookmaker odd/even market probability; not an independent Ash forecast")
+                    .put("reason", "Real odd/even prices returned by multiple bookmakers; verify again before publishing because prices move.")
+                    .put("target_band", "1.35–1.65")
+            }
+            prefs.edit().putString("ash_odd_even_checked_date", day).apply()
+            if (tip != null) {
+                TipResultsTracker.publish(context, tip, "odd_even")
+                db.put("daily_odd_even", day, JSONObject().put("date", day).put("status", "found").put("tip", tip))
+            } else {
+                db.put("daily_odd_even", day, JSONObject().put("date", day).put("status", "market_unavailable")
+                    .put("event_id", event.optString("id")))
+            }
+            tip
+        } catch (e: Exception) {
+            prefs.edit().putString("ash_odd_even_checked_date", day).apply()
+            db.put("daily_odd_even", day, JSONObject().put("date", day).put("status", "request_failed")
+                .put("error", (e.message ?: "market request failed").take(180)))
+            null
+        }
+    }
+
     fun favoriteKeys(context: Context): MutableSet<String> {
         val stored = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(FAVORITES_KEY, null)
         return stored?.split(",")?.map { it.trim() }?.filter { it.isNotBlank() }?.toMutableSet()
