@@ -62,3 +62,41 @@ test("formats each selected match as a copy-ready ticket item", () => {
   assert.match(message, /Pick: Arsenal @ 1.65/);
   assert.match(message, /Best bookmaker: book-1/);
 });
+
+const tennisFixture = {
+  id: "tennis_atp:event-elo", sport: "tennis", competition: "ATP",
+  home: "Jannik Sinner", away: "Alexander Zverev", starts_at: "2026-10-31T18:00:00.000Z",
+};
+function sportOdds(match, books = 5, homePrice = 1.65, awayPrice = 2.25) {
+  const rows = [];
+  for (let i = 1; i <= books; i++) {
+    const bookmaker = `sport-book-${i}`;
+    rows.push(
+      { match_id: match.id, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: match.home, decimal_odds: homePrice, observed_at: now.toISOString() },
+      { match_id: match.id, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: match.away, decimal_odds: awayPrice, observed_at: now.toISOString() },
+    );
+  }
+  return rows;
+}
+
+test("supports tennis using imported Elo when recent result samples are unavailable", () => {
+  const picks = selectDailyPicks([tennisFixture], sportOdds(tennisFixture), [], {
+    now,
+    ratings: { tennis: { "jannik sinner": 1950, "alexander zverev": 1850 } },
+    ratingMatchCounts: { tennis: 361571 },
+  });
+  assert.equal(picks.length, 1);
+  assert.equal(picks[0].selection, "Jannik Sinner");
+  assert.equal(picks[0].edge_type, "elo_rating");
+  assert.equal(picks[0].rating_edge_points, 100);
+  assert.equal(picks[0].historical_match_count, 361571);
+  assert.match(formatDailyPicks("31 Oct 2026", picks), /Historical Elo/);
+});
+
+test("Elo-only selections still require at least four supporting bookmakers for short odds", () => {
+  const picks = selectDailyPicks([tennisFixture], sportOdds(tennisFixture, 3), [], {
+    now,
+    ratings: { tennis: { "jannik sinner": 1950, "alexander zverev": 1850 } },
+  });
+  assert.equal(picks.length, 0);
+});
