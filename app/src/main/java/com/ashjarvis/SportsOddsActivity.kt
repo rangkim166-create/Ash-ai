@@ -398,6 +398,7 @@ class SportsOddsActivity : Activity() {
         val all = TipResultsTracker.all(this)
         val week = TipResultsTracker.stats(this, 7)
         val month = TipResultsTracker.stats(this, 30)
+        val lifetime = TipResultsTracker.stats(this, 3650)
         fun pct(value: JSONObject, key: String): String {
             val number = value.optDouble(key, Double.NaN)
             return if (number.isFinite()) "%.1f%%".format(java.util.Locale.US, number) else "—"
@@ -406,6 +407,22 @@ class SportsOddsActivity : Activity() {
             "Won: ${week.optInt("won")} • Lost: ${week.optInt("lost")} • Pending: ${week.optInt("pending")}\nHit rate: ${pct(week, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, week.optDouble("profit_units"))} units • Yield: ${pct(week, "yield_pct")}\nMarket Brier score: ${if (week.isNull("market_brier_score")) "not enough samples" else "%.3f".format(java.util.Locale.US, week.optDouble("market_brier_score"))}") {}
         card("LAST 30 DAYS",
             "Won: ${month.optInt("won")} • Lost: ${month.optInt("lost")} • Pending: ${month.optInt("pending")}\nHit rate: ${pct(month, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, month.optDouble("profit_units"))} units • Yield: ${pct(month, "yield_pct")}\nMarket Brier score: ${if (month.isNull("market_brier_score")) "not enough samples" else "%.3f".format(java.util.Locale.US, month.optDouble("market_brier_score"))}") {}
+        val segments = lifetime.optJSONObject("performance_segments") ?: JSONObject()
+        val segmentRows = mutableListOf<Pair<Int, String>>()
+        val segmentKeys = segments.keys()
+        while (segmentKeys.hasNext()) {
+            val key = segmentKeys.next()
+            val segment = segments.optJSONObject(key) ?: continue
+            val count = segment.optInt("settled")
+            val yield = segment.optDouble("yield_pct", Double.NaN)
+            val hit = segment.optDouble("hit_rate_pct", Double.NaN)
+            segmentRows.add(count to "${key.replace("|", " • ")}: ${segment.optInt("won")}W-${segment.optInt("lost")}L • hit ${if (hit.isFinite()) "%.1f%%".format(java.util.Locale.US, hit) else "—"} • yield ${if (yield.isFinite()) "%.1f%%".format(java.util.Locale.US, yield) else "—"}")
+        }
+        val experienceText = if (segmentRows.isEmpty()) {
+            "No settled tips yet. Ash needs real published and settled selections before it can learn which sport and odds bands perform best."
+        } else segmentRows.sortedByDescending { it.first }.joinToString("\n") { it.second } +
+            "\n\nAsh only uses a segment's past yield to adjust evidence ranking after 30 settled tips in that same sport and odds band."
+        card("ASH'S TRACKED EXPERIENCE", experienceText) {}
         card("HOW TO READ THE NUMBERS",
             "Brier score checks how well the saved bookmaker-implied probabilities matched outcomes (lower is better). It is NOT Ash's independent prediction accuracy. A small sample is not proof of a long-term edge.") {}
         body.addView(button("CHECK FINISHED MATCHES") { checkFinishedResults() })
