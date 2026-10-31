@@ -1,9 +1,7 @@
 import { Pool } from "pg";
 import { attachDatabasePool } from "@neon/functions";
-import { attachDatabasePool } from "@neon/functions";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
 const db=new Pool({connectionString:process.env.DATABASE_URL,max:5});
-attachDatabasePool(db);
 attachDatabasePool(db);
 const masterKey=Buffer.from(process.env.ASH_CREDENTIALS_KEY||"","base64");
 const appToken=process.env.ASH_APP_TOKEN||"";
