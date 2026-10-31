@@ -288,6 +288,7 @@ class SportsOddsActivity : Activity() {
                     ?: payload.optJSONObject("data")?.optJSONArray("bookmakers")
                     ?: JSONArray()
                 val found = mutableListOf<String>()
+                var archivedTip: JSONObject? = null
                 for (i in 0 until books.length()) {
                     val book = books.optJSONObject(i) ?: continue
                     val markets = book.optJSONArray("markets") ?: JSONArray()
@@ -299,10 +300,31 @@ class SportsOddsActivity : Activity() {
                             val outcome = outcomes.optJSONObject(k) ?: continue
                             val price = outcome.optDouble("price", 0.0)
                             if (price in 1.35..1.65) {
-                                found.add("${book.optString("title", book.optString("key"))}: ${outcome.optString("name")} @ ${"%.2f".format(java.util.Locale.US, price)}")
+                                val bookmakerName = book.optString("title", book.optString("key"))
+                                found.add("$bookmakerName: ${outcome.optString("name")} @ ${"%.2f".format(java.util.Locale.US, price)}")
+                                if (archivedTip == null) {
+                                    archivedTip = JSONObject()
+                                        .put("id", event.optString("id"))
+                                        .put("sport_key", event.optString("sport_key"))
+                                        .put("sport_title", event.optString("sport_title"))
+                                        .put("home_team", event.optString("home_team"))
+                                        .put("away_team", event.optString("away_team"))
+                                        .put("commence_time", event.optString("commence_time"))
+                                        .put("selection", outcome.optString("name"))
+                                        .put("price", price)
+                                        .put("bookmaker", bookmakerName)
+                                        .put("bookmakers", 1)
+                                        .put("probability_method", "Single bookmaker price; no independent Ash probability")
+                                }
                             }
                         }
                     }
+                }
+                archivedTip?.let { tip ->
+                    val day = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
+                    TipResultsTracker.publish(this@SportsOddsActivity, tip, "odd_even")
+                    LocalSportsDatabase.get(this@SportsOddsActivity).put("daily_odd_even", day,
+                        JSONObject().put("date", day).put("status", "found").put("tip", tip))
                 }
                 val message = if (found.isEmpty()) {
                     "No actual odd/even price near 1.50 was returned for this match. The selected API feed may not support this market. Try another match or a provider that offers odd/even odds."
