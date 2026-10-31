@@ -454,7 +454,7 @@ class SportsOddsActivity : Activity() {
     private fun showLeagues() {
         val key = OddsEngine.readApiKey(this)
         if (key.isNullOrBlank()) { showSetup(); return }
-        status.text = "Loading active sports from your API…"
+        status.text = "Loading competitions available on your odds plan…"
         scope.launch {
             try {
                 val sports = withContext(Dispatchers.IO) { OddsEngine.loadSports(key) }
@@ -462,19 +462,28 @@ class SportsOddsActivity : Activity() {
                     .filter { it.optBoolean("active", true) && it.optString("key").isNotBlank() }
                     .sortedWith(compareBy<JSONObject>({ it.optString("group") }, { it.optString("title") }))
                 val labels = options.map { "${it.optString("group", "Sport")} • ${it.optString("title", it.optString("key"))}" }.toTypedArray()
-                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Active sports exposed by your API key")
-                    .setMessage("Ash's daily scan checks all active sports returned by this key. The Odds API needs a separate odds request for each sport, so a broad scan can use more API credits. Actual fixtures and bookmaker markets depend on your provider plan.")
-                    .setItems(labels) { _, which ->
-                        val chosen = options[which]
-                        AlertDialog.Builder(this@SportsOddsActivity)
-                            .setTitle(chosen.optString("title", chosen.optString("key")))
-                            .setMessage("API key: ${chosen.optString("key")}\nGroup: ${chosen.optString("group")}\nActive: ${chosen.optBoolean("active", true)}\n\nThis competition is included in the all-active-sports scan.")
-                            .setPositiveButton("OK", null).show()
-                    }
-                    .setPositiveButton("CLOSE", null).show()
-                status.text = "All active sports listed • ${options.size} available"
+                val selected = OddsEngine.favoriteKeys(this@SportsOddsActivity)
+                val checked = BooleanArray(options.size) { options[it].optString("key") in selected }
+                AlertDialog.Builder(this@SportsOddsActivity)
+                    .setTitle("Choose leagues and sports")
+                    .setMessage("Select the competitions Ash should scan. Each selected competition uses a separate odds request. Keep the list focused to protect your monthly API credits. Maximum 12 per refresh.")
+                    .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
+                    .setNegativeButton("CANCEL", null)
+                    .setPositiveButton("SAVE SELECTION") { _, _ ->
+                        val chosen = options.indices.filter { checked[it] }.map { options[it].optString("key") }.toSet()
+                        if (chosen.isEmpty()) {
+                            Toast.makeText(this@SportsOddsActivity, "Select at least one competition", Toast.LENGTH_LONG).show()
+                        } else if (chosen.size > 12) {
+                            Toast.makeText(this@SportsOddsActivity, "Choose at most 12 competitions to protect your quota", Toast.LENGTH_LONG).show()
+                        } else {
+                            OddsEngine.saveFavorites(this@SportsOddsActivity, chosen)
+                            Toast.makeText(this@SportsOddsActivity, "${chosen.size} competitions saved", Toast.LENGTH_SHORT).show()
+                            render()
+                        }
+                    }.show()
+                status.text = "${options.size} active competitions available • ${selected.size} selected"
             } catch (e: Exception) {
-                status.text = "Could not load sports list"
+                status.text = "Could not load competitions"
                 Toast.makeText(this@SportsOddsActivity, (e.message ?: "Request failed").take(300), Toast.LENGTH_LONG).show()
             }
         }
