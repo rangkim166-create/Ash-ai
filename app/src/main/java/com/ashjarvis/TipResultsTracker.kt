@@ -68,7 +68,7 @@ object TipResultsTracker {
         }.filter { tip ->
             tip.optString("status") == "pending" &&
                 runCatching { Instant.parse(tip.optString("commence_time")).isBefore(now) }.getOrDefault(false)
-        }
+        }.sortedBy { it.optString("commence_time") }.take(10)
         fun norm(value: String) = value.lowercase().replace(Regex("[^a-z0-9]"), "")
         fun findRow(rows: JSONArray, home: String, away: String): JSONObject? {
             for (i in 0 until rows.length()) {
