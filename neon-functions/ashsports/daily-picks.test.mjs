@@ -39,7 +39,7 @@ test("rejects a fixture with too few bookmakers", () => {
 });
 
 test("rejects stale bookmaker snapshots", () => {
-  const stale = new Date(now.getTime() - 30 * 60 * 60 * 1000).toISOString();
+  const stale = new Date(now.getTime() - 7 * 60 * 60 * 1000).toISOString();
   const picks = selectDailyPicks([fixture], odds(fixture.id, 5, stale), [...form("Arsenal", 9), ...form("Leicester", 2)], { now });
   assert.equal(picks.length, 0);
 });
