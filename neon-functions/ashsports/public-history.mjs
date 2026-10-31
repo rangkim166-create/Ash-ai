@@ -26,7 +26,7 @@ export async function importPublicFootballHistory() {
       imported_at timestamptz NOT NULL DEFAULT now()
     )
   `;
-  const doneRows = await sql`SELECT source_path FROM public_history_imports`;
+  const doneRows = await sql`SELECT source_path FROM public_history_imports WHERE imported_matches > 0`;
   const done = new Set(doneRows.map(r => r.source_path));
   const jobs = seasonNames().flatMap(season =>
     LEAGUES.map(([code]) => `${season}/${code}.json`)
