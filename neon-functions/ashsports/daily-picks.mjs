@@ -1,7 +1,7 @@
 const normalize = (value) => String(value ?? "").trim().toLocaleLowerCase("en-US");
 const normalizeTeam = (value) => normalize(value)
   .normalize("NFKD")
-  .replace(/[\\u0300-\\u036f]/g, "")
+  .replace(/[\u0300-\u036f]/g, "")
   .replace(/[^a-z0-9]+/g, " ")
   .trim();
 const finite = (value) => Number.isFinite(Number(value)) && Number(value) > 1;
