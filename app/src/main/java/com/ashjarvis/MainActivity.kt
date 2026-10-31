@@ -837,8 +837,7 @@ class MainActivity : Activity() {
                 val chosen = compatibleModels().getOrNull(modelSpinner.selectedItemPosition) ?: offlineModels.first()
                 prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).putString("offline_model_file", chosen.fileName).apply()
                 val downloadedFile = java.io.File(filesDir, chosen.fileName)
-                val isThisModelReady = prefs.getString("offline_model_downloaded_file", null) == chosen.fileName &&
-                    downloadedFile.isFile && downloadedFile.length() > 1024 * 1024
+                val isThisModelReady = downloadedFile.isFile && downloadedFile.length() > 1024 * 1024
                 if (isThisModelReady) {
                     setOfflineAiEnabled(true)
                 } else {
@@ -1544,26 +1543,23 @@ class MainActivity : Activity() {
             updateStatus()
             return
         }
-        val modelFile = try { getOfflineModelFile() } catch (e: Exception) {
-            addMessage("Ash Jarvis", "Offline model is not ready: " + (e.message ?: "download it first."))
-            footer.text = "Offline model missing"
-            return
-        }
-        val memory = android.app.ActivityManager.MemoryInfo()
-        (getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(memory)
-        val availableMb = memory.availMem / (1024L * 1024L)
-        val modelMb = modelFile.length() / (1024L * 1024L)
-        val requiredMb = maxOf(1200L, (modelMb * 1.25).toLong() + 650L)
-        if (availableMb < requiredMb) {
-            val message = "This model needs about $requiredMb MB of free memory for safe loading, but Android reports about $availableMb MB available. On an 8 GB phone, use Qwen 2.5 1.5B Q4 (about 1 GB). Dolphin 8B Q4 (about 4.9 GB) is too large for reliable use while Android is running."
-            addMessage("Ash Jarvis", message)
-            footer.text = "Not enough free RAM for this model"
-            Toast.makeText(this, "Choose a smaller offline model", Toast.LENGTH_LONG).show()
-            return
-        }
-        footer.text = "Testing local model • first load can take a minute"
+        footer.text = "Preparing local model • first load can take a minute"
         aiScope.launch {
             try {
+                // Copying a multi-gigabyte GGUF file must happen off the UI thread.
+                val modelFile = withContext(Dispatchers.IO) { getOfflineModelFile() }
+                val memory = android.app.ActivityManager.MemoryInfo()
+                (getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(memory)
+                val availableMb = memory.availMem / (1024L * 1024L)
+                val modelMb = modelFile.length() / (1024L * 1024L)
+                val requiredMb = maxOf(1200L, (modelMb * 1.25).toLong() + 650L)
+                if (availableMb < requiredMb) {
+                    val message = "This model needs about $requiredMb MB of free memory for safe loading, but Android reports about $availableMb MB available. On an 8 GB phone, use Qwen 2.5 1.5B Q4 (about 1 GB). Dolphin 8B Q4 (about 4.9 GB) is too large for reliable use while Android is running."
+                    addMessage("Ash Jarvis", message)
+                    footer.text = "Not enough free RAM for this model"
+                    Toast.makeText(this@MainActivity, "Choose a smaller offline model", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
                 val edge = offlineEdge ?: LLMEdge.create(this@MainActivity, aiScope).also { offlineEdge = it }
                 val test = withContext(Dispatchers.IO) {
                     edge.text.generate(
