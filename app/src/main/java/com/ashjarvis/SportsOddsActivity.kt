@@ -142,8 +142,20 @@ class SportsOddsActivity : Activity() {
                 .setPositiveButton("OK", null).show()
         }
         showAccumulatorTargets(candidates)
-        card("ODD / EVEN • TARGET 1.50", "Choose a match and check whether your provider actually returns an odd/even market near 1.50. Ash never invents these prices.") {
-            chooseOddEvenGame(upcoming)
+        val oddEvenDay = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
+        val oddEvenRecord = LocalSportsDatabase.get(this).get("daily_odd_even", oddEvenDay)
+        val oddEvenTip = oddEvenRecord?.optJSONObject("tip")
+        card("DAILY ODD / EVEN • TARGET 1.50",
+            if (oddEvenTip != null) {
+                "${oddEvenTip.optString("away_team")} vs ${oddEvenTip.optString("home_team")}\nPick: ${oddEvenTip.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, oddEvenTip.optDouble("price"))}\nBookmakers: ${oddEvenTip.optInt("bookmakers")} • ${oddEvenTip.optString("bookmaker")}\nStatus: archived for result tracking"
+            } else {
+                "Ash checks one real football odd/even market each day (one extra odds request). Today: ${oddEvenRecord?.optString("status", "not checked yet") ?: "not checked yet"}. No made-up prices. Tap to inspect another match."
+            }) {
+            if (oddEvenTip != null) {
+                AlertDialog.Builder(this).setTitle("Today's odd/even selection")
+                    .setMessage("${oddEvenTip.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, oddEvenTip.optDouble("price"))}\n${oddEvenTip.optString("bookmaker")}\n${oddEvenTip.optString("probability_method")}")
+                    .setPositiveButton("OK", null).show()
+            } else chooseOddEvenGame(upcoming)
         }
         if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
         candidates.take(20).forEach { event ->
@@ -717,17 +729,21 @@ class SportsOddsActivity : Activity() {
                 val pair = withContext(Dispatchers.IO) {
                     val result = OddsEngine.sync(this@SportsOddsActivity, key)
                     val picks = OddsEngine.buildDailyPicks(this@SportsOddsActivity)
-                    result to picks
+                    val oddEven = OddsEngine.dailyOddEvenTip(this@SportsOddsActivity, key)
+                    Triple(result, picks, oddEven)
                 }
                 val result = pair.first
                 val picks = pair.second
+                val oddEven = pair.third
                 DailyPicksNotifier.notify(this@SportsOddsActivity, picks)
                 val pickSummary = if (picks.length() == 0) "\nNo evidence-ranked picks available today; Ash did not force a selection."
                     else "\nDaily shortlist:\n" + (0 until picks.length()).mapNotNull { i ->
                         val p = picks.optJSONObject(i) ?: return@mapNotNull null
                         "• ${p.optString("away_team")} vs ${p.optString("home_team")} — ${p.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, p.optDouble("price", 0.0))} (${p.optString("confidence")})"
                     }.joinToString("\n")
-                val summary = "Games received: ${result.gamesFound}\nNew games discovered: ${result.newGames}\nActive sports scanned: ${result.sportsChecked}\nAPI credits remaining: ${result.remaining ?: "not reported"}" + pickSummary +
+                val oddEvenSummary = if (oddEven != null) "\nDaily odd/even: ${oddEven.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, oddEven.optDouble("price"))} • ${oddEven.optInt("bookmakers")} bookmakers"
+                    else "\nDaily odd/even: no verified market price returned today"
+                val summary = "Games received: ${result.gamesFound}\nNew games discovered: ${result.newGames}\nSelected competitions scanned: ${result.sportsChecked}\nAPI credits remaining: ${result.remaining ?: "not reported"}" + oddEvenSummary + pickSummary +
                     if (result.errors.isNotEmpty()) "\n\nSome sports could not be checked:\n" + result.errors.take(4).joinToString("\n") else ""
                 AlertDialog.Builder(this@SportsOddsActivity).setTitle("Daily odds refresh complete")
                     .setMessage(summary).setPositiveButton("VIEW GAMES") { _, _ -> currentTab = "today"; render() }.show()
