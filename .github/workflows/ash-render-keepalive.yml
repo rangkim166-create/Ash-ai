@@ -9,6 +9,7 @@ on:
     paths:
       - ".github/workflows/ash-render-keepalive.yml"
 
+# This workflow runs from the default branch so its schedule stays active.
 permissions:
   contents: read
 
