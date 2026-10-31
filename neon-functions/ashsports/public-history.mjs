@@ -190,14 +190,14 @@ export async function importPublicFootballHistory() {
             .update(result.path + "|" + row.starts + "|" + row.home + "|" + row.away).digest("hex"),
           ...row
         }));
-        await sql\`
+        await sql`
           INSERT INTO sports_matches
             (id, sport, competition, home_or_player_one, away_or_player_two,
              starts_at, status, home_score, away_score, source, source_updated_at, updated_at)
           SELECT x.id, 'football', x.competition, x.home, x.away,
                  x.starts::timestamptz, 'completed', x.home_score, x.away_score,
                  'openfootball_world', now(), now()
-          FROM jsonb_to_recordset(\${JSON.stringify(enriched)}::jsonb) AS x(
+          FROM jsonb_to_recordset(${JSON.stringify(enriched)}::jsonb) AS x(
             id text, competition text, home text, away text, starts text,
             home_score integer, away_score integer
           )
@@ -208,12 +208,12 @@ export async function importPublicFootballHistory() {
             starts_at = EXCLUDED.starts_at, status = 'completed',
             home_score = EXCLUDED.home_score, away_score = EXCLUDED.away_score,
             source = 'openfootball_world', source_updated_at = now(), updated_at = now()
-        \`;
+        `;
       }
-      await sql\`INSERT INTO public_history_imports(source_path, imported_matches)
-        VALUES (\${"world/" + result.path}, \${rows.length})
+      await sql`INSERT INTO public_history_imports(source_path, imported_matches)
+        VALUES (${"world/" + result.path}, ${rows.length})
         ON CONFLICT (source_path) DO UPDATE SET
-          imported_matches = EXCLUDED.imported_matches, imported_at = now()\`;
+          imported_matches = EXCLUDED.imported_matches, imported_at = now()`;
       worldFilesImported++;
       worldMatchesImported += rows.length;
     }
