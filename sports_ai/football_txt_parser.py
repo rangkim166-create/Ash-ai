@@ -14,6 +14,8 @@ DATE_PATTERNS = (
     re.compile(r"(?P<d>\d{1,2})[./](?P<m>\d{1,2})[./](?P<y>(?:19|20)\d{2})"),
     re.compile(r"\b(?P<d>\d{1,2})\s+(?P<mon>[A-Za-z]{3,9})\s+(?P<y>(?:19|20)\d{2})\b", re.I),
     re.compile(r"\b(?P<mon>[A-Za-z]{3,9})\s+(?P<d>\d{1,2}),?\s+(?P<y>(?:19|20)\d{2})\b", re.I),
+    re.compile(r"\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?P<d>\d{1,2})\s+(?P<mon>[A-Za-z]{3,9})\b", re.I),
+    re.compile(r"\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?P<d>\d{1,2})[./](?P<m>\d{1,2})\b", re.I),
     re.compile(r"\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(?P<mon>[A-Za-z]{3,9})\s+(?P<d>\d{1,2})\b", re.I),
 )
 MONTHS = {name.lower()[:3]: number for number, name in enumerate(
