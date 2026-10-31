@@ -177,6 +177,8 @@ object OddsEngine {
                     .thenBy { -kotlin.math.abs(it.value.average() - 1.50) })
             val tip = selected?.let { entry ->
                 val averagePrice = entry.value.average()
+                val bestIndex = entry.value.indices.maxByOrNull { entry.value[it] } ?: 0
+                val bestPrice = entry.value[bestIndex]
                 JSONObject()
                     .put("id", event.optString("id"))
                     .put("sport_key", event.optString("sport_key"))
@@ -185,8 +187,10 @@ object OddsEngine {
                     .put("away_team", event.optString("away_team"))
                     .put("commence_time", event.optString("commence_time"))
                     .put("selection", entry.key)
-                    .put("price", averagePrice)
-                    .put("bookmaker", bookNames[entry.key]?.distinct()?.joinToString(", ").orEmpty())
+                    .put("price", bestPrice)
+                    .put("average_market_price", averagePrice)
+                    .put("bookmaker", bookNames[entry.key]?.getOrNull(bestIndex).orEmpty())
+                    .put("bookmaker_names", bookNames[entry.key]?.distinct()?.joinToString(", ").orEmpty())
                     .put("bookmakers", entry.value.size)
                     .put("market_probability_pct", fairByOutcome[entry.key]?.average()?.times(100.0) ?: JSONObject.NULL)
                     .put("probability_method", "Average de-vigged bookmaker odd/even market probability; not an independent Ash forecast")
