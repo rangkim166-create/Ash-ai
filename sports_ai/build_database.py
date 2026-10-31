@@ -3,12 +3,10 @@
 import csv
 import io
 import json
-import re
 import sqlite3
 import tarfile
 from pathlib import Path
 from datetime import datetime, timezone
-from football_txt_parser import parse_football_txt
 
 ROOT = Path(__file__).resolve().parents[1]
 RAW = ROOT / "data" / "history" / "raw"
@@ -121,31 +119,6 @@ def main():
         except (OSError, tarfile.TarError, csv.Error, UnicodeError):
             continue
 
-    # Normalize the CC0 OpenFootball world archive (Africa/Asia/Middle East etc.).
-    # The parser is deliberately conservative: only dated rows with a clear final score
-    # enter the ratings database. The raw archive and skipped rows remain auditable.
-    regional_counts = {}
-    regional_root = RAW / "football_world" / "unpacked"
-    if regional_root.exists():
-        for p in sorted(regional_root.rglob("*.txt")):
-            try:
-                relative = p.relative_to(regional_root)
-            except ValueError:
-                continue
-            parts = relative.parts
-            if len(parts) < 2:
-                continue
-            competition = " / ".join(parts[:-1])
-            season_match = re.search(r"(20\d{2}(?:-\d{2})?)", str(relative))
-            season = season_match.group(1) if season_match else "unknown"
-            for match in parse_football_txt(p):
-                home_score, away_score = match["home_score"], match["away_score"]
-                winner = match["home"] if home_score > away_score else match["away"] if away_score > home_score else "draw"
-                add("football", competition, season, match["date"], match["home"], match["away"],
-                    float(home_score), float(away_score), winner,
-                    str(p.relative_to(ROOT)), match)
-                regional_counts[competition] = regional_counts.get(competition, 0) + 1
-
     db.commit()
     total = db.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
     by_sport = dict(db.execute("SELECT sport, COUNT(*) FROM matches GROUP BY sport").fetchall())
@@ -155,7 +128,6 @@ def main():
         "total_matches": str(total),
         "counts_by_sport": json.dumps(by_sport),
         "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
-        "regional_football_txt_counts": json.dumps(regional_counts, sort_keys=True),
     }
     db.executemany("INSERT INTO metadata VALUES(?,?)", metadata.items())
     db.commit()
