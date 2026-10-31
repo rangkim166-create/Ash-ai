@@ -834,7 +834,7 @@ class MainActivity : Activity() {
             .setView(panel)
             .setNegativeButton("CANCEL", null)
             .setNeutralButton("CHECK DOWNLOADED", null)
-            .setPositiveButton(if (prefs.getBoolean("offline_ai_enabled", false)) "USE OFFLINE AI" else "DOWNLOAD MODEL") { _, _ ->
+            .setPositiveButton("USE SELECTED MODEL") { _, _ ->
                 val ram = selectedRam()
                 val chosen = compatibleModels().getOrNull(modelSpinner.selectedItemPosition) ?: offlineModels.first()
                 prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).putString("offline_model_file", chosen.fileName).apply()
