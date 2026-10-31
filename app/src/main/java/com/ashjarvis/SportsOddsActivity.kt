@@ -624,8 +624,8 @@ class SportsOddsActivity : Activity() {
                     "• ${item.optString("title")} — ${item.optString("group")}"
                 }
                 val message = if (lines.isEmpty()) "No competitions have been collected yet. Ash's server will populate this list after its next odds scan."
-                    else "Competitions currently represented in Ash's database:\\n\\n" + lines.joinToString("\\n") +
-                        "\\n\\nAsh currently chooses a diversified set automatically. Your league preferences are not yet sent to the server."
+                    else "Competitions currently represented in Ash's database:\n\n" + lines.joinToString("\n") +
+                        "\n\nAsh currently chooses a diversified set automatically. Your league preferences are not yet sent to the server."
                 AlertDialog.Builder(this@SportsOddsActivity).setTitle("Ash server competitions")
                     .setMessage(message).setPositiveButton("OK", null).show()
                 status.text = "${sports.length()} competitions in the latest server data"
@@ -823,13 +823,13 @@ class SportsOddsActivity : Activity() {
                 val result = pair.first
                 val picks = pair.second
                 DailyPicksNotifier.notify(this@SportsOddsActivity, picks)
-                val pickSummary = if (picks.length() == 0) "\\nNo evidence-ranked picks available today; Ash did not force a selection."
-                    else "\\nDaily shortlist:\\n" + (0 until picks.length()).mapNotNull { i ->
+                val pickSummary = if (picks.length() == 0) "\nNo evidence-ranked picks available today; Ash did not force a selection."
+                    else "\nDaily shortlist:\n" + (0 until picks.length()).mapNotNull { i ->
                         val p = picks.optJSONObject(i) ?: return@mapNotNull null
                         "• ${p.optString("away_team")} vs ${p.optString("home_team")} — ${p.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, p.optDouble("price", 0.0))} (${p.optString("confidence")})"
-                    }.joinToString("\\n")
-                val summary = "Games received from Ash server: ${result.gamesFound}\\nNew games discovered: ${result.newGames}\\nServer-managed competitions: yes\\nAPI key stored on server; no key in this APK." + pickSummary +
-                    if (result.errors.isNotEmpty()) "\\n\\nSome items could not be checked:\\n" + result.errors.take(4).joinToString("\\n") else ""
+                    }.joinToString("\n")
+                val summary = "Games received from Ash server: ${result.gamesFound}\nNew games discovered: ${result.newGames}\nServer-managed competitions: yes\nAPI key stored on server; no key in this APK." + pickSummary +
+                    if (result.errors.isNotEmpty()) "\n\nSome items could not be checked:\n" + result.errors.take(4).joinToString("\n") else ""
                 AlertDialog.Builder(this@SportsOddsActivity).setTitle("Ash server sync complete")
                     .setMessage(summary).setPositiveButton("VIEW GAMES") { _, _ -> currentTab = "today"; render() }.show()
                 status.text = "Updated • ${result.newGames} new games • ${picks.length()} shortlist picks"
