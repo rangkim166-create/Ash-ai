@@ -48,10 +48,11 @@ object TipResultsTracker {
             else -> 0.0
         }
         tip.put("status", status)
-            .put("home_score", homeScore)
-            .put("away_score", awayScore)
             .put("settled_at", Instant.now().toString())
             .put("profit_units", profit)
+        if (homeScore >= 0 && awayScore >= 0) {
+            tip.put("home_score", homeScore).put("away_score", awayScore)
+        }
         db.put(TYPE, tipId, tip)
         return true
     }
