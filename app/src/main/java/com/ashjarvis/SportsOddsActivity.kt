@@ -338,9 +338,11 @@ class SportsOddsActivity : Activity() {
             return if (number.isFinite()) "%.1f%%".format(java.util.Locale.US, number) else "—"
         }
         card("LAST 7 DAYS",
-            "Won: ${week.optInt("won")} • Lost: ${week.optInt("lost")} • Pending: ${week.optInt("pending")}\nHit rate: ${pct(week, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, week.optDouble("profit_units"))} units • Yield: ${pct(week, "yield_pct")}") {}
+            "Won: ${week.optInt("won")} • Lost: ${week.optInt("lost")} • Pending: ${week.optInt("pending")}\nHit rate: ${pct(week, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, week.optDouble("profit_units"))} units • Yield: ${pct(week, "yield_pct")}\nMarket Brier score: ${if (week.isNull("market_brier_score")) "not enough samples" else "%.3f".format(java.util.Locale.US, week.optDouble("market_brier_score"))}") {}
         card("LAST 30 DAYS",
-            "Won: ${month.optInt("won")} • Lost: ${month.optInt("lost")} • Pending: ${month.optInt("pending")}\nHit rate: ${pct(month, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, month.optDouble("profit_units"))} units • Yield: ${pct(month, "yield_pct")}") {}
+            "Won: ${month.optInt("won")} • Lost: ${month.optInt("lost")} • Pending: ${month.optInt("pending")}\nHit rate: ${pct(month, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, month.optDouble("profit_units"))} units • Yield: ${pct(month, "yield_pct")}\nMarket Brier score: ${if (month.isNull("market_brier_score")) "not enough samples" else "%.3f".format(java.util.Locale.US, month.optDouble("market_brier_score"))}") {}
+        card("HOW TO READ THE NUMBERS",
+            "Brier score checks how well the saved bookmaker-implied probabilities matched outcomes (lower is better). It is NOT Ash's independent prediction accuracy. A small sample is not proof of a long-term edge.") {}
         card("SAVED TIPS",
             "${all.length()} records saved in SQLite. Tap a pending tip after its match to record WON, LOST or VOID.") {}
         val rows = (0 until all.length()).mapNotNull { all.optJSONObject(it) }
