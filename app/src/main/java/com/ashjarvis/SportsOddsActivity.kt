@@ -127,7 +127,7 @@ class SportsOddsActivity : Activity() {
         if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
         candidates.take(20).forEach { event ->
             card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nTap to research team profiles, recent results, available players, performance news and possible injury clues.") { researchMatch(event) }
+                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nMarket-implied chance: ${if (event.optDouble("candidate_market_probability", Double.NaN).isFinite()) "%.1f%%".format(java.util.Locale.US, event.optDouble("candidate_market_probability") * 100.0) else "not available"}\nRaw odds-implied chance: ${if (event.optDouble("candidate_raw_implied_probability", Double.NaN).isFinite()) "%.1f%%".format(java.util.Locale.US, event.optDouble("candidate_raw_implied_probability") * 100.0) else "not available"}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nProbability is market-derived, not a guarantee or independently validated Ash forecast. Tap to research team profiles, recent results, available players, performance news and possible injury clues.") { researchMatch(event) }
         }
         card("ALL UPCOMING GAMES", "Saved games found through your API key: ${upcoming.size}") {}
         upcoming.filter { candidates.none { c -> c.optString("id") == it.optString("id") } }.take(30).forEach { event ->
@@ -161,8 +161,15 @@ class SportsOddsActivity : Activity() {
             val title = "TARGET ${target.toInt()} ODDS" + if (ready) "  •  ${picks.size} PICKS" else "  •  NOT ENOUGH GAMES"
             val details = if (ready) {
                 "Approx. combined decimal odds: %.2f".format(java.util.Locale.US, combined) +
-                    "\n" + picks.joinToString("\n") { "• ${it.optString("away_team")} vs ${it.optString("home_team")} — ${it.optString("candidate")} @ ${it.optDouble("candidate_price", 0.0)}" } +
-                    "\nResearch shortlist only. Prices can change; no outcome is guaranteed."
+                    "\n" + picks.joinToString("\n") { event ->
+                        val pct = event.optDouble("candidate_market_probability", Double.NaN) * 100.0
+                        "• ${event.optString("away_team")} vs ${event.optString("home_team")} — ${event.optString("candidate")} @ ${"%.2f".format(java.util.Locale.US, event.optDouble("candidate_price", 0.0))} • market chance ${if (pct.isFinite()) "%.1f%%".format(java.util.Locale.US, pct) else "n/a"}"
+                    } +
+                    "\nApprox. combined chance (product of market-implied leg probabilities): ${run {
+                        val probabilities = picks.map { it.optDouble("candidate_market_probability", Double.NaN) }
+                        if (probabilities.all { it.isFinite() && it in 0.0..1.0 }) "%.2f%%".format(java.util.Locale.US, probabilities.fold(1.0) { acc, p -> acc * p } * 100.0) else "not available"
+                    }}" +
+                    "\nThis estimate assumes independent legs; real matches may not be independent. Market probabilities are bookmaker-derived, not a guarantee. Prices can change."
             } else {
                 "Ash has not found enough distinct upcoming games with usable prices to reach this target. Refresh later or select more leagues. No games are added just to force the target."
             }
