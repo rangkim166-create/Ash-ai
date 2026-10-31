@@ -11,12 +11,13 @@ DB = ROOT / "data" / "history" / "ash_sports_history.sqlite"
 OUT = ROOT / "data" / "history" / "coverage-report.json"
 TARGETS = {
     "arab_football": [
-        {"name": "Saudi Pro League", "exact": ["saudi arabia", "saudi pro league"], "prefixes": ["saudi pro league "]},
-        {"name": "Egyptian Premier League", "exact": ["egypt", "egyptian premier league", "egyptian premiership"], "prefixes": ["egyptian premier league "]},
-        {"name": "Moroccan Botola", "exact": ["morocco", "moroccan botola", "botola pro"], "prefixes": ["moroccan botola ", "botola pro "]},
-        {"name": "Algerian Ligue 1", "exact": ["algeria", "algerian ligue 1"], "prefixes": ["algerian ligue 1 "]},
+        {"name": "Saudi Pro League", "exact": ["saudi arabia", "saudi pro league"], "prefixes": ["saudi pro league ", "saudi arabia saudi professional league "]},
+        {"name": "Egyptian Premier League", "exact": ["egypt", "egyptian premier league", "egyptian premiership"], "prefixes": ["egyptian premier league ", "egypt premiership "]},
+        {"name": "Moroccan Botola", "exact": ["morocco", "moroccan botola", "botola pro"], "prefixes": ["moroccan botola ", "botola pro ", "morocco botola pro "]},
+        {"name": "Algerian Ligue 1", "exact": ["algeria", "algerian ligue 1"], "prefixes": ["algerian ligue 1 ", "algeria ligue 1 "]},
         {"name": "Qatar Stars League", "exact": ["qatar", "qatar stars league"], "prefixes": ["qatar stars league "]},
         {"name": "UAE Pro League", "exact": ["united arab emirates", "uae pro league", "uae league"], "prefixes": ["uae pro league "]},
+        {"name": "Nigerian Premier Football League", "exact": ["nigeria", "nigeria professional league"], "prefixes": ["nigeria professional league "]},
         {"name": "Tunisian Ligue 1", "exact": ["tunisia", "tunisian ligue 1"], "prefixes": ["tunisian ligue 1 "]},
     ],
     "popular_europe": [
