@@ -23,7 +23,7 @@ server.listen(port, "0.0.0.0", () => {
   console.log(`Ash Sports API listening on ${port}`);
   const runDailyScout = async () => {
     if (!process.env.ASH_APP_TOKEN || !process.env.THE_ODDS_API_KEY) {
-      console.log("[ash-scout] skipped: app token or Odds API key is not configured");
+      console.log("[ash-scout] skipped configuration", { appToken: !!process.env.ASH_APP_TOKEN, oddsApiKey: !!process.env.THE_ODDS_API_KEY });
       return;
     }
     try {
