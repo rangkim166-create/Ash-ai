@@ -23,7 +23,19 @@ async function collectOdds(maxSports=8){
  const priority=["saudi","egypt","morocco","qatar","uae","tunisia","algeria","soccer_epl","championship","bundesliga","la_liga","serie_a","ligue_one","basketball_nba","euroleague","tennis_atp","tennis_wta"];
  sports.sort((a,b)=>{const rank=x=>{const i=priority.findIndex(p=>x.key.includes(p));return i<0?99:i;};return rank(a)-rank(b);});
  const limit=Math.min(12,Math.max(1,maxSports));const arab=sports.filter(s=>["saudi","egypt","morocco","qatar","uae","tunisia","algeria"].some(x=>s.key.includes(x)));const football=sports.filter(s=>s.key.startsWith("soccer_")&&!arab.includes(s));const basketball=sports.filter(s=>s.key.startsWith("basketball_"));const tennis=sports.filter(s=>s.key.startsWith("tennis_"));const selected=[...arab.slice(0,2),...football.slice(0,1),...basketball.slice(0,2),...tennis.slice(0,1)];for(const s of sports){if(selected.length>=limit)break;if(!selected.includes(s))selected.push(s);}
- const last=await db.query("SELECT started_at,status FROM daily_scout_runs ORDER BY started_at DESC LIMIT 1");if(last.rowCount){const age=Date.now()-new Date(last.rows[0].started_at).getTime();const cooldown=last.rows[0].status==="failed"?60*1000:last.rows[0].status==="partial"?5*60*1000:3*60*60*1000;if(Number.isFinite(age)&&age<cooldown)return{skipped:true,reason:"recent_scout_run",lastStatus:last.rows[0].status,lastStartedAt:last.rows[0].started_at};}const run=await db.query("INSERT INTO daily_scout_runs(status) VALUES('running') RETURNING id");
+ const last=await db.query("SELECT id,started_at,status FROM daily_scout_runs ORDER BY started_at DESC LIMIT 1");
+ if(last.rowCount){
+  const prior=last.rows[0];
+  const age=Date.now()-new Date(prior.started_at).getTime();
+  const cooldown=prior.status==="failed"?60*1000:prior.status==="partial"?5*60*1000:prior.status==="running"?10*60*1000:3*60*60*1000;
+  if(Number.isFinite(age)&&age<cooldown)return{skipped:true,reason:"recent_scout_run",lastStatus:prior.status,lastStartedAt:prior.started_at};
+  // A process can restart while a provider request is in flight. Recover stale
+  // "running" rows after the maximum expected collection window so scouting resumes.
+  if(prior.status==="running"&&Number.isFinite(age)&&age>=cooldown){
+   await db.query("UPDATE daily_scout_runs SET status='failed',finished_at=now(),error_summary='Recovered stale run after process restart' WHERE id=$1 AND status='running'",[prior.id]);
+  }
+ }
+ const run=await db.query("INSERT INTO daily_scout_runs(status) VALUES('running') RETURNING id");
  const runId=run.rows[0].id, observedAt=new Date().toISOString();
  let fixtures=0, saved=0; const errors=[], results=[];
  for(const sport of selected){
