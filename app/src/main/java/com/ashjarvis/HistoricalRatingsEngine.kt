@@ -34,8 +34,13 @@ object HistoricalRatingsEngine {
     private fun normalize(value: String): String {
         val ascii = Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
             .replace(Regex("\\p{M}+"), "")
-        return ascii.replace(Regex("[^a-z0-9]"), "")
+        val compact = ascii.replace(Regex("[^a-z0-9]"), "")
             .replace(Regex("(afc|fc|cf|bc|sc|sk|fk|club)$"), "")
+        return when (compact) {
+            "laclippers" -> "losangelesclippers"
+            "lalakers" -> "losangeleslakers"
+            else -> compact
+        }
     }
 
     private fun sportKey(value: String): String = when {
