@@ -24,7 +24,7 @@ function summarizeForm(rows, sport, team) {
 export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
   const now = options.now ? new Date(options.now) : new Date();
   const maxPicks = Math.max(1, Math.min(5, Number(options.maxPicks) || 3));
-  const cutoff = now.getTime() - 24 * 60 * 60 * 1000;
+  const cutoff = now.getTime() - 6 * 60 * 60 * 1000;
   const byMatch = new Map();
 
   for (const row of oddsRows || []) {
