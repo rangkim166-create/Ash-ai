@@ -1,0 +1,30 @@
+name: Ash Sports Render heartbeat
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping Render health endpoint
+        env:
+          HEALTH_URL: https://ash-sports-api.onrender.com/health
+        run: |
+          for attempt in 1 2 3; do
+            response="$(curl --silent --show-error --max-time 25 "$HEALTH_URL" || true)"
+            echo "Heartbeat attempt $attempt: $response"
+            if echo "$response" | grep -q '"ok":true'; then
+              echo "Ash Sports API and database health check passed."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Health check failed after 3 attempts."
+          exit 1
