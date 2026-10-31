@@ -34,7 +34,7 @@ Historical results are imported from OpenFootball football.json and OpenFootball
 
 The Render process now checks once per hour for a Kampala-day publication that has not been sent yet. It refreshes bookmaker odds when the collector cooldown allows, then applies a conservative server-side filter:
 
-- upcoming fixtures only, with bookmaker snapshots no older than 24 hours;
+- upcoming fixtures only, with bookmaker snapshots no older than 6 hours;
 - head-to-head prices from multiple distinct bookmakers;
 - at least five verified recent results for both participants;
 - a positive recent-form edge, with stricter bookmaker/form requirements for higher prices;
