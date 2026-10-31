@@ -45,11 +45,19 @@ async function importHistoricalRatings(){
   }
  }
  const rows=[...unique.values()];
- await db.query(`INSERT INTO historical_team_ratings(sport,team_name,normalized_name,rating,source_generated_at)
-  SELECT x.sport,x.team_name,x.normalized_name,x.rating,$2::timestamptz
-  FROM jsonb_to_recordset($1::jsonb) AS x(sport text,team_name text,normalized_name text,rating double precision)
-  ON CONFLICT(sport,normalized_name) DO UPDATE SET team_name=EXCLUDED.team_name,rating=EXCLUDED.rating,
-   source_generated_at=EXCLUDED.source_generated_at,imported_at=now()`,[JSON.stringify(rows),generatedAt]);
+ for(let start=0;start<rows.length;start+=1500){
+  const batch=rows.slice(start,start+1500),values=[];
+  const tuples=batch.map((row,index)=>{
+   const offset=index*4;
+   values.push(row.sport,row.team_name,row.normalized_name,row.rating);
+   return `(${offset+1},${offset+2},${offset+3},${offset+4},${batch.length*4+1}::timestamptz)`;
+  });
+  values.push(generatedAt);
+  await db.query(`INSERT INTO historical_team_ratings(sport,team_name,normalized_name,rating,source_generated_at)
+   VALUES ${tuples.join(",")}
+   ON CONFLICT(sport,normalized_name) DO UPDATE SET team_name=EXCLUDED.team_name,rating=EXCLUDED.rating,
+    source_generated_at=EXCLUDED.source_generated_at,imported_at=now()`,values);
+ }
  await db.query(`INSERT INTO historical_ratings_meta(source,generated_at,imported_at,team_count,match_counts)
   VALUES('ash_elo_baseline',$1::timestamptz,now(),$2,$3::jsonb)
   ON CONFLICT(source) DO UPDATE SET generated_at=EXCLUDED.generated_at,imported_at=now(),
