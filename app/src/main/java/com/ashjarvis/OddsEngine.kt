@@ -458,7 +458,16 @@ object OddsEngine {
                             val identity = "${row.optString("date")}|${row.optString("event")}"
                             if (seen.add(identity)) combined.put(row)
                         }
-                        return combined
+                        // Add the verified 3-year archive form snapshot, then sort all sources newest-first.
+                        val publishedForm = HistoricalRatingsEngine.recentForm(context, event.optString("sport_title"), teamName)
+                        for (index in 0 until publishedForm.length()) {
+                            val row = publishedForm.optJSONObject(index) ?: continue
+                            val identity = "${row.optString("date")}|${row.optString("event")}"
+                            if (seen.add(identity)) combined.put(row)
+                        }
+                        val ordered = (0 until combined.length()).mapNotNull { combined.optJSONObject(it) }
+                            .sortedByDescending { it.optString("date") }
+                        return JSONArray().also { resultRows -> ordered.forEach(resultRows::put) }
                     }
                     val homeRecent = combineRecent("home", event.optString("home_team"))
                     val awayRecent = combineRecent("away", event.optString("away_team"))
