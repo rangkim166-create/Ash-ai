@@ -79,6 +79,7 @@ class SportsOddsActivity : Activity() {
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, 12, 0, 8) }
         controls.addView(button("TODAY") { currentTab = "today"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("HISTORY") { currentTab = "history"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
+        controls.addView(button("RESULTS") { currentTab = "results"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("SETUP") { showSetup() }, LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(controls)
         val scroll = ScrollView(this)
@@ -88,7 +89,11 @@ class SportsOddsActivity : Activity() {
         status = text("", 11f, muted).apply { setPadding(3, 8, 3, 0) }
         root.addView(status)
         setContentView(root)
-        if (currentTab == "history") showHistory() else showToday()
+        when (currentTab) {
+            "history" -> showHistory()
+            "results" -> showResults()
+            else -> showToday()
+        }
     }
 
     private fun showToday() {
@@ -310,6 +315,42 @@ class SportsOddsActivity : Activity() {
                     .setPositiveButton("OK", null).show()
             }
         }
+    }
+
+    private fun showResults() {
+        val all = TipResultsTracker.all(this)
+        val week = TipResultsTracker.stats(this, 7)
+        val month = TipResultsTracker.stats(this, 30)
+        fun pct(value: JSONObject, key: String): String {
+            val number = value.optDouble(key, Double.NaN)
+            return if (number.isFinite()) "%.1f%%".format(java.util.Locale.US, number) else "—"
+        }
+        card("LAST 7 DAYS",
+            "Won: ${week.optInt("won")} • Lost: ${week.optInt("lost")} • Pending: ${week.optInt("pending")}\nHit rate: ${pct(week, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, week.optDouble("profit_units"))} units • Yield: ${pct(week, "yield_pct")}") {}
+        card("LAST 30 DAYS",
+            "Won: ${month.optInt("won")} • Lost: ${month.optInt("lost")} • Pending: ${month.optInt("pending")}\nHit rate: ${pct(month, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, month.optDouble("profit_units"))} units • Yield: ${pct(month, "yield_pct")}") {}
+        card("SAVED TIPS",
+            "${all.length()} records saved in SQLite. Tap a pending tip after its match to record WON, LOST or VOID.") {}
+        val rows = (0 until all.length()).mapNotNull { all.optJSONObject(it) }
+            .sortedByDescending { it.optString("published_at") }
+        if (rows.isEmpty()) {
+            body.addView(text("No tips archived yet. Generate the daily shortlist first.", 14f, muted).apply { setPadding(12, 12, 12, 12) })
+        }
+        rows.take(150).forEach { tip ->
+            val details = "${tip.optString("sport_title")} • ${tip.optString("market_type")}\nPick: ${tip.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, tip.optDouble("price", 0.0))}\nPublished: ${tip.optString("published_at")}\nStatus: ${tip.optString("status")}"
+            card("${tip.optString("away_team")} vs ${tip.optString("home_team")}", details) {
+                if (tip.optString("status") == "pending") {
+                    val options = arrayOf("WON", "LOST", "VOID")
+                    AlertDialog.Builder(this).setTitle("Record final result")
+                        .setItems(options) { _, which ->
+                            val outcome = when (which) { 0 -> "won"; 1 -> "lost"; else -> "void" }
+                            TipResultsTracker.settle(this, tip.optString("tip_id"), outcome, -1, -1)
+                            render()
+                        }.setNegativeButton("CANCEL", null).show()
+                }
+            }
+        }
+        status.text = "Results ledger • pending tips can be settled after matches"
     }
 
     private fun showHistory() {
