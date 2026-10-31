@@ -20,6 +20,7 @@ def main():
     if not DB.exists():
         raise SystemExit("History database not found; run build_database.py first.")
     ratings = {"football": {}, "tennis": {}, "basketball": {}}
+    appearances = {"football": {}, "tennis": {}, "basketball": {}}
     counts = {sport: 0 for sport in ratings}
     with sqlite3.connect(DB) as db:
         rows = db.execute(
@@ -31,6 +32,8 @@ def main():
         if sport not in ratings or not a or not b:
             continue
         table = ratings[sport]
+        appearances[sport][a] = appearances[sport].get(a, 0) + 1
+        appearances[sport][b] = appearances[sport].get(b, 0) + 1
         ra, rb = table.get(a, START), table.get(b, START)
         ea = expected(ra, rb)
         result = 1.0 if sa > sb else 0.0 if sa < sb else 0.5
@@ -40,10 +43,15 @@ def main():
     if not any(counts.values()):
         raise SystemExit("No match records available to build ratings.")
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "model": "Elo baseline; equal starting ratings; no injuries, lineup, surface or venue adjustments",
+        "model": "Chronological Elo baseline; equal starting ratings; K=24; no injuries, lineups, surface or venue adjustments",
         "match_counts": counts,
+        "participant_counts": {sport: len(table) for sport, table in ratings.items()},
+        "appearances": {
+            sport: {name: played for name, played in sorted(table.items())}
+            for sport, table in appearances.items()
+        },
         "ratings": {
             sport: {name: round(value, 2) for name, value in sorted(table.items())}
             for sport, table in ratings.items()
