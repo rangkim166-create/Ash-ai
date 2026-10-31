@@ -78,6 +78,7 @@ class SportsOddsActivity : Activity() {
         root.addView(header)
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, 12, 0, 8) }
         controls.addView(button("TODAY") { currentTab = "today"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
+        controls.addView(button("PARKED") { currentTab = "parked"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("HISTORY") { currentTab = "history"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("RESULTS") { currentTab = "results"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("SETUP") { showSetup() }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -90,6 +91,7 @@ class SportsOddsActivity : Activity() {
         root.addView(status)
         setContentView(root)
         when (currentTab) {
+            "parked" -> showParked()
             "history" -> showHistory()
             "results" -> showResults()
             else -> showToday()
@@ -102,7 +104,7 @@ class SportsOddsActivity : Activity() {
             .filter { it.optString("commence_time").isNotBlank() && it.optString("commence_time") >= java.time.Instant.now().toString() }
             .sortedBy { it.optString("commence_time") }
         val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
-        card("DAILY SHORTLIST", "Ash scans the competitions you selected across football, basketball and tennis. It researches up to six diversified candidates across 1.50–10.00 odds bands, then publishes only selections that pass evidence checks. No forced picks.") {}
+        card("ODDS OF THE DAY", "Today's approved selections only. Ash ranks real upcoming fixtures using bookmaker prices, recent verified results, historical ratings and match research. If nothing passes, the sheet stays empty — no forced picks.") {}
         card("HOW ASH ANALYSES A MATCH",
             "• Recent verified results, weighted toward newer games\n• Long-run historical Elo ratings from archived football, basketball and tennis results (supporting evidence only)\n• Comparable bookmaker prices and best available price\n• Multi-bookmaker agreement and market-implied probability\n• Sport-specific online news: line-ups/injuries for football, rest/back-to-back and player availability for basketball, surface/form/fitness for tennis\n• Higher odds require deeper history and more bookmaker support\n\nThe evidence index is a ranking aid, not a win probability. Probability figures are bookmaker-derived until Ash has enough settled data to validate an independent model.") {}
         val dailyPicks = OddsEngine.savedDailyPicks(this)
@@ -112,41 +114,64 @@ class SportsOddsActivity : Activity() {
             } else {
                 for (i in 0 until dailyPicks.length()) {
                     val pick = dailyPicks.optJSONObject(i) ?: continue
-                    if (isNotEmpty()) append("\\n\\n")
+                    if (isNotEmpty()) append("\n\n")
                     append(i + 1).append(". ").append(pick.optString("away_team"))
                         .append(" vs ").append(pick.optString("home_team"))
-                    append("\\nPick: ").append(pick.optString("selection"))
+                    append("\nPick: ").append(pick.optString("selection"))
                         .append(" @ ").append("%.2f".format(java.util.Locale.US, pick.optDouble("price", 0.0)))
-                    append("\\nMarket-implied chance: ")
+                    append("\nMarket-implied chance: ")
                     val marketPct = pick.optDouble("market_probability_pct", Double.NaN)
                     append(if (marketPct.isFinite()) "%.1f%%".format(java.util.Locale.US, marketPct) else "not available")
-                    append("\\nRaw odds-implied chance: ")
+                    append("\nRaw odds-implied chance: ")
                     val rawPct = pick.optDouble("raw_implied_probability_pct", Double.NaN)
                     append(if (rawPct.isFinite()) "%.1f%%".format(java.util.Locale.US, rawPct) else "not available")
-                    append("\\nEvidence index: ").append(pick.optInt("evidence_index"))
+                    append("\nEvidence index: ").append(pick.optInt("evidence_index"))
                         .append("/100 • Bookmakers: ").append(pick.optInt("bookmakers"))
                     val eloHome = pick.optDouble("historical_elo_home", Double.NaN)
                     val eloAway = pick.optDouble("historical_elo_away", Double.NaN)
                     val eloProbability = pick.optDouble("historical_elo_home_probability_pct", Double.NaN)
                     if (eloHome.isFinite() && eloAway.isFinite()) {
-                        append("\\nHistorical Elo prior: home ").append("%.0f".format(java.util.Locale.US, eloHome))
+                        append("\nHistorical Elo prior: home ").append("%.0f".format(java.util.Locale.US, eloHome))
                             .append(" vs away ").append("%.0f".format(java.util.Locale.US, eloAway))
                             .append(" • samples ").append(pick.optInt("historical_elo_home_matches"))
                             .append("/").append(pick.optInt("historical_elo_away_matches"))
-                        if (eloProbability.isFinite()) append("\\nElo baseline home estimate: ")
+                        if (eloProbability.isFinite()) append("\nElo baseline home estimate: ")
                             .append("%.1f%%".format(java.util.Locale.US, eloProbability))
                             .append(" (unvalidated historical baseline, not a betting probability)")
                     }
-                    append("\\nWhy: ").append(pick.optString("reason"))
+                    append("\nWhy: ").append(pick.optString("reason"))
                 }
-                append("\\n\\nEvidence index is a heuristic, not a measured chance of winning. Odds can change.")
+                append("\n\nEvidence index is a heuristic, not a measured chance of winning. Odds can change.")
             }
         }
-        card("ASH DAILY MATCHES TO WATCH", picksText) {
+        card("TODAY'S APPROVED PICKS", picksText) {
             AlertDialog.Builder(this).setTitle("Daily researched shortlist")
                 .setMessage(picksText)
                 .setPositiveButton("OK", null).show()
         }
+        body.addView(button("COPY ODDS OF THE DAY") {
+            val copyText = buildString {
+                append("ASH ODDS OF THE DAY • ").append(java.time.LocalDate.now()).append("\n\n")
+                if (dailyPicks.length() == 0) {
+                    append("No selections passed today's evidence checks. No forced bets.")
+                } else {
+                    for (i in 0 until dailyPicks.length()) {
+                        val pick = dailyPicks.optJSONObject(i) ?: continue
+                        append(i + 1).append(". ").append(pick.optString("away_team"))
+                            .append(" vs ").append(pick.optString("home_team")).append("\n")
+                        append("Pick: ").append(pick.optString("selection")).append(" @ ")
+                            .append("%.2f".format(java.util.Locale.US, pick.optDouble("price", 0.0))).append("\n")
+                        append("Sport: ").append(pick.optString("sport_title")).append(" • Bookmakers: ")
+                            .append(pick.optInt("bookmakers")).append("\n")
+                        append("Best price: ").append(pick.optString("best_bookmaker", "not listed")).append("\n\n")
+                    }
+                }
+                append("Odds move. Evidence rankings are not guarantees. Bet responsibly.")
+            }
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Ash Odds of the Day", copyText))
+            Toast.makeText(this, "Daily odds copied — ready to paste", Toast.LENGTH_LONG).show()
+        })
         showAccumulatorTargets(dailyPicks)
         val oddEvenDay = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
         val oddEvenRecord = LocalSportsDatabase.get(this).get("daily_odd_even", oddEvenDay)
@@ -218,6 +243,40 @@ class SportsOddsActivity : Activity() {
         actions.addView(button("REFRESH NOW") { refreshNow() }, LinearLayout.LayoutParams(0, -2, 1f))
         actions.addView(button("VIEW SPORTS API LIST") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(actions, 0)
+    }
+
+    private fun showParked() {
+        val history = OddsEngine.history(this)
+        val dailyPicks = OddsEngine.savedDailyPicks(this)
+        val approvedIds = (0 until dailyPicks.length()).mapNotNull { dailyPicks.optJSONObject(it)?.optString("id") }.toSet()
+        val now = java.time.Instant.now()
+        val parked = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
+            .filter { event ->
+                val kickoff = event.optString("commence_time")
+                val future = kickoff.isNotBlank() && runCatching { java.time.Instant.parse(kickoff).isAfter(now) }.getOrDefault(false)
+                future && event.optString("candidate").isNotBlank() &&
+                    event.optInt("candidate_bookmakers") >= 2 && event.optString("id") !in approvedIds
+            }
+            .sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
+                .thenBy { it.optString("commence_time") })
+
+        card("PARKED / WATCHLIST", "These are real upcoming fixtures that did not make today's approved Odds of the Day. They are for monitoring only — not recommended bets. A match stays parked until its evidence checks pass.") {}
+        if (parked.isEmpty()) {
+            body.addView(text("No parked fixtures right now. Refresh the odds feed to update the watchlist.", 14f, muted)
+                .apply { setPadding(12, 14, 12, 14) })
+            status.text = "Parked watchlist • 0 fixtures"
+            return
+        }
+        parked.take(60).forEach { event ->
+            val books = event.optInt("candidate_bookmakers")
+            val reason = if (books < 3) "Too few bookmakers for the main shortlist" else
+                "Did not pass the full recent-form / research threshold"
+            card("${event.optString("away_team")} vs ${event.optString("home_team")}",
+                "${event.optString("sport_title")}\nMarket candidate: ${event.optString("candidate")} @ ${"%.2f".format(java.util.Locale.US, event.optDouble("candidate_price", 0.0))}\nBookmakers: $books\nKick-off: ${event.optString("commence_time")}\nPARKED — $reason. Not a pick.") {
+                researchMatch(event)
+            }
+        }
+        status.text = "Parked watchlist • ${parked.size} fixtures • not approved for betting"
     }
 
     private fun showAccumulatorTargets(researchedPicks: JSONArray) {

@@ -11,10 +11,9 @@ import org.json.JSONArray
 import java.time.LocalDate
 
 object DailyPicksNotifier {
-    private const val CHANNEL_ID = "ash_daily_sports_picks"
+    private const val CHANNEL_ID = "ash_odds_of_the_day"
 
     fun notify(context: Context, picks: JSONArray) {
-        if (picks.length() == 0) return
         val prefs = context.getSharedPreferences("ash_jarvis", Context.MODE_PRIVATE)
         val today = LocalDate.now().toString()
         if (prefs.getString("ash_daily_notification_date", "") == today) return
@@ -22,15 +21,15 @@ object DailyPicksNotifier {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "Ash daily sports shortlist", NotificationManager.IMPORTANCE_DEFAULT)
-                    .apply { description = "Daily match research shortlist from Ash Sports Intelligence" }
+                NotificationChannel(CHANNEL_ID, "Ash Odds of the Day", NotificationManager.IMPORTANCE_DEFAULT)
+                    .apply { description = "Approved daily match selections and research status from Ash Sports Intelligence" }
             )
         }
         val lines = (0 until minOf(picks.length(), 3)).mapNotNull { index ->
             val item = picks.optJSONObject(index) ?: return@mapNotNull null
             "${item.optString("away_team")} vs ${item.optString("home_team")} — ${item.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, item.optDouble("price", 0.0))}"
         }
-        val body = lines.joinToString("\n").ifBlank { "Open Ash Sports Intelligence to review today's research." }
+        val body = lines.joinToString("\n").ifBlank { "No selection passed today’s evidence checks. Ash did not force a pick." }
         val intent = Intent(context, SportsOddsActivity::class.java)
         val pending = PendingIntent.getActivity(
             context, 5120, intent,
@@ -38,8 +37,8 @@ object DailyPicksNotifier {
         )
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
-            .setContentTitle("Ash daily match shortlist")
-            .setContentText("${picks.length()} evidence-ranked matches to review")
+            .setContentTitle("Ash • Odds of the Day")
+            .setContentText(if (picks.length() > 0) "${picks.length()} approved selections to review" else "No pick passed today’s evidence checks")
             .setStyle(NotificationCompat.BigTextStyle().bigText(body + "\n\nResearch only — outcomes are not guaranteed."))
             .setContentIntent(pending)
             .setAutoCancel(true)
