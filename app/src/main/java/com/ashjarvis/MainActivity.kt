@@ -715,7 +715,7 @@ class MainActivity : Activity() {
             "Dolphin 2.9 Llama 3 8B (Q4_K_M)", "8 GB+ RAM recommended", 8, "~4.9 GB",
             "dolphin-2.9-llama3-8b-Q4_K_M.gguf",
             "https://huggingface.co/bartowski/dolphin-2.9-llama3-8b-GGUF/resolve/main/dolphin-2.9-llama3-8b-Q4_K_M.gguf?download=true",
-            "Less restrictive style; too large for many 6 GB phones."
+            "Not recommended for an 8 GB phone: the 4.9 GB weights plus native runtime and Android memory can exceed available RAM. Use Qwen 2.5 1.5B Q4 on the Galaxy A70."
         )
     )
 
@@ -734,11 +734,11 @@ class MainActivity : Activity() {
         val ramSpinner = android.widget.Spinner(this)
         val ramOptions = listOf("2 GB", "3 GB", "4 GB", "6 GB", "8 GB", "12 GB", "16 GB or more")
         ramSpinner.adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ramOptions)
-        val savedRam = prefs.getInt("offline_ram_gb", 6)
+        val savedRam = prefs.getInt("offline_ram_gb", 8)
         ramSpinner.setSelection(ramOptions.indexOfFirst { it.startsWith(savedRam.toString() + " ") }.takeIf { it >= 0 } ?: 3)
         panel.addView(ramSpinner)
         panel.addView(TextView(this).apply {
-            text = "2. Choose a model recommended for that RAM"
+            text = "2. Choose a model that leaves memory for Android"
             textSize = 15f
             setTextColor(Color.rgb(30, 41, 59))
             setPadding(0, 14, 0, 8)
@@ -770,6 +770,7 @@ class MainActivity : Activity() {
         })
 
         fun selectedRam(): Int = ramOptions[ramSpinner.selectedItemPosition].substringBefore(" ").toIntOrNull() ?: 16
+        fun modelMemoryBudget(): Int = (selectedRam() - 3).coerceAtLeast(2)
         fun compatibleModels(): List<OfflineModel> {
             // Show every bundled model, including Dolphin, but clearly warn when a model exceeds the selected RAM.
             // Hiding large models made users think Dolphin was not supported.
@@ -781,11 +782,12 @@ class MainActivity : Activity() {
             modelAdapter.addAll(choices.map { it.name + " • " + it.sizeLabel })
             modelAdapter.notifyDataSetChanged()
             val chosen = choices.firstOrNull { it.name == preferredName }
-                ?: choices.lastOrNull { it.minRamGb <= selectedRam() }
+                ?: choices.lastOrNull { it.minRamGb <= modelMemoryBudget() }
                 ?: choices.first()
             modelSpinner.setSelection(choices.indexOf(chosen).coerceAtLeast(0))
             val ram = selectedRam()
-            val ramWarning = if (chosen.minRamGb > ram) "\n\n⚠️ This model is above your selected RAM setting. It may download successfully but run slowly, fail to load, or cause Android to close Ash." else ""
+            val budget = modelMemoryBudget()
+            val ramWarning = if (chosen.minRamGb > budget) "\n\n⚠️ This model exceeds the safe model-memory budget of about $budget GB after reserving 3 GB for Android and other apps. It may fail to load or close Ash." else ""
             details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
                 "\nRecommended minimum RAM: " + chosen.ramLabel + ramWarning +
                 "\n\nOnly GGUF models supported by Ash's bundled inference runtime will run. A successful download alone does not guarantee that every architecture or chat template works."
@@ -797,8 +799,10 @@ class MainActivity : Activity() {
         modelSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val chosen = compatibleModels().getOrNull(position) ?: return
+                val budget = modelMemoryBudget()
+                val warning = if (chosen.minRamGb > budget) "\n\n⚠️ Exceeds the safe model-memory budget (~$budget GB). Choose a smaller model for reliable offline use." else ""
                 details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
-                    "\nRecommended minimum RAM: " + chosen.ramLabel +
+                    "\nRecommended minimum RAM: " + chosen.ramLabel + warning +
                     "\n\nAsh can load compatible GGUF models locally. Not every GGUF architecture or chat template is supported by the bundled runtime."
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
