@@ -110,7 +110,9 @@ class SportsOddsActivity : Activity() {
             .filter { it.optString("commence_time").isNotBlank() && it.optString("commence_time") >= java.time.Instant.now().toString() }
             .sortedBy { it.optString("commence_time") }
         val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
-        card("DAILY SHORTLIST", "Ash scans active sports exposed by your API key, then ranks a small daily research shortlist. Each sport requires a separate odds request, so your API quota/plan limits coverage. Target odds are combined prices, not win probabilities or guarantees.") {}
+        card("DAILY SHORTLIST", "Ash scans the competitions you selected across football, basketball and tennis. It researches up to six diversified candidates across 1.50–10.00 odds bands, then publishes only selections that pass evidence checks. No forced picks.") {}
+        card("HOW ASH ANALYSES A MATCH",
+            "• Recent verified results, weighted toward newer games\n• Comparable bookmaker prices and best available price\n• Multi-bookmaker agreement and market-implied probability\n• Sport-specific online news: line-ups/injuries for football, rest/back-to-back and player availability for basketball, surface/form/fitness for tennis\n• Higher odds require deeper history and more bookmaker support\n\nThe evidence index is a ranking aid, not a win probability. Probability figures are bookmaker-derived until Ash has enough settled data to validate an independent model.") {}
         val dailyPicks = OddsEngine.savedDailyPicks(this)
         val picksText = buildString {
             if (dailyPicks.length() == 0) {
