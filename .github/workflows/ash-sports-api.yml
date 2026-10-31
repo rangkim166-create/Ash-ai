@@ -1,0 +1,33 @@
+name: Validate Ash Sports Neon Function
+
+on:
+  push:
+    branches: [ash-neon-backend]
+    paths:
+      - "neon-functions/ashsports/**"
+      - ".github/workflows/ash-sports-api.yml"
+  pull_request:
+    paths:
+      - "neon-functions/ashsports/**"
+      - ".github/workflows/ash-sports-api.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: neon-functions/ashsports
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: neon-functions/ashsports/package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Check function syntax
+        run: node --check index.mjs && node --check public-history.mjs && node --check daily-picks.mjs && node --test daily-picks.test.mjs

@@ -16,7 +16,7 @@ The GitHub Actions workflow runs daily, on changes to the sports module, or manu
 
 - Football: OpenFootball JSON, public domain; selected leagues and seasons from 2000/01 onward. Coverage differs by league/season.
 - Tennis: ATP/WTA match results mirrored in `Aneeshers/tennis-sackmann-archive`, decades of historical results where available. The data retains Jeff Sackmann's CC BY-NC-SA 4.0 terms: attribution, share-alike, non-commercial use. Do not use it commercially without permission.
-- Basketball: NBA team game logs in `shufinskiy/nba_data`, regular season and playoffs from 1996 onward where archives exist. This is not every global basketball league.
+- Basketball: NBA team-game logs from the `llimllib/nba_data` stats.nba.com mirror, 2009/10 onward. This is NBA only, not every global basketball league; the mirror does not publish an explicit dataset reuse license, so it is not commercially cleared.
 
 No free source contains literally every match ever played, and match results are not historical bookmaker odds. Historical odds, line movement, injuries, lineups and current fixtures require separate sources.
 
@@ -24,19 +24,19 @@ No free source contains literally every match ever played, and match results are
 
 The Elo baseline now supports football, tennis and basketball. It is a starting point, not a production-validated prediction system. It does not account for injuries, lineups, tennis surface, fatigue, venue effects, odds or team/player identity changes. Run chronological backtests and calibration before using predictions to make decisions. No prediction is guaranteed.
 
-The database is built on the GitHub Actions runner and attached as an artifact; it is not yet a permanent online database or automatically served to the Android app. To connect live app requests, Ash needs a hosted API/database endpoint and deployment configuration.
+The full SQLite database is built on the GitHub Actions runner and attached as an artifact. A compact, per-participant Elo snapshot is committed as data/history/ratings.json; the Android app downloads it from the public branch, caches ratings in its private SQLite database and uses them as a small supporting adjustment when ranking researched picks. The full raw match archive is not downloaded to the phone.
 
 ## League priorities and Arab football
 
 Ash now keeps a prioritized league profile in `sports_ai/league_profiles.json`. The first data-quality priorities are the English Premier League, Championship, Bundesliga, La Liga, Serie A, Ligue 1, Eredivisie, Primeira Liga and Scottish Premiership because public historical results are relatively discoverable. This is a data-coverage priority, not a claim that matches are easy to predict.
 
-The workflow also downloads the public-domain OpenFootball world archive using `sports_ai/collect_arab_football.py`. It targets African/Asian league data including Egypt, Morocco and Algeria where present. The archive is currently preserved and inventoried separately; its text files are **not yet normalized into the match database**, so Ash must not claim those matches are already included in its ratings. Saudi Pro League, Qatar Stars League and UAE Pro League still need a verified, legally usable source before their history can be advertised as available.
+The workflow also downloads the public-domain OpenFootball world archive using `sports_ai/collect_arab_football.py`. It targets African and regional league data including Egypt, Morocco, Algeria, Nigeria and Saudi Arabia where present. The archive is preserved and inventoried separately. A conservative Football.TXT parser now normalizes dated, completed results from regional text files into the match database; it skips unclear dates, unscored fixtures and ambiguous score lines. Coverage is only confirmed after the history workflow succeeds and the coverage report shows non-zero counts for a target league. The world archive currently exposes a Saudi Professional League 2024/25 file and Nigerian league seasons from 2009/10 onward; Egypt, Morocco and Algeria currently have 2023/24 and 2024/25 files. Qatar Stars League and UAE Pro League still need a verified source. Actual imported counts and season ranges must be confirmed by the coverage report before claiming coverage.
 
 For recommendations, Ash should prefer leagues with a large recent sample, verified fixtures, stable data coverage and probabilities validated on held-out past seasons. It must show low/medium/high confidence and missing-data warnings rather than call any match a sure win. A popular league is not necessarily easier to predict, and odds can already reflect public information.
 
 ## Expanded coverage and audit status
 
-The collector now attempts the OpenFootball world archive, Saudi Pro League CSV archive, NBA play-by-play source archives, and compact basketball game tables for NBA, EuroLeague, EuroCup, ABA League and the Slovenian league. The SQLite build then imports source formats that have verified parsers. Missing source files are recorded instead of being silently treated as zero-history competitions.
+The collector attempts the OpenFootball world archive, Saudi Pro League CSV archive and NBA team-game archives. The multi-league basketball parquet source with no clear reuse license is deliberately excluded from the automated pipeline. Missing source files are recorded instead of being silently treated as zero-history competitions.
 
 The data pipeline must never describe itself as literally complete: no public source contains every football match in every Arab league, every ATP/WTA match and every basketball competition. Coverage depends on season/source availability. The workflow should publish source manifests, normalized counts by sport/competition and parser warnings with every archive.
 
@@ -44,7 +44,7 @@ The data pipeline must never describe itself as literally complete: no public so
 
 - OpenFootball's football JSON results are public domain; regional text files are imported only where the score line is unambiguous.
 - The ATP/WTA archive used here is marked CC BY-NC-SA 4.0 upstream. It is non-commercial unless a separate permission/license is obtained.
-- The Saudi league and multi-league basketball archives do not clearly state a reuse license in their README. Keep attribution and do not redistribute or use commercially until permission is confirmed.
+- The Saudi CSV archive and third-party multi-league basketball parquet archive do not clearly state a reuse license. The automated pipeline excludes the unlicensed multi-league parquet source; Saudi CSV results remain research-only pending permission.
 - Football-Data.co.uk explicitly limits its free datasets to private individuals and excludes commercial/AI data-training projects with heavy repeated automated downloads. It is **not** downloaded or imported by the automated workflow. Do not use its CSVs for training or publish its data without permission.
 - Results datasets are not a substitute for live fixtures, injuries, lineups or licensed historical bookmaker odds. No match is guaranteed.
 
@@ -53,9 +53,9 @@ The data pipeline must never describe itself as literally complete: no public so
 The daily GitHub Actions job now attempts these additional imports:
 
 - A global ODC-BY football results dataset containing 1.2M+ match records across 207 domestic leagues and 20 international competitions, reported upstream from 1888–2023. Attribution is retained; old records may contain errors and team identities may vary.
-- OpenFootball's world archive for regional football text files. The parser imports only score lines it can recognize; the audit report lists target leagues that were not detected.
-- Saudi Pro League CSV archive where available. Its upstream reuse licence is unclear, so treat it as research-only until permission is confirmed.
-- NBA, EuroLeague, EuroCup, ABA League and Slovenian league parquet tables where available. Their upstream reuse licence is also unclear; do not redistribute commercially without permission.
+- OpenFootball's world archive for regional football text files. The parser imports only clearly dated, completed score lines it can recognize; parser unit tests run in CI and the audit report lists target leagues that were not detected.
+- Saudi Pro League CSV archive where available. Its upstream reuse licence is unclear, so treat it as research-only until permission is confirmed. Separately, OpenFootball world includes a CC0 Saudi 2024/25 text file.
+- NBA team-game logs from the llimllib stats.nba.com mirror, 2009/10 onward. The repository does not publish an explicit dataset reuse license; use only for personal/research work until terms are clarified.
 - A coverage audit in `data/history/coverage-report.json` records imported match counts, competitions/seasons and Arab league targets not found.
 
 The workflow builds the SQLite database, imports additional sources, rebuilds `ratings.json`, packages the raw archive/database/report as the `ash-sports-history` Actions artifact, and commits small manifests/ratings to the repository. The artifact has a 90-day retention limit; each successful run removes older copies so the latest archive is easy to find. The full database is reproducible from source URLs but is not permanently stored in Git history.

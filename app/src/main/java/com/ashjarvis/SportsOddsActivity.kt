@@ -78,6 +78,7 @@ class SportsOddsActivity : Activity() {
         root.addView(header)
         val controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; setPadding(0, 12, 0, 8) }
         controls.addView(button("TODAY") { currentTab = "today"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
+        controls.addView(button("PARKED") { currentTab = "parked"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("HISTORY") { currentTab = "history"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("RESULTS") { currentTab = "results"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("SETUP") { showSetup() }, LinearLayout.LayoutParams(0, -2, 1f))
@@ -90,6 +91,7 @@ class SportsOddsActivity : Activity() {
         root.addView(status)
         setContentView(root)
         when (currentTab) {
+            "parked" -> showParked()
             "history" -> showHistory()
             "results" -> showResults()
             else -> showToday()
@@ -97,22 +99,13 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun showToday() {
-        val key = OddsEngine.readApiKey(this)
-        if (key.isNullOrBlank()) {
-            card("CONNECT YOUR ODDS FEED", "Paste your own The Odds API key. Ash encrypts it on this phone and checks the selected leagues daily.") {
-                button("ADD API KEY") { showSetup() }
-            }
-            status.text = "Not connected • no API key saved"
-            return
-        }
         val history = OddsEngine.history(this)
         val upcoming = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
             .filter { it.optString("commence_time").isNotBlank() && it.optString("commence_time") >= java.time.Instant.now().toString() }
             .sortedBy { it.optString("commence_time") }
-        val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
-        card("DAILY SHORTLIST", "Ash scans the competitions you selected across football, basketball and tennis. It researches up to six diversified candidates across 1.50–10.00 odds bands, then publishes only selections that pass evidence checks. No forced picks.") {}
+        card("ODDS OF THE DAY", "Today's approved selections only. Ash ranks real upcoming fixtures using bookmaker prices, recent verified results, historical ratings and match research. If nothing passes, the sheet stays empty — no forced picks.") {}
         card("HOW ASH ANALYSES A MATCH",
-            "• Recent verified results, weighted toward newer games\n• Comparable bookmaker prices and best available price\n• Multi-bookmaker agreement and market-implied probability\n• Sport-specific online news: line-ups/injuries for football, rest/back-to-back and player availability for basketball, surface/form/fitness for tennis\n• Higher odds require deeper history and more bookmaker support\n\nThe evidence index is a ranking aid, not a win probability. Probability figures are bookmaker-derived until Ash has enough settled data to validate an independent model.") {}
+            "• Recent verified results, weighted toward newer games\n• Long-run historical Elo ratings from archived football, basketball and tennis results (supporting evidence only)\n• Comparable bookmaker prices and best available price\n• Multi-bookmaker agreement and market-implied probability\n• Sport-specific online news: line-ups/injuries for football, rest/back-to-back and player availability for basketball, surface/form/fitness for tennis\n• Higher odds require deeper history and more bookmaker support\n\nThe evidence index is a ranking aid, not a win probability. Probability figures are bookmaker-derived until Ash has enough settled data to validate an independent model.") {}
         val dailyPicks = OddsEngine.savedDailyPicks(this)
         val picksText = buildString {
             if (dailyPicks.length() == 0) {
@@ -120,29 +113,64 @@ class SportsOddsActivity : Activity() {
             } else {
                 for (i in 0 until dailyPicks.length()) {
                     val pick = dailyPicks.optJSONObject(i) ?: continue
-                    if (isNotEmpty()) append("\\n\\n")
+                    if (isNotEmpty()) append("\n\n")
                     append(i + 1).append(". ").append(pick.optString("away_team"))
                         .append(" vs ").append(pick.optString("home_team"))
-                    append("\\nPick: ").append(pick.optString("selection"))
+                    append("\nPick: ").append(pick.optString("selection"))
                         .append(" @ ").append("%.2f".format(java.util.Locale.US, pick.optDouble("price", 0.0)))
-                    append("\\nMarket-implied chance: ")
+                    append("\nMarket-implied chance: ")
                     val marketPct = pick.optDouble("market_probability_pct", Double.NaN)
                     append(if (marketPct.isFinite()) "%.1f%%".format(java.util.Locale.US, marketPct) else "not available")
-                    append("\\nRaw odds-implied chance: ")
+                    append("\nRaw odds-implied chance: ")
                     val rawPct = pick.optDouble("raw_implied_probability_pct", Double.NaN)
                     append(if (rawPct.isFinite()) "%.1f%%".format(java.util.Locale.US, rawPct) else "not available")
-                    append("\\nEvidence index: ").append(pick.optInt("evidence_index"))
+                    append("\nEvidence index: ").append(pick.optInt("evidence_index"))
                         .append("/100 • Bookmakers: ").append(pick.optInt("bookmakers"))
-                    append("\\nWhy: ").append(pick.optString("reason"))
+                    val eloHome = pick.optDouble("historical_elo_home", Double.NaN)
+                    val eloAway = pick.optDouble("historical_elo_away", Double.NaN)
+                    val eloProbability = pick.optDouble("historical_elo_home_probability_pct", Double.NaN)
+                    if (eloHome.isFinite() && eloAway.isFinite()) {
+                        append("\nHistorical Elo prior: home ").append("%.0f".format(java.util.Locale.US, eloHome))
+                            .append(" vs away ").append("%.0f".format(java.util.Locale.US, eloAway))
+                            .append(" • samples ").append(pick.optInt("historical_elo_home_matches"))
+                            .append("/").append(pick.optInt("historical_elo_away_matches"))
+                        if (eloProbability.isFinite()) append("\nElo baseline home estimate: ")
+                            .append("%.1f%%".format(java.util.Locale.US, eloProbability))
+                            .append(" (unvalidated historical baseline, not a betting probability)")
+                    }
+                    append("\nWhy: ").append(pick.optString("reason"))
                 }
-                append("\\n\\nEvidence index is a heuristic, not a measured chance of winning. Odds can change.")
+                append("\n\nEvidence index is a heuristic, not a measured chance of winning. Odds can change.")
             }
         }
-        card("ASH DAILY MATCHES TO WATCH", picksText) {
+        card("TODAY'S APPROVED PICKS", picksText) {
             AlertDialog.Builder(this).setTitle("Daily researched shortlist")
                 .setMessage(picksText)
                 .setPositiveButton("OK", null).show()
         }
+        body.addView(button("COPY ODDS OF THE DAY") {
+            val copyText = buildString {
+                append("ASH ODDS OF THE DAY • ").append(java.time.LocalDate.now()).append("\n\n")
+                if (dailyPicks.length() == 0) {
+                    append("No selections passed today's evidence checks. No forced bets.")
+                } else {
+                    for (i in 0 until dailyPicks.length()) {
+                        val pick = dailyPicks.optJSONObject(i) ?: continue
+                        append(i + 1).append(". ").append(pick.optString("away_team"))
+                            .append(" vs ").append(pick.optString("home_team")).append("\n")
+                        append("Pick: ").append(pick.optString("selection")).append(" @ ")
+                            .append("%.2f".format(java.util.Locale.US, pick.optDouble("price", 0.0))).append("\n")
+                        append("Sport: ").append(pick.optString("sport_title")).append(" • Bookmakers: ")
+                            .append(pick.optInt("bookmakers")).append("\n")
+                        append("Best price: ").append(pick.optString("best_bookmaker", "not listed")).append("\n\n")
+                    }
+                }
+                append("Odds move. Evidence rankings are not guarantees. Bet responsibly.")
+            }
+            val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("Ash Odds of the Day", copyText))
+            Toast.makeText(this, "Daily odds copied — ready to paste", Toast.LENGTH_LONG).show()
+        })
         showAccumulatorTargets(dailyPicks)
         val oddEvenDay = java.time.LocalDate.now(java.time.ZoneId.systemDefault()).toString()
         val oddEvenRecord = LocalSportsDatabase.get(this).get("daily_odd_even", oddEvenDay)
@@ -194,22 +222,56 @@ class SportsOddsActivity : Activity() {
             }
             startActivity(android.content.Intent.createChooser(intent, "Share Ash daily tips"))
         })
-        if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
-        candidates.take(20).forEach { event ->
-            card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nMarket-implied chance: ${if (event.optDouble("candidate_market_probability", Double.NaN).isFinite()) "%.1f%%".format(java.util.Locale.US, event.optDouble("candidate_market_probability") * 100.0) else "not available"}\nRaw odds-implied chance: ${if (event.optDouble("candidate_raw_implied_probability", Double.NaN).isFinite()) "%.1f%%".format(java.util.Locale.US, event.optDouble("candidate_raw_implied_probability") * 100.0) else "not available"}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nProbability is market-derived, not a guarantee or independently validated Ash forecast. Tap to research team profiles, recent results, available players, performance news and possible injury clues.") { researchMatch(event) }
-        }
-        card("ALL UPCOMING GAMES", "Saved games found through your API key: ${upcoming.size}") {}
-        upcoming.filter { candidates.none { c -> c.optString("id") == it.optString("id") } }.take(30).forEach { event ->
-            card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")} • ${event.optString("commence_time")}\nBookmakers: ${event.optInt("bookmaker_count")} • First seen: ${event.optString("first_seen")}\nTap for team/player profiles, recent form and current news") { researchMatch(event) }
-        }
         val last = getSharedPreferences("ash_jarvis", MODE_PRIVATE).getString("odds_last_sync", "not yet")
-        status.text = "Last sync: $last • Stored history: ${history.length()} games"
+        val ratingSnapshot = HistoricalRatingsEngine.snapshotInfo(this)
+        val ratingCount = ratingSnapshot?.optInt("participant_records_cached") ?: 0
+        val ratingDate = ratingSnapshot?.optString("generated_at").orEmpty().take(10)
+        status.text = "Last sync: $last • ${upcoming.size} upcoming • ${dailyPicks.length()} approved picks • Historical Elo: " +
+            if (ratingCount > 0) "$ratingCount participants ($ratingDate)" else "not synced yet"
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         actions.addView(button("REFRESH NOW") { refreshNow() }, LinearLayout.LayoutParams(0, -2, 1f))
         actions.addView(button("VIEW SPORTS API LIST") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
         body.addView(actions, 0)
+    }
+
+            private fun showParked() {
+        val history = OddsEngine.history(this)
+        val dailyPicks = OddsEngine.savedDailyPicks(this)
+        val approvedIds = (0 until dailyPicks.length()).mapNotNull { dailyPicks.optJSONObject(it)?.optString("id") }.toSet()
+        val now = java.time.Instant.now()
+        val parked = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
+            .filter { event ->
+                val kickoff = event.optString("commence_time")
+                val future = kickoff.isNotBlank() && runCatching { java.time.Instant.parse(kickoff).isAfter(now) }.getOrDefault(false)
+                future && event.optString("id") !in approvedIds
+            }
+            .sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
+                .thenBy { it.optString("commence_time") })
+
+        card("PARKED / WATCHLIST", "These are real upcoming fixtures that did not make today's approved Odds of the Day. They are for monitoring only — not recommended bets. A match stays parked until its evidence checks pass.") {}
+        if (parked.isEmpty()) {
+            body.addView(text("No parked fixtures right now. Refresh the odds feed to update the watchlist.", 14f, muted)
+                .apply { setPadding(12, 14, 12, 14) })
+            status.text = "Parked watchlist • 0 fixtures"
+            return
+        }
+        parked.take(100).forEach { event ->
+            val books = event.optInt("candidate_bookmakers")
+            val candidate = event.optString("candidate")
+            val marketText = if (candidate.isNotBlank()) {
+                "Market candidate: $candidate @ ${"%.2f".format(java.util.Locale.US, event.optDouble("candidate_price", 0.0))}"
+            } else "Market candidate: not available"
+            val reason = when {
+                candidate.isBlank() -> "No qualifying bookmaker market is available"
+                books < 3 -> "Too few bookmaker quotes for the main shortlist"
+                else -> "Did not pass the full recent-form / research threshold"
+            }
+            card("${event.optString("away_team")} vs ${event.optString("home_team")}",
+                "${event.optString("sport_title")}\n$marketText\nBookmakers: $books\nKick-off: ${event.optString("commence_time")}\nPARKED — $reason. Not a pick.") {
+                researchMatch(event)
+            }
+        }
+        status.text = "Parked watchlist • ${parked.size} fixtures • not approved for betting"
     }
 
     private fun showAccumulatorTargets(researchedPicks: JSONArray) {
@@ -504,31 +566,11 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun showSetup() {
-        val saved = OddsEngine.readApiKey(this).orEmpty()
-        val field = EditText(this).apply {
-            hint = "Paste The Odds API key"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
-            setSingleLine(true)
-            setText(saved)
-        }
-        AlertDialog.Builder(this).setTitle("Connect The Odds API")
-            .setMessage("Your key is encrypted with Android Keystore and stored on this phone. It is not written into the APK or sent to Ash's server.")
-            .setView(field)
-            .setNegativeButton("CANCEL", null)
-            .setNeutralButton("REMOVE KEY") { _, _ ->
-                OddsEngine.clearApiKey(this)
-                Toast.makeText(this, "Odds API key removed", Toast.LENGTH_SHORT).show()
-                render()
-            }
-            .setPositiveButton("SAVE & TEST") { _, _ ->
-                val key = field.text.toString().trim()
-                if (key.length < 8) {
-                    Toast.makeText(this, "Enter a valid API key", Toast.LENGTH_LONG).show()
-                } else {
-                    OddsEngine.saveApiKey(this, key)
-                    testConnection(key)
-                }
-            }.show()
+        AlertDialog.Builder(this).setTitle("Ash Sports backend")
+            .setMessage("This app reads bookmaker odds collected by Ash's server. Your Odds API key stays on the server and is never embedded in the APK. Use REFRESH NOW to sync the latest saved fixtures and bookmaker prices.")
+            .setPositiveButton("REFRESH NOW") { _, _ -> refreshNow() }
+            .setNegativeButton("CLOSE", null)
+            .show()
     }
 
     private fun testConnection(key: String) {
@@ -573,39 +615,23 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun showLeagues() {
-        val key = OddsEngine.readApiKey(this)
-        if (key.isNullOrBlank()) { showSetup(); return }
-        status.text = "Loading competitions available on your odds plan…"
+        status.text = "Loading competitions currently collected by Ash…"
         scope.launch {
             try {
-                val sports = withContext(Dispatchers.IO) { OddsEngine.loadSports(key) }
-                val options = (0 until sports.length()).mapNotNull { sports.optJSONObject(it) }
-                    .filter { it.optBoolean("active", true) && it.optString("key").isNotBlank() }
-                    .sortedWith(compareBy<JSONObject>({ it.optString("group") }, { it.optString("title") }))
-                val labels = options.map { "${it.optString("group", "Sport")} • ${it.optString("title", it.optString("key"))}" }.toTypedArray()
-                val selected = OddsEngine.favoriteKeys(this@SportsOddsActivity)
-                val checked = BooleanArray(options.size) { options[it].optString("key") in selected }
-                AlertDialog.Builder(this@SportsOddsActivity)
-                    .setTitle("Choose leagues and sports")
-                    .setMessage("Select the competitions Ash should scan. Each selected competition uses a separate odds request. Keep the list focused to protect your monthly API credits. Maximum 12 per refresh.")
-                    .setMultiChoiceItems(labels, checked) { _, which, isChecked -> checked[which] = isChecked }
-                    .setNegativeButton("CANCEL", null)
-                    .setPositiveButton("SAVE SELECTION") { _, _ ->
-                        val chosen = options.indices.filter { checked[it] }.map { options[it].optString("key") }.toSet()
-                        if (chosen.isEmpty()) {
-                            Toast.makeText(this@SportsOddsActivity, "Select at least one competition", Toast.LENGTH_LONG).show()
-                        } else if (chosen.size > 12) {
-                            Toast.makeText(this@SportsOddsActivity, "Choose at most 12 competitions to protect your quota", Toast.LENGTH_LONG).show()
-                        } else {
-                            OddsEngine.saveFavorites(this@SportsOddsActivity, chosen)
-                            Toast.makeText(this@SportsOddsActivity, "${chosen.size} competitions saved", Toast.LENGTH_SHORT).show()
-                            render()
-                        }
-                    }.show()
-                status.text = "${options.size} active competitions available • ${selected.size} selected"
+                val sports = withContext(Dispatchers.IO) { OddsEngine.loadBackendSports() }
+                val lines = (0 until sports.length()).mapNotNull { i ->
+                    val item = sports.optJSONObject(i) ?: return@mapNotNull null
+                    "• ${item.optString("title")} — ${item.optString("group")}"
+                }
+                val message = if (lines.isEmpty()) "No competitions have been collected yet. Ash's server will populate this list after its next odds scan."
+                    else "Competitions currently represented in Ash's database:\n\n" + lines.joinToString("\n") +
+                        "\n\nAsh currently chooses a diversified set automatically. Your league preferences are not yet sent to the server."
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Ash server competitions")
+                    .setMessage(message).setPositiveButton("OK", null).show()
+                status.text = "${sports.length()} competitions in the latest server data"
             } catch (e: Exception) {
-                status.text = "Could not load competitions"
-                Toast.makeText(this@SportsOddsActivity, (e.message ?: "Request failed").take(300), Toast.LENGTH_LONG).show()
+                status.text = "Could not load server competitions"
+                Toast.makeText(this@SportsOddsActivity, (e.message ?: "Network error").take(250), Toast.LENGTH_LONG).show()
             }
         }
     }
@@ -779,81 +805,39 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun checkOddEven(event: JSONObject) {
-        val key = OddsEngine.readApiKey(this)
-        if (key.isNullOrBlank()) { showSetup(); return }
-        status.text = "Checking bookmaker odd/even market…"
-        scope.launch {
-            try {
-                val payload = withContext(Dispatchers.IO) {
-                    OddsEngine.checkOddEven(key, event.optString("sport_key"), event.optString("id"))
-                }
-                val firstEvent = payload.optJSONArray("data")?.optJSONObject(0)
-                val books = payload.optJSONArray("bookmakers")
-                    ?: firstEvent?.optJSONArray("bookmakers")
-                    ?: payload.optJSONObject("data")?.optJSONArray("bookmakers")
-                    ?: JSONArray()
-                val lines = mutableListOf<String>()
-                for (i in 0 until books.length()) {
-                    val book = books.optJSONObject(i) ?: continue
-                    val markets = book.optJSONArray("markets") ?: continue
-                    for (j in 0 until markets.length()) {
-                        val market = markets.optJSONObject(j) ?: continue
-                        if (market.optString("key") !in setOf("odd_even", "odd_even_goals", "total_goals_odd_even")) continue
-                        val outcomes = market.optJSONArray("outcomes") ?: continue
-                        val prices = (0 until outcomes.length()).mapNotNull { idx ->
-                            outcomes.optJSONObject(idx)?.let { "${it.optString("name")} @ ${it.optDouble("price", 0.0)}" }
-                        }
-                        if (prices.isNotEmpty()) lines.add("${book.optString("title", book.optString("key"))}: ${prices.joinToString(", ")}")
-                    }
-                }
-                val message = if (lines.isEmpty()) {
-                    "No bookmaker returned an odd/even market for this event. This feed may not publish odd/even; Ash will not guess or convert over/under odds into fake prices."
-                } else lines.joinToString("\n")
-                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Odd/even market check")
-                    .setMessage(message).setPositiveButton("OK", null).show()
-                status.text = if (lines.isEmpty()) "Odd/even odds unavailable for this game" else "Odd/even odds found"
-            } catch (e: Exception) {
-                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Odd/even unavailable")
-                    .setMessage((e.message ?: "Provider does not publish this market").take(700))
-                    .setPositiveButton("OK", null).show()
-                status.text = "Odd/even odds unavailable for this game"
-            }
-        }
+        AlertDialog.Builder(this).setTitle("Odd/even market not collected")
+            .setMessage("Ash's central collector currently stores match winner, totals and spread markets. It does not yet collect odd/even prices, so it will not invent them.")
+            .setPositiveButton("OK", null).show()
     }
 
     private fun refreshNow() {
-        val key = OddsEngine.readApiKey(this)
-        if (key.isNullOrBlank()) { showSetup(); return }
-        status.text = "Fetching today's bookmaker odds…"
+        status.text = "Syncing the latest bookmaker data from Ash's server…"
         scope.launch {
             try {
                 val pair = withContext(Dispatchers.IO) {
-                    val result = OddsEngine.sync(this@SportsOddsActivity, key)
+                    val result = OddsEngine.syncFromBackend(this@SportsOddsActivity)
                     val picks = OddsEngine.buildDailyPicks(this@SportsOddsActivity)
-                    val oddEven = OddsEngine.dailyOddEvenTip(this@SportsOddsActivity, key)
-                    Triple(result, picks, oddEven)
+                    TipResultsTracker.settleFinishedFromHistory(this@SportsOddsActivity)
+                    result to picks
                 }
                 val result = pair.first
                 val picks = pair.second
-                val oddEven = pair.third
                 DailyPicksNotifier.notify(this@SportsOddsActivity, picks)
                 val pickSummary = if (picks.length() == 0) "\nNo evidence-ranked picks available today; Ash did not force a selection."
                     else "\nDaily shortlist:\n" + (0 until picks.length()).mapNotNull { i ->
                         val p = picks.optJSONObject(i) ?: return@mapNotNull null
                         "• ${p.optString("away_team")} vs ${p.optString("home_team")} — ${p.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, p.optDouble("price", 0.0))} (${p.optString("confidence")})"
                     }.joinToString("\n")
-                val oddEvenSummary = if (oddEven != null) "\nDaily odd/even: ${oddEven.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, oddEven.optDouble("price"))} • ${oddEven.optInt("bookmakers")} bookmakers"
-                    else "\nDaily odd/even: no verified market price returned today"
-                val summary = "Games received: ${result.gamesFound}\nNew games discovered: ${result.newGames}\nSelected competitions scanned: ${result.sportsChecked}\nAPI credits remaining: ${result.remaining ?: "not reported"}" + oddEvenSummary + pickSummary +
-                    if (result.errors.isNotEmpty()) "\n\nSome sports could not be checked:\n" + result.errors.take(4).joinToString("\n") else ""
-                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Daily odds refresh complete")
+                val summary = "Games received from Ash server: ${result.gamesFound}\nNew games discovered: ${result.newGames}\nServer-managed competitions: yes\nAPI key stored on server; no key in this APK." + pickSummary +
+                    if (result.errors.isNotEmpty()) "\n\nSome items could not be checked:\n" + result.errors.take(4).joinToString("\n") else ""
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Ash server sync complete")
                     .setMessage(summary).setPositiveButton("VIEW GAMES") { _, _ -> currentTab = "today"; render() }.show()
                 status.text = "Updated • ${result.newGames} new games • ${picks.length()} shortlist picks"
             } catch (e: Exception) {
-                status.text = "Refresh failed"
-                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Couldn't refresh odds")
-                    .setMessage((e.message ?: "API request failed").take(900))
-                    .setPositiveButton("SETTINGS") { _, _ -> showSetup() }
+                status.text = "Server sync failed"
+                AlertDialog.Builder(this@SportsOddsActivity).setTitle("Couldn't sync Ash Sports")
+                    .setMessage((e.message ?: "Backend request failed").take(900))
+                    .setPositiveButton("RETRY") { _, _ -> refreshNow() }
                     .setNegativeButton("OK", null).show()
             }
         }

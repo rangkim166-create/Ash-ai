@@ -1,23 +1,23 @@
 {
-  "generated_at_utc": "2026-10-30T11:01:54.187393+00:00",
+  "generated_at_utc": "2026-10-31T16:17:06.889327+00:00",
   "completeness": "best_effort_not_exhaustive",
   "summary": {
-    "total_matches": 1800931,
+    "total_matches": 1776261,
     "by_sport": [
       {
         "sport": "basketball",
-        "matches": 43471
+        "matches": 21890
       },
       {
         "sport": "football",
-        "matches": 1395889
+        "matches": 1392800
       },
       {
         "sport": "tennis",
         "matches": 361571
       }
     ],
-    "competition_groups": 10966,
+    "competition_groups": 11100,
     "reported_competitions": 500,
     "competition_counts_truncated": true
   },
@@ -28,37 +28,33 @@
         "detected": true,
         "matched_competitions": [
           "saudi-arabia",
-          "Saudi Pro League",
-          "Saudi Arabia"
+          "Saudi Pro League"
         ],
-        "matches_found": 7686
+        "matches_found": 7419
       },
       {
         "target": "Egyptian Premier League",
         "detected": true,
         "matched_competitions": [
-          "egypt",
-          "Egypt"
+          "egypt"
         ],
-        "matches_found": 6889
+        "matches_found": 6400
       },
       {
         "target": "Moroccan Botola",
         "detected": true,
         "matched_competitions": [
-          "morocco",
-          "Morocco"
+          "morocco"
         ],
-        "matches_found": 8989
+        "matches_found": 8549
       },
       {
         "target": "Algerian Ligue 1",
         "detected": true,
         "matched_competitions": [
-          "algeria",
-          "Algeria"
+          "algeria"
         ],
-        "matches_found": 6791
+        "matches_found": 6391
       },
       {
         "target": "Qatar Stars League",
@@ -75,6 +71,14 @@
           "united-arab-emirates"
         ],
         "matches_found": 3857
+      },
+      {
+        "target": "Nigerian Premier Football League",
+        "detected": true,
+        "matched_competitions": [
+          "nigeria"
+        ],
+        "matches_found": 7838
       },
       {
         "target": "Tunisian Ligue 1",
@@ -270,13 +274,6 @@
       "last_date": "2025-09-22"
     },
     {
-      "sport": "basketball",
-      "competition": "Nba",
-      "matches": 29469,
-      "first_date": "2000-10-31",
-      "last_date": "2023-06-12"
-    },
-    {
       "sport": "football",
       "competition": "italy",
       "matches": 28414,
@@ -303,6 +300,13 @@
       "matches": 22521,
       "first_date": "1919-08-31",
       "last_date": "2025-09-21"
+    },
+    {
+      "sport": "basketball",
+      "competition": "NBA regular season",
+      "matches": 20429,
+      "first_date": "2009-10-27",
+      "last_date": "2026-10-30"
     },
     {
       "sport": "football",
@@ -467,13 +471,6 @@
     },
     {
       "sport": "football",
-      "competition": "Mexico",
-      "matches": 8820,
-      "first_date": "Fri Apr 1",
-      "last_date": "Wed Sep 9"
-    },
-    {
-      "sport": "football",
       "competition": "morocco",
       "matches": 8549,
       "first_date": "1988-10-01",
@@ -586,13 +583,6 @@
     },
     {
       "sport": "football",
-      "competition": "Major League Soccer",
-      "matches": 7001,
-      "first_date": "Fri Apr 1",
-      "last_date": "Wed Sep 9"
-    },
-    {
-      "sport": "football",
       "competition": "israel",
       "matches": 6901,
       "first_date": "1995-08-26",
@@ -604,13 +594,6 @@
       "matches": 6865,
       "first_date": "1992-02-29",
       "last_date": "2025-09-22"
-    },
-    {
-      "sport": "football",
-      "competition": "Nigeria",
-      "matches": 6833,
-      "first_date": "Fri Aug 22 2025",
-      "last_date": "Wed Oct 8 2025"
     },
     {
       "sport": "football",
@@ -1005,20 +988,6 @@
       "last_date": "2025-08-27"
     },
     {
-      "sport": "basketball",
-      "competition": "Euroleague",
-      "matches": 3977,
-      "first_date": "01/02/2012",
-      "last_date": "31/10/2019"
-    },
-    {
-      "sport": "basketball",
-      "competition": "Aba",
-      "matches": 3963,
-      "first_date": "01/02/2003",
-      "last_date": "31/10/2022"
-    },
-    {
       "sport": "football",
       "competition": "serbia — ddr",
       "matches": 3938,
@@ -1178,13 +1147,6 @@
       "matches": 3362,
       "first_date": "2007-02-24",
       "last_date": "2025-06-01"
-    },
-    {
-      "sport": "basketball",
-      "competition": "Eurocup",
-      "matches": 3320,
-      "first_date": "01/02/2011",
-      "last_date": "31/10/2018"
     },
     {
       "sport": "football",
@@ -1360,13 +1322,6 @@
       "matches": 2785,
       "first_date": "08.08. 2014",
       "last_date": "2018-05-04"
-    },
-    {
-      "sport": "basketball",
-      "competition": "Slovenian League",
-      "matches": 2742,
-      "first_date": "01/02/2008",
-      "last_date": "31/10/2020"
     },
     {
       "sport": "tennis",
@@ -1563,13 +1518,6 @@
       "matches": 2146,
       "first_date": "2004-05-24",
       "last_date": "2025-09-21"
-    },
-    {
-      "sport": "football",
-      "competition": "Japan",
-      "matches": 2120,
-      "first_date": "Fri Apr 1",
-      "last_date": "Wed Sep 9"
     },
     {
       "sport": "football",
@@ -1789,13 +1737,6 @@
       "last_date": "2022-01-11"
     },
     {
-      "sport": "football",
-      "competition": "Ghana",
-      "matches": 1772,
-      "first_date": "Fri Apr 11 2025",
-      "last_date": "Wed Sep 28 2022"
-    },
-    {
       "sport": "tennis",
       "competition": "Adelaide",
       "matches": 1754,
@@ -1850,13 +1791,6 @@
       "matches": 1692,
       "first_date": "2010-08-26",
       "last_date": "2023-10-06"
-    },
-    {
-      "sport": "football",
-      "competition": "China",
-      "matches": 1673,
-      "first_date": "Fri Apr 11",
-      "last_date": "Wed Sep 9"
     },
     {
       "sport": "football",
@@ -1976,6 +1910,13 @@
       "matches": 1424,
       "first_date": "20021014",
       "last_date": "20260422"
+    },
+    {
+      "sport": "basketball",
+      "competition": "NBA playoffs",
+      "matches": 1421,
+      "first_date": "2010-04-17",
+      "last_date": "2026-06-13"
     },
     {
       "sport": "tennis",
@@ -2104,46 +2045,11 @@
       "last_date": "2025-09-21"
     },
     {
-      "sport": "football",
-      "competition": "Rwanda",
-      "matches": 1273,
-      "first_date": "Fri Apr 15 2022",
-      "last_date": "Wed Sep 7 2022"
-    },
-    {
-      "sport": "football",
-      "competition": "Tanzania",
-      "matches": 1266,
-      "first_date": "Fri Apr 1 2022",
-      "last_date": "Wed Sep 29 2021"
-    },
-    {
       "sport": "tennis",
       "competition": "Hobart",
       "matches": 1253,
       "first_date": "19680108",
       "last_date": "20260112"
-    },
-    {
-      "sport": "football",
-      "competition": "Zambia",
-      "matches": 1224,
-      "first_date": "Fri Aug 18 2023",
-      "last_date": "Wed Sep 29 2021"
-    },
-    {
-      "sport": "football",
-      "competition": "Zimbabwe",
-      "matches": 1224,
-      "first_date": "Fri Apr 14 2023",
-      "last_date": "Wed Sep 25 2024"
-    },
-    {
-      "sport": "football",
-      "competition": "Kenya",
-      "matches": 1223,
-      "first_date": "Fri Apr 18 2025",
-      "last_date": "Wed Sep 27 2023"
     },
     {
       "sport": "tennis",
@@ -2216,13 +2122,6 @@
       "last_date": "19940725"
     },
     {
-      "sport": "football",
-      "competition": "Australia",
-      "matches": 1103,
-      "first_date": "Fri Apr 11",
-      "last_date": "Wed May 5"
-    },
-    {
       "sport": "tennis",
       "competition": "Hamburg Masters",
       "matches": 1101,
@@ -2293,13 +2192,6 @@
       "last_date": "2023-12-19"
     },
     {
-      "sport": "football",
-      "competition": "Senegal",
-      "matches": 1026,
-      "first_date": "Fri Apr 11 2025",
-      "last_date": "Wed May 3 2023"
-    },
-    {
       "sport": "tennis",
       "competition": "Umag",
       "matches": 1021,
@@ -2361,13 +2253,6 @@
       "matches": 980,
       "first_date": "19930614",
       "last_date": "20250616"
-    },
-    {
-      "sport": "football",
-      "competition": "Champions League",
-      "matches": 978,
-      "first_date": "Fri Apr 25",
-      "last_date": "Wed Sep 29"
     },
     {
       "sport": "football",
@@ -2594,13 +2479,6 @@
       "last_date": "20210913"
     },
     {
-      "sport": "football",
-      "competition": "Israel",
-      "matches": 781,
-      "first_date": "Fri Apr 11",
-      "last_date": "Wed Sep 27"
-    },
-    {
       "sport": "tennis",
       "competition": "Milan",
       "matches": 780,
@@ -2678,13 +2556,6 @@
       "last_date": "20221010"
     },
     {
-      "sport": "football",
-      "competition": "Malawi",
-      "matches": 721,
-      "first_date": "Fri Aug 23 2024",
-      "last_date": "Wed Sep 6 2023"
-    },
-    {
       "sport": "tennis",
       "competition": "Wimbledon Plate",
       "matches": 719,
@@ -2704,13 +2575,6 @@
       "matches": 707,
       "first_date": "19921109",
       "last_date": "20241014"
-    },
-    {
-      "sport": "football",
-      "competition": "Uganda",
-      "matches": 706,
-      "first_date": "Fri Apr 10 2026",
-      "last_date": "Wed Oct 30 2024"
     },
     {
       "sport": "football",
@@ -3203,6 +3067,20 @@
       "last_date": "2025-08-28"
     },
     {
+      "sport": "football",
+      "competition": "north-america / major-league-soccer / 2023_mls",
+      "matches": 505,
+      "first_date": "2023-02-25",
+      "last_date": "2023-02-25"
+    },
+    {
+      "sport": "football",
+      "competition": "north-america / major-league-soccer / 2024_mls",
+      "matches": 505,
+      "first_date": "2024-02-21",
+      "last_date": "2024-02-21"
+    },
+    {
       "sport": "tennis",
       "competition": "Columbus",
       "matches": 504,
@@ -3266,13 +3144,6 @@
       "last_date": "20040823"
     },
     {
-      "sport": "football",
-      "competition": "Egypt",
-      "matches": 489,
-      "first_date": "Fri Apr 11",
-      "last_date": "Wed Sep 27"
-    },
-    {
       "sport": "tennis",
       "competition": "Athens",
       "matches": 489,
@@ -3320,6 +3191,13 @@
       "matches": 474,
       "first_date": "1960-04-30",
       "last_date": "2025-05-29"
+    },
+    {
+      "sport": "football",
+      "competition": "north-america / major-league-soccer / 2022_mls",
+      "matches": 474,
+      "first_date": "2022-02-26",
+      "last_date": "2022-02-26"
     },
     {
       "sport": "football",
@@ -3470,6 +3348,13 @@
     },
     {
       "sport": "football",
+      "competition": "north-america / major-league-soccer / 2021_mls",
+      "matches": 446,
+      "first_date": "2021-04-16",
+      "last_date": "2021-04-16"
+    },
+    {
+      "sport": "football",
       "competition": "brazil — Copa Sud",
       "matches": 441,
       "first_date": "2003-07-30",
@@ -3481,13 +3366,6 @@
       "matches": 441,
       "first_date": "1955-10-26",
       "last_date": "2025-09-17"
-    },
-    {
-      "sport": "football",
-      "competition": "Morocco",
-      "matches": 440,
-      "first_date": "Fri Apr 19",
-      "last_date": "Wed Sep 27"
     },
     {
       "sport": "tennis",
@@ -3533,6 +3411,13 @@
     },
     {
       "sport": "football",
+      "competition": "north-america / major-league-soccer / 2019_mls",
+      "matches": 408,
+      "first_date": "2019-03-02",
+      "last_date": "2019-03-02"
+    },
+    {
+      "sport": "football",
       "competition": "scotland — UEFA EL",
       "matches": 407,
       "first_date": "1961-02-22",
@@ -3565,13 +3450,6 @@
       "matches": 404,
       "first_date": "19680101",
       "last_date": "19820802"
-    },
-    {
-      "sport": "football",
-      "competition": "Algeria",
-      "matches": 400,
-      "first_date": "Fri Apr 19",
-      "last_date": "Wed Sep 27"
     },
     {
       "sport": "tennis",
@@ -3621,6 +3499,13 @@
       "matches": 393,
       "first_date": "1961-10-26",
       "last_date": "2025-08-28"
+    },
+    {
+      "sport": "football",
+      "competition": "north-america / major-league-soccer / 2018_mls",
+      "matches": 392,
+      "first_date": "2018-03-03",
+      "last_date": "2018-03-03"
     },
     {
       "sport": "tennis",
@@ -3686,6 +3571,13 @@
       "last_date": "20150202"
     },
     {
+      "sport": "football",
+      "competition": "north-america / major-league-soccer / 2017_mls",
+      "matches": 385,
+      "first_date": "2017-03-03",
+      "last_date": "2017-03-03"
+    },
+    {
       "sport": "tennis",
       "competition": "Charlotte",
       "matches": 385,
@@ -3733,123 +3625,210 @@
       "matches": 381,
       "first_date": "19850506",
       "last_date": "20080818"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2010/11",
+      "matches": 380,
+      "first_date": "2010-08-14",
+      "last_date": "2011-05-22"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2011/12",
+      "matches": 380,
+      "first_date": "2011-08-13",
+      "last_date": "2012-05-13"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2012/13",
+      "matches": 380,
+      "first_date": "2012-08-18",
+      "last_date": "2013-05-19"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2013/14",
+      "matches": 380,
+      "first_date": "2013-08-17",
+      "last_date": "2014-05-11"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2014/15",
+      "matches": 380,
+      "first_date": "2014-08-16",
+      "last_date": "2015-05-24"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2015/16",
+      "matches": 380,
+      "first_date": "2015-08-08",
+      "last_date": "2016-05-17"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2016/17",
+      "matches": 380,
+      "first_date": "2016-08-13",
+      "last_date": "2017-05-21"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2017/18",
+      "matches": 380,
+      "first_date": "2017-08-11",
+      "last_date": "2018-05-13"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2018/19",
+      "matches": 380,
+      "first_date": "2018-08-10",
+      "last_date": "2019-05-12"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2019/20",
+      "matches": 380,
+      "first_date": "2019-07-01",
+      "last_date": "2020-06-30"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2020/21",
+      "matches": 380,
+      "first_date": "2020-09-12",
+      "last_date": "2021-05-23"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2021/22",
+      "matches": 380,
+      "first_date": "2021-08-13",
+      "last_date": "2022-05-22"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2022/23",
+      "matches": 380,
+      "first_date": "2022-08-05",
+      "last_date": "2023-05-28"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2023/24",
+      "matches": 380,
+      "first_date": "2023-08-11",
+      "last_date": "2024-05-19"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2024/25",
+      "matches": 380,
+      "first_date": "2024-08-16",
+      "last_date": "2025-05-25"
+    },
+    {
+      "sport": "football",
+      "competition": "English Premier League 2025/26",
+      "matches": 380,
+      "first_date": "2025-08-15",
+      "last_date": "2026-05-24"
     }
   ],
   "match_counts_by_sport_and_year": [
     {
       "sport": "basketball",
-      "year": "2000",
-      "matches": 1260
-    },
-    {
-      "sport": "basketball",
-      "year": "2001",
-      "matches": 1395
-    },
-    {
-      "sport": "basketball",
-      "year": "2002",
-      "matches": 1412
-    },
-    {
-      "sport": "basketball",
-      "year": "2003",
-      "matches": 1456
-    },
-    {
-      "sport": "basketball",
-      "year": "2004",
-      "matches": 1561
-    },
-    {
-      "sport": "basketball",
-      "year": "2005",
-      "matches": 1508
-    },
-    {
-      "sport": "basketball",
-      "year": "2006",
-      "matches": 1498
-    },
-    {
-      "sport": "basketball",
-      "year": "2007",
-      "matches": 2283
-    },
-    {
-      "sport": "basketball",
-      "year": "2008",
-      "matches": 2060
-    },
-    {
-      "sport": "basketball",
-      "year": "2009",
-      "matches": 2059
-    },
-    {
-      "sport": "basketball",
       "year": "2010",
-      "matches": 1983
+      "matches": 1312
     },
     {
       "sport": "basketball",
       "year": "2011",
-      "matches": 1761
+      "matches": 1311
     },
     {
       "sport": "basketball",
       "year": "2012",
-      "matches": 2066
+      "matches": 1074
     },
     {
       "sport": "basketball",
       "year": "2013",
-      "matches": 2298
+      "matches": 1314
     },
     {
       "sport": "basketball",
       "year": "2014",
-      "matches": 2258
+      "matches": 1319
     },
     {
       "sport": "basketball",
       "year": "2015",
-      "matches": 2219
+      "matches": 1311
     },
     {
       "sport": "basketball",
       "year": "2016",
-      "matches": 2106
+      "matches": 1316
     },
     {
       "sport": "basketball",
       "year": "2017",
-      "matches": 2084
+      "matches": 1309
     },
     {
       "sport": "basketball",
       "year": "2018",
-      "matches": 2055
+      "matches": 1312
     },
     {
       "sport": "basketball",
       "year": "2019",
-      "matches": 1771
+      "matches": 1312
     },
     {
       "sport": "basketball",
       "year": "2020",
-      "matches": 2026
+      "matches": 1143
     },
     {
       "sport": "basketball",
       "year": "2021",
-      "matches": 2160
+      "matches": 1171
     },
     {
       "sport": "basketball",
       "year": "2022",
-      "matches": 2192
+      "matches": 1323
+    },
+    {
+      "sport": "basketball",
+      "year": "2023",
+      "matches": 1320
+    },
+    {
+      "sport": "basketball",
+      "year": "2024",
+      "matches": 1319
+    },
+    {
+      "sport": "basketball",
+      "year": "2025",
+      "matches": 1321
+    },
+    {
+      "sport": "basketball",
+      "year": "2026",
+      "matches": 1322
+    },
+    {
+      "sport": "basketball",
+      "year": "2027",
+      "matches": 81
     },
     {
       "sport": "football",
@@ -4439,152 +4418,112 @@
     {
       "sport": "football",
       "year": "2005",
-      "matches": 28176
+      "matches": 28364
     },
     {
       "sport": "football",
       "year": "2006",
-      "matches": 27722
+      "matches": 27907
     },
     {
       "sport": "football",
       "year": "2007",
-      "matches": 30556
+      "matches": 30754
     },
     {
       "sport": "football",
       "year": "2008",
-      "matches": 32163
+      "matches": 32370
     },
     {
       "sport": "football",
       "year": "2009",
-      "matches": 33203
+      "matches": 33801
     },
     {
       "sport": "football",
       "year": "2010",
-      "matches": 35553
+      "matches": 36543
     },
     {
       "sport": "football",
       "year": "2011",
-      "matches": 35761
+      "matches": 37102
     },
     {
       "sport": "football",
       "year": "2012",
-      "matches": 38314
+      "matches": 39634
     },
     {
       "sport": "football",
       "year": "2013",
-      "matches": 39496
+      "matches": 40813
     },
     {
       "sport": "football",
       "year": "2014",
-      "matches": 40040
+      "matches": 41337
     },
     {
       "sport": "football",
       "year": "2015",
-      "matches": 39819
+      "matches": 41138
     },
     {
       "sport": "football",
       "year": "2016",
-      "matches": 39959
+      "matches": 41351
     },
     {
       "sport": "football",
       "year": "2017",
-      "matches": 40961
+      "matches": 42466
     },
     {
       "sport": "football",
       "year": "2018",
-      "matches": 41772
+      "matches": 43059
     },
     {
       "sport": "football",
       "year": "2019",
-      "matches": 41164
+      "matches": 42842
     },
     {
       "sport": "football",
       "year": "2020",
-      "matches": 29645
+      "matches": 31546
     },
     {
       "sport": "football",
       "year": "2021",
-      "matches": 40206
+      "matches": 43387
     },
     {
       "sport": "football",
       "year": "2022",
-      "matches": 41198
+      "matches": 44272
     },
     {
       "sport": "football",
       "year": "2023",
-      "matches": 42598
+      "matches": 47275
     },
     {
       "sport": "football",
       "year": "2024",
-      "matches": 41111
+      "matches": 47104
     },
     {
       "sport": "football",
       "year": "2025",
-      "matches": 30676
+      "matches": 34715
     },
     {
       "sport": "football",
       "year": "2026",
-      "matches": 470
-    },
-    {
-      "sport": "football",
-      "year": "Fri ",
-      "matches": 4118
-    },
-    {
-      "sport": "football",
-      "year": "Mon ",
-      "matches": 1006
-    },
-    {
-      "sport": "football",
-      "year": "Sat ",
-      "matches": 14192
-    },
-    {
-      "sport": "football",
-      "year": "Sun ",
-      "matches": 8820
-    },
-    {
-      "sport": "football",
-      "year": "Thu ",
-      "matches": 1867
-    },
-    {
-      "sport": "football",
-      "year": "Tue ",
-      "matches": 1709
-    },
-    {
-      "sport": "football",
-      "year": "Wed ",
-      "matches": 4262
-    },
-    {
-      "sport": "football",
-      "year": "unkn",
-      "matches": 6187
+      "matches": 1855
     },
     {
       "sport": "tennis",
@@ -4883,18 +4822,20 @@
     }
   ],
   "pipeline_metadata": {
-    "built_at_utc": "2026-10-30T11:00:04.128771+00:00",
+    "built_at_utc": "2026-10-31T16:15:12.852545+00:00",
     "total_matches": "416052",
     "counts_by_sport": "{\"football\": 54481, \"tennis\": 361571}",
     "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
+    "nba_team_results_imported": "21890",
+    "nba_team_results_skipped": "1588",
     "global_football_matches_imported": "1296462",
     "global_football_duplicates_or_penalties_skipped": "7062",
     "global_football_invalid_rows": "5977",
-    "world_archive_imported": "42161",
+    "world_archive_imported": "39072",
+    "world_archive_skipped_duplicates": "1823",
+    "world_archive_competition_counts": "{\"africa / african-football-league / 2023_afl\": 14, \"africa / algeria / 2023-24_dz1\": 231, \"africa / algeria / 2024-25_dz1\": 148, \"africa / champions-league / 2023-24_cafcl\": 135, \"africa / champions-league / 2024-25_cafcl\": 140, \"africa / egypt / 2023-24_eg1\": 299, \"africa / egypt / 2024-25_eg1\": 182, \"africa / ghana / 2016-17_gh1\": 238, \"africa / ghana / 2020-21_gh1\": 304, \"africa / ghana / 2021-22_gh1\": 304, \"africa / ghana / 2022-23_gh1\": 308, \"africa / ghana / 2023-24_gh1\": 306, \"africa / ghana / 2024-25_gh1\": 306, \"africa / kenya / 2022-23_ke1\": 306, \"africa / kenya / 2023-24_ke1\": 304, \"africa / kenya / 2024-25_ke1\": 306, \"africa / kenya / 2025-26_ke1\": 306, \"africa / malawi / 2023_mw1\": 220, \"africa / malawi / 2024_mw1\": 234, \"africa / malawi / 2025_mw1\": 235, \"africa / morocco / 2023-24_ma1\": 238, \"africa / morocco / 2024-25_ma1\": 199, \"africa / nigeria / 2009-10_ng1\": 373, \"africa / nigeria / 2010-11_ng1\": 371, \"africa / nigeria / 2011-12_ng1\": 368, \"africa / nigeria / 2012-13_ng1\": 375, \"africa / nigeria / 2013-14_ng1\": 369, \"africa / nigeria / 2014-15_ng1\": 372, \"africa / nigeria / 2015-16_ng1\": 352, \"africa / nigeria / 2016-17_ng1\": 370, \"africa / nigeria / 2017-18_ng1\": 237, \"africa / nigeria / 2020-21_ng1\": 364, \"africa / nigeria / 2021-22_ng1\": 367, \"africa / nigeria / 2023-24_ng1\": 366, \"africa / nigeria / 2024-25_ng1\": 367, \"africa / nigeria / 2025-26_ng1\": 380, \"africa / nigeria / 2025-26_ng2\": 266, \"africa / rwanda / 2021-22_rw1\": 221, \"africa / rwanda / 2022-23_rw1\": 220, \"africa / rwanda / 2023-24_rw1\": 223, \"africa / rwanda / 2024-25_rw1\": 227, \"africa / rwanda / 2025-26_rw1\": 306, \"africa / senegal / 2020-21_sn1\": 177, \"africa / senegal / 2021-22_sn1\": 180, \"africa / senegal / 2022-23_sn1\": 177, \"africa / senegal / 2024-25_sn1\": 238, \"africa / senegal / 2025-26_sn1\": 238, \"africa / south-africa / 2024-25_za1\": 186, \"africa / tanzania / 2020-21_tz1\": 306, \"africa / tanzania / 2021-22_tz1\": 240, \"africa / tanzania / 2023-24_tz1\": 240, \"africa / tanzania / 2024-25_tz1\": 240, \"africa / tanzania / 2025-26_tz1\": 240, \"africa / uganda / 2023-24_ug1\": 226, \"africa / uganda / 2024-25_ug1\": 240, \"africa / uganda / 2025-26_ug1\": 240, \"africa / zambia / 2023-24_zm1\": 34, \"africa / zambia / 2024-25_zm1\": 45, \"africa / zambia / 2025-26_zm1\": 278, \"africa / zimbabwe / 2021-22_zw1\": 305, \"africa / zimbabwe / 2023_zw1\": 306, \"africa / zimbabwe / 2024_zw1\": 306, \"africa / zimbabwe / 2025_zw1\": 305, \"asia / china / 2018_cn1\": 231, \"asia / china / 2019_cn1\": 226, \"asia / china / 2020_cn1\": 155, \"asia / china / 2021_cn1\": 171, \"asia / china / 2022_cn1\": 297, \"asia / china / 2023_cn1\": 228, \"asia / china / 2024_cn1\": 229, \"asia / china / 2025_cn1\": 76, \"asia / japan / 2019_jp1\": 297, \"asia / japan / 2020_jp1\": 297, \"asia / japan / 2021_jp1\": 360, \"asia / japan / 2022_jp1\": 295, \"asia / japan / 2023_jp1\": 289, \"asia / japan / 2024_jp1\": 366, \"asia / japan / 2025_jp1\": 135, \"asia / kazakhstan / 2023_kz1\": 177, \"asia / kazakhstan / 2024_kz1\": 149, \"asia / kazakhstan / 2025_kz1\": 14, \"central-america / costa-rica / 2024-25_cr1\": 254, \"middle-east / israel / 2023-24_il1\": 229, \"middle-east / israel / 2024-25_il1\": 226, \"middle-east / israel / 2024-25_il2\": 272, \"middle-east / israel / 2024-25_ilcup\": 30, \"middle-east / saudi-arabia / 2024-25_sa1\": 262, \"north-america / champions-league / 2010-11_concacafcl\": 61, \"north-america / champions-league / 2011-12_concacafcl\": 62, \"north-america / champions-league / 2012-13_concacafcl\": 58, \"north-america / champions-league / 2013-14_concacafcl\": 60, \"north-america / champions-league / 2014-15_concacafcl\": 61, \"north-america / champions-league / 2015-16_concacafcl\": 60, \"north-america / champions-league / 2016-17_concacafcl\": 60, \"north-america / champions-league / 2018_concacafcl\": 30, \"north-america / champions-league / 2019_concacafcl\": 30, \"north-america / champions-league / 2020_concacafcl\": 26, \"north-america / champions-league / 2021_concacafcl\": 27, \"north-america / champions-league / 2022_concacafcl\": 30, \"north-america / champions-league / 2023_concacafcl\": 29, \"north-america / champions-league / 2024_concacafcl\": 51, \"north-america / champions-league / 2025_concacafcl\": 48, \"north-america / major-league-soccer / 2005_mls\": 188, \"north-america / major-league-soccer / 2006_mls\": 185, \"north-america / major-league-soccer / 2007_mls\": 198, \"north-america / major-league-soccer / 2008_mls\": 207, \"north-america / major-league-soccer / 2009_mls\": 225, \"north-america / major-league-soccer / 2010_mls\": 245, \"north-america / major-league-soccer / 2011_mls\": 302, \"north-america / major-league-soccer / 2012_mls\": 321, \"north-america / major-league-soccer / 2013_mls\": 326, \"north-america / major-league-soccer / 2014_mls\": 316, \"north-america / major-league-soccer / 2015_mls\": 340, \"north-america / major-league-soccer / 2016_mls\": 333, \"north-america / major-league-soccer / 2017_mls\": 385, \"north-america / major-league-soccer / 2018_mls\": 392, \"north-america / major-league-soccer / 2019_mls\": 408, \"north-america / major-league-soccer / 2020_mls\": 291, \"north-america / major-league-soccer / 2021_mls\": 446, \"north-america / major-league-soccer / 2022_mls\": 474, \"north-america / major-league-soccer / 2023_mls\": 505, \"north-america / major-league-soccer / 2024_mls\": 505, \"north-america / major-league-soccer / 2025_mls\": 163, \"north-america / mexico / 2010-11_mx1\": 330, \"north-america / mexico / 2010-11_mx2ascenso\": 310, \"north-america / mexico / 2011-12_mx1\": 330, \"north-america / mexico / 2011-12_mx2ascenso\": 250, \"north-america / mexico / 2012-13_mx1\": 329, \"north-america / mexico / 2012-13_mx2ascenso\": 233, \"north-america / mexico / 2013-14_mx1\": 333, \"north-america / mexico / 2013-14_mx2ascenso\": 230, \"north-america / mexico / 2014-15_mx1\": 330, \"north-america / mexico / 2014-15_mx2ascenso\": 207, \"north-america / mexico / 2015-16_mx1\": 331, \"north-america / mexico / 2015-16_mx2ascenso\": 262, \"north-america / mexico / 2016-17_mx1\": 331, \"north-america / mexico / 2016-17_mx2ascenso\": 335, \"north-america / mexico / 2017-18_mx1\": 330, \"north-america / mexico / 2017-18_mx2ascenso\": 269, \"north-america / mexico / 2018-19_mx1\": 332, \"north-america / mexico / 2018-19_mx2ascenso\": 236, \"north-america / mexico / 2019-20_mx1\": 274, \"north-america / mexico / 2019-20_mx2ascenso\": 150, \"north-america / mexico / 2020-21_mx1\": 339, \"north-america / mexico / 2020-21_mx2expansion\": 272, \"north-america / mexico / 2021-22_mx1\": 340, \"north-america / mexico / 2021-22_mx2expansion\": 306, \"north-america / mexico / 2022-23_mx1\": 339, \"north-america / mexico / 2022-23_mx2expansion\": 339, \"north-america / mexico / 2023-24_mx1\": 336, \"north-america / mexico / 2023-24_mx2expansion\": 244, \"north-america / mexico / 2024-25_mx1\": 336, \"north-america / mexico / 2024-25_mx2expansion\": 194, \"pacific / australia / 2018-19_au1\": 138, \"pacific / australia / 2019-20_au1\": 145, \"pacific / australia / 2020-21_au1\": 153, \"pacific / australia / 2021-22_au1\": 160, \"pacific / australia / 2022-23_au1\": 152, \"pacific / australia / 2023-24_au1\": 164, \"pacific / australia / 2024-25_au1\": 166}",
     "saudi_matches_imported": "2785",
-    "saudi_duplicates_skipped": "24",
-    "basketball_parquet_imported": "43471",
-    "basketball_parquet_schema": "[{\"file\": \"aba-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"Round\", \"ID\", \"Played\", \"Date\", \"Time\", \"H_Team\", \"A_Team\", \"H_Score\", \"A_Score\", \"Href\"], \"mapped\": {\"date\": \"Date\", \"home\": \"H_Team\", \"away\": \"A_Team\", \"home_score\": \"H_Score\", \"away_score\": \"A_Score\", \"competition\": null, \"season\": \"Season\"}}, {\"file\": \"eurocup-games.parquet\", \"columns\": [\"SEASON\", \"GAME_ID\", \"GAME_ID_IN_SEASON\", \"STAGE\", \"ROUND\", \"PLAYED\", \"DATE\", \"TIME\", \"H_TEAM\", \"A_TEAM\", \"H_SCORE\", \"A_SCORE\", \"HREF\"], \"mapped\": {\"date\": \"DATE\", \"home\": \"H_TEAM\", \"away\": \"A_TEAM\", \"home_score\": \"H_SCORE\", \"away_score\": \"A_SCORE\", \"competition\": null, \"season\": \"SEASON\"}}, {\"file\": \"euroleague-games.parquet\", \"columns\": [\"SEASON\", \"GAME_ID\", \"GAME_ID_IN_SEASON\", \"STAGE\", \"ROUND\", \"PLAYED\", \"DATE\", \"TIME\", \"H_TEAM\", \"A_TEAM\", \"H_SCORE\", \"A_SCORE\", \"HREF\"], \"mapped\": {\"date\": \"DATE\", \"home\": \"H_TEAM\", \"away\": \"A_TEAM\", \"home_score\": \"H_SCORE\", \"away_score\": \"A_SCORE\", \"competition\": null, \"season\": \"SEASON\"}}, {\"file\": \"nba-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"ID\", \"Date\", \"H_Team\", \"A_Team\", \"H_Team_ID\", \"A_Team_ID\", \"H_Score\", \"A_Score\"], \"mapped\": {\"date\": \"Date\", \"home\": \"H_Team\", \"away\": \"A_Team\", \"home_score\": \"H_Score\", \"away_score\": \"A_Score\", \"competition\": null, \"season\": \"Season\"}}, {\"file\": \"slovenian-league-games.parquet\", \"columns\": [\"Season\", \"Stage\", \"Round\", \"ID\", \"Played\", \"Date\", \"Time\", \"H_Team\", \"A_Team\", \"H_Score\", \"A_Score\", \"Href\"], \"mapped\": {\"date\": \"Date\", \"home\": \"H_Team\", \"away\": \"A_Team\", \"home_score\": \"H_Score\", \"away_score\": \"A_Score\", \"competition\": null, \"season\": \"Season\"}}]"
+    "saudi_duplicates_skipped": "24"
   },
   "warnings": [
     "Detected competition names do not prove every season is complete.",

@@ -15,6 +15,15 @@ android {
         versionName = "0.1.0"
     }
 
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a")
+            isUniversalApk = false
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false

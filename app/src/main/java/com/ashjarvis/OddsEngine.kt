@@ -241,6 +241,47 @@ object OddsEngine {
         return db.list("match", 10000)
     }
 
+    fun loadBackendSports(): JSONArray {
+        val payload = requestJson("https://ash-sports-api.onrender.com/v1/public/odds/sports").first
+        return payload.optJSONArray("data") ?: JSONArray()
+    }
+
+    fun syncFromBackend(context: Context): SyncResult {
+        val payload = requestJson("https://ash-sports-api.onrender.com/v1/public/odds/events").first
+        val events = payload.optJSONArray("data") ?: JSONArray()
+        val old = history(context)
+        val byId = linkedMapOf<String, JSONObject>()
+        for (i in 0 until old.length()) {
+            val item = old.optJSONObject(i) ?: continue
+            val id = item.optString("id")
+            if (id.isNotBlank()) byId[id] = item
+        }
+        var found = 0
+        var added = 0
+        val errors = mutableListOf<String>()
+        for (i in 0 until events.length()) {
+            val event = events.optJSONObject(i) ?: continue
+            val id = event.optString("id")
+            if (id.isBlank()) continue
+            val prior = byId[id]
+            val sportKey = event.optString("sport_key")
+            val sportTitle = event.optString("sport_title")
+            val summary = summarize(event, sportKey, sportTitle, Instant.now().toString(), prior)
+            if (prior == null) added++
+            byId[id] = summary
+            LocalSportsDatabase.get(context).put("match", id, summary)
+            found++
+        }
+        val sorted = byId.values.sortedByDescending { it.optString("last_seen") }
+        val cache = JSONArray()
+        sorted.take(1000).forEach { cache.put(it) }
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(HISTORY_KEY, cache.toString())
+            .putString("odds_last_sync", Instant.now().toString())
+            .apply()
+        return SyncResult(found, added, 0, errors, null)
+    }
+
     fun sync(context: Context, apiKey: String): SyncResult {
         val allSports = loadSports(apiKey)
         val active = (0 until allSports.length()).mapNotNull { allSports.optJSONObject(it) }
@@ -348,6 +389,9 @@ object OddsEngine {
      */
     fun buildDailyPicks(context: Context): JSONArray {
         val now = Instant.now()
+        // Refresh global historical Elo independently of bookmaker API quota.
+        // A failed download leaves the phone's previous snapshot intact.
+        val historicalRatingRefresh = runCatching { HistoricalRatingsEngine.refreshIfStale(context) }.getOrNull()
         val history = history(context)
         val upcoming = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
             .filter {
@@ -414,7 +458,16 @@ object OddsEngine {
                             val identity = "${row.optString("date")}|${row.optString("event")}"
                             if (seen.add(identity)) combined.put(row)
                         }
-                        return combined
+                        // Add the verified 3-year archive form snapshot, then sort all sources newest-first.
+                        val publishedForm = HistoricalRatingsEngine.recentForm(context, event.optString("sport_title"), teamName)
+                        for (index in 0 until publishedForm.length()) {
+                            val row = publishedForm.optJSONObject(index) ?: continue
+                            val identity = "${row.optString("date")}|${row.optString("event")}"
+                            if (seen.add(identity)) combined.put(row)
+                        }
+                        val ordered = (0 until combined.length()).mapNotNull { combined.optJSONObject(it) }
+                            .sortedByDescending { it.optString("date") }
+                        return JSONArray().also { resultRows -> ordered.forEach(resultRows::put) }
                     }
                     val homeRecent = combineRecent("home", event.optString("home_team"))
                     val awayRecent = combineRecent("away", event.optString("away_team"))
@@ -487,6 +540,20 @@ object OddsEngine {
             val selection = event.optString("candidate")
             val homeName = event.optString("home_team")
             val awayName = event.optString("away_team")
+            val homeRating = HistoricalRatingsEngine.rating(context, sportCategory(event), homeName)
+            val awayRating = HistoricalRatingsEngine.rating(context, sportCategory(event), awayName)
+            val historicalRatingReady = homeRating != null && awayRating != null &&
+                homeRating.matches >= 8 && awayRating.matches >= 8
+            val historicalEloHomeProbability = if (historicalRatingReady) {
+                1.0 / (1.0 + Math.pow(10.0, (awayRating!!.rating - homeRating!!.rating) / 400.0))
+            } else null
+            val ratingEdge = when {
+                selection.equals(homeName, ignoreCase = true) && historicalRatingReady -> homeRating!!.rating - awayRating!!.rating
+                selection.equals(awayName, ignoreCase = true) && historicalRatingReady -> awayRating!!.rating - homeRating!!.rating
+                else -> 0.0
+            }
+            // Elo is a supporting historical prior, not a calibrated standalone betting probability.
+            val ratingAdjustment = if (historicalRatingReady) (ratingEdge / 50.0).toInt().coerceIn(-6, 6) else 0
             val edge = when {
                 selection.equals(homeName, ignoreCase = true) -> homeForm.weightedWinRate - awayForm.weightedWinRate
                 selection.equals(awayName, ignoreCase = true) -> awayForm.weightedWinRate - homeForm.weightedWinRate
@@ -546,12 +613,16 @@ object OddsEngine {
             }
             val baseEvidenceIndex = (minOf(books, 8) * 6 + formDepth * 2 + edgePoints +
                 (if (flags == 0) 8 else 0) - oddsRiskPenalty).coerceIn(0, 100)
-            val evidenceIndex = (baseEvidenceIndex + experienceAdjustment).coerceIn(0, 100)
+            val evidenceIndex = (baseEvidenceIndex + experienceAdjustment + ratingAdjustment).coerceIn(0, 100)
             val reason = buildList {
                 add("$books bookmakers return this selection")
                 add("recent results available for both teams ($homePlayed home-team records, $awayPlayed away-team records)")
                 add("selected side's recency-weighted win-rate edge: %.1f percentage points".format(java.util.Locale.US, edge * 100.0))
                 add("recent form: ${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L vs ${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
+                if (historicalRatingReady) {
+                    add("historical Elo prior: $homeName ${"%.0f".format(java.util.Locale.US, homeRating!!.rating)} (${homeRating!!.matches} matches) vs $awayName ${"%.0f".format(java.util.Locale.US, awayRating!!.rating)} (${awayRating!!.matches} matches)")
+                    add("historical Elo supports selected side by ${"%.0f".format(java.util.Locale.US, ratingEdge)} points; used only as a small ranking adjustment, not a calibrated probability")
+                } else add("historical Elo unavailable or under 8 matches for one side; no rating adjustment applied")
                 if (price >= 5.0) add("high-variance price band; stricter sample and bookmaker requirements applied")
                 if (pastSettled >= 30) add("Ash's tracked ${sportCategory(event)} history in this odds band: $pastSettled settled tips, ${"%.1f".format(java.util.Locale.US, pastYield)}% yield")
                 else add("Ash has $pastSettled/30 settled ${sportCategory(event)} tips in this odds band; experience adjustment not yet enabled")
@@ -578,6 +649,14 @@ object OddsEngine {
                 .put("home_recent_count", homePlayed)
                 .put("away_recent_count", awayPlayed)
                 .put("form_edge_per_game", edge)
+                .put("historical_elo_home", homeRating?.rating ?: JSONObject.NULL)
+                .put("historical_elo_away", awayRating?.rating ?: JSONObject.NULL)
+                .put("historical_elo_home_probability_pct", historicalEloHomeProbability?.times(100.0) ?: JSONObject.NULL)
+                .put("historical_elo_home_matches", homeRating?.matches ?: 0)
+                .put("historical_elo_away_matches", awayRating?.matches ?: 0)
+                .put("historical_elo_rating_adjustment", ratingAdjustment)
+                .put("historical_elo_generated_at", homeRating?.generatedAt ?: awayRating?.generatedAt ?: JSONObject.NULL)
+                .put("historical_rating_snapshot_updated", historicalRatingRefresh?.updated ?: false)
                 .put("home_form", "${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L")
                 .put("away_form", "${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L")
                 .put("form_method", "Recency-weighted win rate over up to 10 verified team/player results; draws count as half")

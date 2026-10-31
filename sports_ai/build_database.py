@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Normalize downloaded football, tennis and NBA team game logs into SQLite."""
+"""Normalize downloaded football and tennis archives into SQLite; NBA logs are imported separately."""
 import csv
 import io
 import json
@@ -70,54 +70,6 @@ def main():
         except (OSError, UnicodeError, csv.Error):
             continue
 
-    # NBA team game-log files contain two rows per GAME_ID: one row per team.
-    for p in sorted((RAW / "basketball").glob("*.tar.xz")):
-        try:
-            with tarfile.open(p, mode="r:xz") as archive:
-                members = [m for m in archive.getmembers() if m.isfile() and m.name.lower().endswith(".csv")]
-                if not members:
-                    continue
-                member = members[0]
-                stream = archive.extractfile(member)
-                if stream is None:
-                    continue
-                rows = list(csv.DictReader(io.TextIOWrapper(stream, encoding="utf-8-sig", errors="replace")))
-                grouped = {}
-                for row in rows:
-                    low = {str(k).lower().strip(): v for k, v in row.items() if k is not None}
-                    game_id = low.get("game_id") or low.get("gameid")
-                    team = low.get("team_name") or low.get("team") or low.get("team_abbreviation")
-                    points = low.get("pts") or low.get("points") or low.get("team_score")
-                    date = low.get("game_date") or low.get("date")
-                    if not game_id or not team or points in (None, ""):
-                        continue
-                    try:
-                        points = float(points)
-                    except (TypeError, ValueError):
-                        continue
-                    grouped.setdefault(game_id, []).append({
-                        "team": team, "points": points, "date": date, "raw": low
-                    })
-                for game_id, teams in grouped.items():
-                    if len(teams) < 2:
-                        continue
-                    # De-duplicate possible repeated rows while preserving team order.
-                    unique = []
-                    seen = set()
-                    for team in teams:
-                        if team["team"] not in seen:
-                            seen.add(team["team"])
-                            unique.append(team)
-                    if len(unique) < 2:
-                        continue
-                    a, b = unique[0], unique[1]
-                    winner = a["team"] if a["points"] > b["points"] else b["team"] if b["points"] > a["points"] else "draw"
-                    season = p.stem.split("_")[-1]
-                    add("basketball", "NBA", season, a["date"] or b["date"],
-                        a["team"], b["team"], a["points"], b["points"], winner,
-                        f"{p.name}:{member.name}", {"game_id": game_id, "team_a": a["raw"], "team_b": b["raw"]})
-        except (OSError, tarfile.TarError, csv.Error, UnicodeError):
-            continue
 
     db.commit()
     total = db.execute("SELECT COUNT(*) FROM matches").fetchone()[0]

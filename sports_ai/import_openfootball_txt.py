@@ -1,95 +1,83 @@
 #!/usr/bin/env python3
-"""Import verified full-time results from OpenFootball Football.TXT files into SQLite.
+"""Import dated, completed results from the CC0 OpenFootball world archive.
 
-Parser intentionally accepts only simple, unambiguous score lines. Fixtures without a
-final score and penalty/extra-time lines are skipped rather than guessed.
+The shared parser normalizes date headings and accepts only unambiguous score rows.
+Unknown date formats and ambiguous rows are skipped, never guessed.
 """
 from __future__ import annotations
+import json
 import re
 import sqlite3
-from datetime import datetime
 from pathlib import Path
+from football_txt_parser import parse_football_txt
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "data" / "history" / "raw" / "football_world" / "unpacked"
 DB = ROOT / "data" / "history" / "ash_sports_history.sqlite"
-SCORE = re.compile(r"(?P<a>.+?)\s+(?P<sa>\d{1,2})-(?P<sb>\d{1,2})\s+(?P<b>.+?)\s*(?:@.*)?$")
-DATE = re.compile(r"^(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+)?(?:\w{3,9}\s+\d{1,2}(?:,?\s+\d{4})?|\d{1,2}[./-]\d{1,2}[./-]\d{4})$")
-
-
-def clean_team(value: str) -> str:
-    value = re.sub(r"\([^)]*\)", "", value)
-    value = re.sub(r"^\(\d+\)\s*", "", value)
-    # Some upstream fixtures prefix team names with kickoff time; never treat it as part of the name.
-    value = re.sub(r"^\d{1,2}:\d{2}\s+", "", value.strip())
-    return " ".join(value.split()).strip(" -|")
-
-
-def parse_line(line: str):
-    line = re.sub(r"^\s*\(\d+\)\s*", "", line.strip())
-    if not line or line.startswith(("#", "(", "[", "▪", "::", "=")):
-        return None
-    if re.search(r"\b(?:pen\.?|a\.?e\.?t\.?|agget|asget)\b", line, re.I):
-        return None
-    # Modern layout: Home Team v Away Team 2-1
-    m = re.match(r"^(?P<a>.+?)\s+(?:v|vs\.?|-)\s+(?P<b>.+?)\s+(?P<sa>\d{1,2})-(?P<sb>\d{1,2})(?:\s+\([^)]*\))?(?:\s+@.*)?$", line, re.I)
-    if m:
-        a, b = clean_team(m.group("a")), clean_team(m.group("b"))
-        if a and b and a.lower() != b.lower():
-            return a, b, int(m.group("sa")), int(m.group("sb"))
-    # Older layout: Home Team 2-1 Away Team
-    m = SCORE.match(line)
-    if m:
-        a, b = clean_team(m.group("a")), clean_team(m.group("b"))
-        if a and b and a.lower() != b.lower():
-            return a, b, int(m.group("sa")), int(m.group("sb"))
-    return None
+SEASON_RE = re.compile(r"(?:19|20)\d{2}-\d{2}|20\d{2}")
 
 
 def main():
     if not DB.exists():
         raise SystemExit("Database missing; run build_database.py first.")
-    imported = 0
+    files = sorted(BASE.rglob("*.txt")) if BASE.exists() else []
+    imported = skipped = 0
     seen = set()
+    competition_counts = {}
     with sqlite3.connect(DB) as db:
-        files = sorted(BASE.rglob("*.txt")) if BASE.exists() else []
+        # Avoid double-counting results present in football.json or the global archive.
+        # Competition labels differ between sources, so compare date, teams and score.
+        for date, home, away, home_score, away_score in db.execute(
+            "SELECT match_date,participant_a,participant_b,score_a,score_b FROM matches WHERE sport='football'"
+        ):
+            date_key = str(date or "")[:10]
+            home_key = " ".join(str(home or "").casefold().split())
+            away_key = " ".join(str(away or "").casefold().split())
+            seen.add((date_key, home_key, away_key, home_score, away_score))
+            seen.add((date_key, away_key, home_key, away_score, home_score))
         for path in files:
-            competition = path.parent.name.replace("-", " ").title()
-            season = next((part for part in path.parts if re.fullmatch(r"20\d{2}-\d{2}|19\d{2}-\d{2}", part)), "")
-            current_date = ""
-            try:
-                lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
-            except OSError:
-                continue
-            for raw in lines:
-                line = raw.strip()
-                if not line:
-                    continue
-                if DATE.fullmatch(line):
-                    # Date-only headers are intentionally kept as text when year is absent.
-                    current_date = line
-                    continue
-                parsed = parse_line(line)
-                if not parsed:
-                    continue
-                a, b, sa, sb = parsed
-                key = (competition, season, current_date, a, b, sa, sb)
-                if key in seen:
+            relative = path.relative_to(BASE)
+            parts = list(relative.parts)
+            season = next((part for part in parts if SEASON_RE.fullmatch(part)), "")
+            # Keep region/country and competition in the competition label, not season.
+            label_parts = [part for part in parts[:-1] if part != season]
+            competition = " / ".join(label_parts + [path.stem])
+            for match in parse_football_txt(path):
+                home, away = match["home"], match["away"]
+                home_score, away_score = match["home_score"], match["away_score"]
+                date_key = str(match["date"])[:10]
+                home_key = " ".join(home.casefold().split())
+                away_key = " ".join(away.casefold().split())
+                key = (date_key, home_key, away_key, home_score, away_score)
+                reverse_key = (date_key, away_key, home_key, away_score, home_score)
+                if key in seen or reverse_key in seen:
+                    skipped += 1
                     continue
                 seen.add(key)
-                winner = a if sa > sb else b if sb > sa else "draw"
+                seen.add(reverse_key)
+                winner = home if home_score > away_score else away if away_score > home_score else "draw"
                 db.execute(
                     "INSERT INTO matches(sport,competition,season,match_date,participant_a,participant_b,score_a,score_b,winner,source,raw_json) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                    ("football", competition, season, current_date, a, b, sa, sb, winner,
-                     str(path.relative_to(ROOT)), raw[:1000]),
+                    ("football", competition, season, match["date"], home, away,
+                     home_score, away_score, winner, str(path.relative_to(ROOT)),
+                     json.dumps(match, ensure_ascii=False)),
                 )
                 imported += 1
-        row = db.execute("SELECT value FROM metadata WHERE key='world_archive_imported'").fetchone()
+                competition_counts[competition] = competition_counts.get(competition, 0) + 1
         db.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('world_archive_imported',?)", (str(imported),))
+        db.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('world_archive_skipped_duplicates',?)", (str(skipped),))
+        db.execute("INSERT OR REPLACE INTO metadata(key,value) VALUES('world_archive_competition_counts',?)",
+                   (json.dumps(competition_counts, sort_keys=True),))
         db.commit()
-    print({"world_archive_files": len(files), "world_archive_matches_imported": imported})
+    print(json.dumps({
+        "world_archive_files": len(files),
+        "world_archive_matches_imported": imported,
+        "duplicates_skipped": skipped,
+        "competitions_detected": len(competition_counts),
+        "competition_counts": competition_counts,
+    }))
     if imported == 0:
-        print("No unambiguous scored text matches imported; archive retained for future parser improvements.")
+        print("No dated, unambiguous results imported. Check source date/score formats; raw archive is preserved.")
 
 
 if __name__ == "__main__":

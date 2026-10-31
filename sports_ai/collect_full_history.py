@@ -63,21 +63,13 @@ def main() -> None:
             results.append(fetch(url, RAW / "tennis" / tour / name))
             time.sleep(0.015)
 
-    # Compact team game logs cover regular season + playoffs from 1996/97 onwards.
-    # Each archive contains a CSV named like its archive key.
-    nba_root = "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets"
-    for year in range(1996, 2026):
-        for key in (f"nbastats_{year}", f"nbastats_po_{year}"):
-            url = f"{nba_root}/{key}.tar.xz"
-            results.append(fetch(url, RAW / "basketball" / f"{key}.tar.xz"))
-            time.sleep(0.015)
-
     manifest = {
         "generated_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "coverage_note": (
             "Best-effort public historical results, not every match ever played. Missing upstream seasons are expected. "
-            "NBA source is team game logs; tennis mirror retains the original non-commercial CC BY-NC-SA terms. "
-            "Results are not historical betting odds."
+            "NBA team-game results are downloaded separately from the stats.nba.com team_game_logs mirror (2009/10 onward); "
+            "that mirror does not publish an explicit dataset reuse license. Tennis mirror retains the original non-commercial "
+            "CC BY-NC-SA terms. Results are not historical betting odds."
         ),
         "sources": results,
         "summary": {

@@ -24,43 +24,38 @@ def update(ratings, a, b, score_a):
 
 
 def football_ratings():
+    """Use the normalized database so African, Arab and global imports count too."""
     ratings = {}
-    files = sorted((RAW / "football").glob("*/*.json"))
-    matches = []
-    for path in files:
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            for m in data.get("matches", []):
-                score_data = m.get("score")
-                score = score_data.get("ft") if isinstance(score_data, dict) else score_data if isinstance(score_data, list) else None
-                a, b = m.get("team1"), m.get("team2")
-                if a and b and score and len(score) >= 2 and score[0] is not None and score[1] is not None:
-                    matches.append((str(m.get("date") or ""), a, b, float(score[0]), float(score[1])))
-        except (OSError, ValueError, TypeError):
+    if not DB.exists():
+        raise SystemExit("Sports history database missing. Run the history collection workflow first.")
+    with sqlite3.connect(DB) as db:
+        matches = db.execute(
+            "SELECT match_date, participant_a, participant_b, score_a, score_b "
+            "FROM matches WHERE sport='football' AND score_a IS NOT NULL AND score_b IS NOT NULL "
+            "ORDER BY match_date, id"
+        ).fetchall()
+    for _, a, b, sa, sb in matches:
+        if not a or not b:
             continue
-    for _, a, b, sa, sb in sorted(matches):
         update(ratings, a, b, 1.0 if sa > sb else 0.0 if sa < sb else 0.5)
     return ratings
 
-
 def tennis_ratings():
+    """Use normalized tennis history from every imported source."""
     ratings = {}
-    matches = []
-    for path in sorted((RAW / "tennis").glob("*/*.csv")):
-        try:
-            with path.open(encoding="utf-8-sig", newline="") as f:
-                for row in csv.DictReader(f):
-                    winner = row.get("winner_name") or row.get("Winner") or row.get("winner")
-                    loser = row.get("loser_name") or row.get("Loser") or row.get("loser")
-                    if winner and loser:
-                        date = str(row.get("tourney_date") or row.get("date") or path.stem[-4:])
-                        matches.append((date, winner, loser))
-        except (OSError, UnicodeError, csv.Error):
+    if not DB.exists():
+        raise SystemExit("Sports history database missing. Run the history collection workflow first.")
+    with sqlite3.connect(DB) as db:
+        matches = db.execute(
+            "SELECT match_date, participant_a, participant_b, score_a, score_b "
+            "FROM matches WHERE sport='tennis' AND score_a IS NOT NULL AND score_b IS NOT NULL "
+            "ORDER BY match_date, id"
+        ).fetchall()
+    for _, winner_or_a, loser_or_b, sa, sb in matches:
+        if not winner_or_a or not loser_or_b:
             continue
-    for _, winner, loser in sorted(matches):
-        update(ratings, winner, loser, 1.0)
+        update(ratings, winner_or_a, loser_or_b, 1.0 if sa > sb else 0.0 if sa < sb else 0.5)
     return ratings
-
 
 def basketball_ratings():
     ratings = {}

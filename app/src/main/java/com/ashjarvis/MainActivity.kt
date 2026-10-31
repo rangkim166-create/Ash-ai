@@ -48,6 +48,12 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 import kotlin.concurrent.thread
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
 
 class MainActivity : Activity() {
     private lateinit var messages: LinearLayout
@@ -102,10 +108,25 @@ class MainActivity : Activity() {
                 applySavedVoice()
             }
         }
+        scheduleAshSportsRefresh()
         buildUi()
         restoreHistory()
         if (history.length() == 0) addMessage("Ash Jarvis", "Welcome. Set up your OpenRouter API key and model to start real AI chat.")
         updateStatus()
+    }
+
+    private fun scheduleAshSportsRefresh() {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val request = PeriodicWorkRequestBuilder<OddsRefreshWorker>(6, TimeUnit.HOURS)
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(applicationContext).enqueueUniquePeriodicWork(
+            "ash-sports-odds-refresh",
+            ExistingPeriodicWorkPolicy.UPDATE,
+            request
+        )
     }
 
     private fun buildUi() {
@@ -361,13 +382,13 @@ class MainActivity : Activity() {
                     .putString("offline_model_file", imported.first.name)
                     .putString("offline_model_name", imported.second)
                     .putBoolean("offline_model_downloaded", true)
-                    .putBoolean("offline_ai_enabled", true)
+                    .putString("offline_model_downloaded_file", imported.first.name)
+                    .putBoolean("offline_ai_enabled", false)
                     .remove("offline_model_download_id")
                     .apply()
-                footer.text = "Imported local model • checking on first reply"
-                addMessage("Ash Jarvis", "Imported " + imported.second + ". I'll try to load it for offline replies. If its architecture or chat template isn't supported, choose a compatible GGUF model.")
-                Toast.makeText(this@MainActivity, "Model imported and selected for Offline AI", Toast.LENGTH_LONG).show()
-                updateStatus()
+                footer.text = "Imported local model • testing on-device inference"
+                addMessage("Ash Jarvis", "Imported " + imported.second + ". I'm testing that it can actually generate a reply on this phone.")
+                setOfflineAiEnabled(true)
             } catch (e: Exception) {
                 footer.text = "Model import failed"
                 addMessage("Ash Jarvis", "Couldn't import model: " + (e.message ?: "unknown error"))
@@ -712,10 +733,10 @@ class MainActivity : Activity() {
             "More capable, but may slow down when Android uses much of the memory."
         ),
         OfflineModel(
-            "Dolphin 2.9 Llama 3 8B (Q4_K_M)", "8 GB+ RAM recommended", 8, "~4.9 GB",
+            "Dolphin 2.9 Llama 3 8B (Q4_K_M)", "12 GB+ RAM recommended", 12, "~4.9 GB",
             "dolphin-2.9-llama3-8b-Q4_K_M.gguf",
             "https://huggingface.co/bartowski/dolphin-2.9-llama3-8b-GGUF/resolve/main/dolphin-2.9-llama3-8b-Q4_K_M.gguf?download=true",
-            "Less restrictive style; too large for many 6 GB phones."
+            "Less restrictive style, but not recommended on 8 GB Android phones. Use Qwen 1.5B or 3B for reliable local inference."
         )
     )
 
@@ -734,7 +755,7 @@ class MainActivity : Activity() {
         val ramSpinner = android.widget.Spinner(this)
         val ramOptions = listOf("2 GB", "3 GB", "4 GB", "6 GB", "8 GB", "12 GB", "16 GB or more")
         ramSpinner.adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, ramOptions)
-        val savedRam = prefs.getInt("offline_ram_gb", 6)
+        val savedRam = prefs.getInt("offline_ram_gb", 8)
         ramSpinner.setSelection(ramOptions.indexOfFirst { it.startsWith(savedRam.toString() + " ") }.takeIf { it >= 0 } ?: 3)
         panel.addView(ramSpinner)
         panel.addView(TextView(this).apply {
@@ -780,8 +801,10 @@ class MainActivity : Activity() {
             modelAdapter.clear()
             modelAdapter.addAll(choices.map { it.name + " • " + it.sizeLabel })
             modelAdapter.notifyDataSetChanged()
-            val chosen = choices.firstOrNull { it.name == preferredName }
-                ?: choices.lastOrNull { it.minRamGb <= selectedRam() }
+            val safeRam = (selectedRam() - 2).coerceAtLeast(2)
+            val chosen = choices.firstOrNull { it.name == preferredName && it.minRamGb <= safeRam }
+                ?: choices.firstOrNull { it.name.contains("1.5B", ignoreCase = true) && it.minRamGb <= selectedRam() }
+                ?: choices.firstOrNull { it.minRamGb <= selectedRam() }
                 ?: choices.first()
             modelSpinner.setSelection(choices.indexOf(chosen).coerceAtLeast(0))
             val ram = selectedRam()
@@ -797,8 +820,9 @@ class MainActivity : Activity() {
         modelSpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val chosen = compatibleModels().getOrNull(position) ?: return
+                val ramWarning = if (chosen.minRamGb > selectedRam()) "\n\n⚠️ This model is above your selected RAM setting and may fail to load. On an 8 GB phone, choose Qwen 2.5 1.5B Q4." else ""
                 details.text = chosen.description + "\n\nDownload size: " + chosen.sizeLabel +
-                    "\nRecommended minimum RAM: " + chosen.ramLabel +
+                    "\nRecommended minimum RAM: " + chosen.ramLabel + ramWarning +
                     "\n\nAsh can load compatible GGUF models locally. Not every GGUF architecture or chat template is supported by the bundled runtime."
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
@@ -810,13 +834,16 @@ class MainActivity : Activity() {
             .setView(panel)
             .setNegativeButton("CANCEL", null)
             .setNeutralButton("CHECK DOWNLOADED", null)
-            .setPositiveButton(if (prefs.getBoolean("offline_ai_enabled", false)) "USE OFFLINE AI" else "DOWNLOAD MODEL") { _, _ ->
+            .setPositiveButton("USE SELECTED MODEL") { _, _ ->
                 val ram = selectedRam()
                 val chosen = compatibleModels().getOrNull(modelSpinner.selectedItemPosition) ?: offlineModels.first()
                 prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).putString("offline_model_file", chosen.fileName).apply()
-                if (prefs.getBoolean("offline_model_downloaded", false)) {
+                val downloadedFile = java.io.File(filesDir, chosen.fileName)
+                val isThisModelReady = downloadedFile.isFile && downloadedFile.length() > 1024 * 1024
+                if (isThisModelReady) {
                     setOfflineAiEnabled(true)
                 } else {
+                    prefs.edit().putBoolean("offline_ai_enabled", false).apply()
                     startOfflineModelDownload(chosen)
                 }
             }
@@ -835,7 +862,7 @@ class MainActivity : Activity() {
         if (fileName.isNullOrBlank() || downloadId < 0L) {
             AlertDialog.Builder(this)
                 .setTitle("No model download recorded")
-                .setMessage("Choose DOWNLOAD MODEL first. Ash will save the model under Downloads/AshJarvis.")
+                .setMessage("Choose USE SELECTED MODEL first. Ash will save the model in its private app storage.")
                 .setPositiveButton("OK", null)
                 .show()
             return
@@ -873,7 +900,8 @@ class MainActivity : Activity() {
                         }
                         val size = if (internal.exists()) internal.length() else 0L
                         if (size > 1024 * 1024) {
-                            prefs.edit().putBoolean("offline_model_downloaded", true).apply()
+                            prefs.edit().putBoolean("offline_model_downloaded", true)
+                                .putString("offline_model_downloaded_file", fileName).apply()
                             AlertDialog.Builder(this)
                                 .setTitle("Model ready")
                                 .setMessage("Verified " + fileName + " (" + String.format(Locale.US, "%.2f", size / (1024.0 * 1024.0)) + " MB) in Ash's private app storage. Tap OFFLINE AI again and choose USE OFFLINE AI to start local replies.")
@@ -999,11 +1027,11 @@ class MainActivity : Activity() {
             val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
             val request = DownloadManager.Request(Uri.parse(model.url))
                 .setTitle("Ash Jarvis • " + model.name)
-                .setDescription("Downloading " + model.sizeLabel + " model to Downloads/AshJarvis")
+                .setDescription("Downloading " + model.sizeLabel + " model to Ash private app storage")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setAllowedOverMetered(false)
                 .setAllowedOverRoaming(false)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + model.fileName)
+                .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + model.fileName)
             val id = manager.enqueue(request)
             prefs.edit().putLong("offline_model_download_id", id).putString("offline_model_file", model.fileName).apply()
             showModelDownloadProgress(id, model.name)
@@ -1315,13 +1343,19 @@ class MainActivity : Activity() {
                         edge.text.generate(
                             prompt = prompt,
                             model = ModelSpec.localFile(modelFile),
-                            options = TextModelOptions(contextSize = 2048, numThreads = 4, generationThreads = 4, temperature = 0.7f),
+                            options = TextModelOptions(contextSize = 1024, numThreads = 4, generationThreads = 2, temperature = 0.7f),
                             maxTokens = 256
                         )
                     }
                     addMessage("Ash Jarvis", answer.trim().ifBlank { "I couldn't generate a reply. Try again." })
                     tts?.speak(answer.take(3500), TextToSpeech.QUEUE_FLUSH, null, "ash-offline-reply")
                     footer.text = "Offline AI • replies run on this phone"
+                } catch (e: OutOfMemoryError) {
+                    try { offlineEdge?.close() } catch (_: Exception) {}
+                    offlineEdge = null
+                    prefs.edit().putBoolean("offline_ai_enabled", false).apply()
+                    addMessage("Ash Jarvis", "This model exceeded the phone's available memory. Switch to Qwen 2.5 1.5B Q4 or the 0.5B model.")
+                    footer.text = "Offline AI ran out of memory"
                 } catch (e: Exception) {
                     addMessage("Ash Jarvis", "Offline AI couldn't start: " + (e.message ?: "unknown error"))
                     footer.text = "Offline AI needs a valid downloaded model"
@@ -1489,23 +1523,81 @@ class MainActivity : Activity() {
             ?: throw IllegalStateException("No offline model selected. Open OFFLINE AI and download one.")
         val internal = java.io.File(filesDir, fileName)
         if (internal.exists() && internal.length() > 1024 * 1024) return internal
-        val publicFile = java.io.File(
+        val appDownloadDir = java.io.File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "AshJarvis")
+        val appDownload = java.io.File(appDownloadDir, fileName)
+        // Compatibility fallback for models downloaded by older builds to the public Downloads folder.
+        val legacyPublicFile = java.io.File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "AshJarvis/" + fileName
         )
-        if (!publicFile.exists() || publicFile.length() <= 1024 * 1024) {
-            throw IllegalStateException("Model download isn't complete yet. Check Wi-Fi and download status.")
+        val source = when {
+            appDownload.isFile && appDownload.length() > 1024 * 1024 -> appDownload
+            legacyPublicFile.isFile && legacyPublicFile.length() > 1024 * 1024 -> legacyPublicFile
+            else -> throw IllegalStateException("Model download isn't complete yet. Check Wi-Fi and download status.")
         }
-        publicFile.inputStream().use { input ->
+        source.inputStream().use { input ->
             internal.outputStream().use { output -> input.copyTo(output) }
         }
         return internal
     }
 
     private fun setOfflineAiEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean("offline_ai_enabled", enabled).apply()
-        Toast.makeText(this, if (enabled) "Offline AI selected. Replies will run on-device." else "Online AI selected.", Toast.LENGTH_LONG).show()
-        updateStatus()
+        if (!enabled) {
+            prefs.edit().putBoolean("offline_ai_enabled", false).apply()
+            try { offlineEdge?.close() } catch (_: Exception) {}
+            offlineEdge = null
+            Toast.makeText(this, "Online AI selected.", Toast.LENGTH_LONG).show()
+            updateStatus()
+            return
+        }
+        // A newly selected model must not inherit the previous model's ready flag.
+        prefs.edit().putBoolean("offline_ai_enabled", false).apply()
+        footer.text = "Preparing local model • first load can take a minute"
+        aiScope.launch {
+            try {
+                // Copying a multi-gigabyte GGUF file must happen off the UI thread.
+                val modelFile = withContext(Dispatchers.IO) { getOfflineModelFile() }
+                val memory = android.app.ActivityManager.MemoryInfo()
+                (getSystemService(ACTIVITY_SERVICE) as android.app.ActivityManager).getMemoryInfo(memory)
+                val availableMb = memory.availMem / (1024L * 1024L)
+                val modelMb = modelFile.length() / (1024L * 1024L)
+                val requiredMb = maxOf(1200L, (modelMb * 1.25).toLong() + 650L)
+                if (availableMb < requiredMb) {
+                    val message = "This model needs about $requiredMb MB of free memory for safe loading, but Android reports about $availableMb MB available. On an 8 GB phone, use Qwen 2.5 1.5B Q4 (about 1 GB). Dolphin 8B Q4 (about 4.9 GB) is too large for reliable use while Android is running."
+                    addMessage("Ash Jarvis", message)
+                    footer.text = "Not enough free RAM for this model"
+                    Toast.makeText(this@MainActivity, "Choose a smaller offline model", Toast.LENGTH_LONG).show()
+                    return@launch
+                }
+                val edge = offlineEdge ?: LLMEdge.create(this@MainActivity, aiScope).also { offlineEdge = it }
+                val test = withContext(Dispatchers.IO) {
+                    edge.text.generate(
+                        prompt = "Reply with exactly: OK",
+                        model = ModelSpec.localFile(modelFile),
+                        options = TextModelOptions(contextSize = 1024, numThreads = 2, generationThreads = 2, temperature = 0.0f),
+                        maxTokens = 8
+                    )
+                }
+                if (test.isBlank()) throw IllegalStateException("The model loaded but returned an empty test reply.")
+                prefs.edit().putBoolean("offline_ai_enabled", true)
+                    .putString("offline_model_downloaded_file", modelFile.name).apply()
+                footer.text = "Offline AI • " + (prefs.getString("offline_model_name", modelFile.name) ?: modelFile.name)
+                addMessage("Ash Jarvis", "Offline AI is ready. I generated a test reply locally on this phone.")
+                Toast.makeText(this@MainActivity, "Offline model tested successfully", Toast.LENGTH_LONG).show()
+                updateStatus()
+            } catch (e: OutOfMemoryError) {
+                try { offlineEdge?.close() } catch (_: Exception) {}
+                offlineEdge = null
+                prefs.edit().putBoolean("offline_ai_enabled", false).apply()
+                addMessage("Ash Jarvis", "Android ran out of memory loading this model. Choose Qwen 2.5 1.5B Q4 or the 0.5B model, then test again.")
+                footer.text = "Offline model exceeded available RAM"
+            } catch (e: Exception) {
+                prefs.edit().putBoolean("offline_ai_enabled", false).apply()
+                addMessage("Ash Jarvis", "Offline model test failed: " + (e.message ?: "unsupported model or runtime error"))
+                footer.text = "Offline model failed its startup test"
+                updateStatus()
+            }
+        }
     }
 
     private fun testConnection() {

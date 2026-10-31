@@ -28,18 +28,19 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install parquet reader for basketball history
+      - name: Install Parquet reader for NBA team results
         run: python -m pip install --upgrade pandas pyarrow
       - name: Syntax-check collector and database scripts
-        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/collect_football_data.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/import_openfootball_txt.py sports_ai/collect_global_football.py sports_ai/import_global_football.py sports_ai/import_football_data.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_basketball_history.py sports_ai/import_basketball_history.py sports_ai/audit_history.py
+        run: python -m py_compile sports_ai/collect_full_history.py sports_ai/collect_football_data.py sports_ai/build_database.py sports_ai/predict.py sports_ai/publish_ratings.py sports_ai/collect_arab_football.py sports_ai/football_txt_parser.py sports_ai/import_openfootball_txt.py sports_ai/collect_global_football.py sports_ai/import_global_football.py sports_ai/import_football_data.py sports_ai/collect_saudi_history.py sports_ai/import_saudi_history.py sports_ai/collect_nba_team_results.py sports_ai/import_nba_team_results.py sports_ai/audit_history.py
+      - name: Test regional football text parser
+        run: python -m unittest discover -s sports_ai -p "test_*.py"
       - name: Download historical datasets
         run: python sports_ai/collect_full_history.py
+      - name: Download NBA team-game results (2009/10 onward)
+        run: python sports_ai/collect_nba_team_results.py
       - name: Download Saudi Pro League historical archive
         continue-on-error: true
         run: python sports_ai/collect_saudi_history.py
-      - name: Download basketball results for NBA and international leagues
-        continue-on-error: true
-        run: python sports_ai/collect_basketball_history.py
       - name: Fetch additional Arab and African football source archive
         continue-on-error: true
         run: python sports_ai/collect_arab_football.py
@@ -47,14 +48,14 @@ jobs:
         run: python sports_ai/collect_global_football.py
       - name: Normalize results into SQLite
         run: python sports_ai/build_database.py
+      - name: Import NBA team-game results
+        run: python sports_ai/import_nba_team_results.py
       - name: Import global historical football results
         run: python sports_ai/import_global_football.py
       - name: Import regional OpenFootball text results
         run: python sports_ai/import_openfootball_txt.py
       - name: Import Saudi Pro League history
         run: python sports_ai/import_saudi_history.py
-      - name: Import NBA and international basketball history
-        run: python sports_ai/import_basketball_history.py
       - name: Publish compact Elo ratings for Ash
         run: python sports_ai/publish_ratings.py
       - name: Audit per-sport and per-league history coverage
@@ -89,10 +90,22 @@ jobs:
           if [ -f data/history/raw/football_world/manifest.json ]; then git add data/history/raw/football_world/manifest.json; fi
           if [ -f data/history/raw/global_football/manifest.json ]; then git add data/history/raw/global_football/manifest.json; fi
           if [ -f data/history/raw/arab_football/saudi/manifest.json ]; then git add data/history/raw/arab_football/saudi/manifest.json; fi
-          if [ -f data/history/raw/basketball_parquet/manifest.json ]; then git add data/history/raw/basketball_parquet/manifest.json; fi
+          if [ -f data/history/raw/nba_team_logs/manifest.json ]; then git add data/history/raw/nba_team_logs/manifest.json; fi
           if ! git diff --cached --quiet; then
             git commit -m "Update sports history source manifest"
-            git push
+            # The branch can receive code commits while the long history job is running.
+            # Rebase the generated manifests on the latest branch before publishing.
+            for attempt in 1 2 3; do
+              git fetch origin "$GITHUB_REF_NAME"
+              git rebase "origin/$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+              echo "Push raced with another branch update; retrying after fetch/rebase ($attempt/3)."
+              sleep 3
+            done
+            echo "Could not publish history manifests after three safe retries."
+            exit 1
           else
             echo "Manifest unchanged."
           fi

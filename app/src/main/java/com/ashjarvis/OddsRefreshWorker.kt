@@ -8,11 +8,9 @@ import kotlinx.coroutines.withContext
 
 class OddsRefreshWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val key = OddsEngine.readApiKey(applicationContext) ?: return@withContext Result.failure()
         try {
-            OddsEngine.sync(applicationContext, key)
+            OddsEngine.syncFromBackend(applicationContext)
             val picks = OddsEngine.buildDailyPicks(applicationContext)
-            OddsEngine.dailyOddEvenTip(applicationContext, key)
             TipResultsTracker.settleFinishedFromHistory(applicationContext)
             DailyPicksNotifier.notify(applicationContext, picks)
             Result.success()

@@ -1,0 +1,359 @@
+{
+  "generated_at_utc": "2026-10-31T16:14:38Z",
+  "source": "llimllib/nba_data v2 stats.nba.com team_game_logs",
+  "source_url": "https://github.com/llimllib/nba_data",
+  "dataset_base": "https://basketball-data.billmill.org/nba/stats",
+  "seasons_attempted": [
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021,
+    2022,
+    2023,
+    2024,
+    2025,
+    2026,
+    2027
+  ],
+  "license_note": "The source repository does not publish an explicit dataset reuse license. This archive is not commercially cleared; confirm terms with the source maintainer before commercial redistribution or use.",
+  "files": [
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2010/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2010.parquet",
+      "bytes": 158851,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2010/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2010.parquet",
+      "bytes": 1591,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2010/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2010.parquet",
+      "bytes": 7987,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2011/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2011.parquet",
+      "bytes": 158951,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2011/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2011.parquet",
+      "bytes": 1595,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2011/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2011.parquet",
+      "bytes": 7657,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2012/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2012.parquet",
+      "bytes": 129801,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2012/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2012.parquet",
+      "bytes": 1554,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2012/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2012.parquet",
+      "bytes": 6348,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2013/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2013.parquet",
+      "bytes": 157703,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2013/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2013.parquet",
+      "bytes": 1638,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2013/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2013.parquet",
+      "bytes": 7808,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2014/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2014.parquet",
+      "bytes": 159486,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2014/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2014.parquet",
+      "bytes": 1572,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2014/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2014.parquet",
+      "bytes": 7874,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2015/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2015.parquet",
+      "bytes": 158617,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2015/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2015.parquet",
+      "bytes": 1593,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2015/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2015.parquet",
+      "bytes": 7972,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2016/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2016.parquet",
+      "bytes": 158285,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2016/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2016.parquet",
+      "bytes": 1622,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2016/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2016.parquet",
+      "bytes": 7760,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2017/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2017.parquet",
+      "bytes": 158447,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2017/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2017.parquet",
+      "bytes": 1595,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2017/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2017.parquet",
+      "bytes": 7668,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2018/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2018.parquet",
+      "bytes": 157272,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2018/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2018.parquet",
+      "bytes": 1579,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2018/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2018.parquet",
+      "bytes": 7374,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2019/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2019.parquet",
+      "bytes": 158353,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2019/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2019.parquet",
+      "bytes": 1638,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2019/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2019.parquet",
+      "bytes": 7425,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2020/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2020.parquet",
+      "bytes": 147896,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2020/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2020.parquet",
+      "bytes": 1645,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2020/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2020.parquet",
+      "bytes": 6955,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2021/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2021.parquet",
+      "bytes": 141714,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2021/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2021.parquet",
+      "bytes": 1538,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2021/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2021.parquet",
+      "bytes": 6983,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2022/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2022.parquet",
+      "bytes": 158877,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2022/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2022.parquet",
+      "bytes": 1538,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2022/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2022.parquet",
+      "bytes": 7383,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2023/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2023.parquet",
+      "bytes": 157942,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2023/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2023.parquet",
+      "bytes": 1517,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2023/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2023.parquet",
+      "bytes": 7813,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2024/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2024.parquet",
+      "bytes": 160365,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2024/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2024.parquet",
+      "bytes": 1575,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2024/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2024.parquet",
+      "bytes": 7807,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2025/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2025.parquet",
+      "bytes": 161071,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2025/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2025.parquet",
+      "bytes": 1543,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2025/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2025.parquet",
+      "bytes": 7942,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2026/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2026.parquet",
+      "bytes": 161353,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2026/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2026.parquet",
+      "bytes": 1546,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2026/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2026.parquet",
+      "bytes": 7959,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2027/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_game_logs/season_2027.parquet",
+      "bytes": 34891,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/team_seasons/season=2027/data.parquet",
+      "path": "data/history/raw/nba_team_logs/team_seasons/season_2027.parquet",
+      "bytes": 1519,
+      "status": "ok"
+    },
+    {
+      "url": "https://basketball-data.billmill.org/nba/stats/games/season=2027/data.parquet",
+      "path": "data/history/raw/nba_team_logs/games/season_2027.parquet",
+      "bytes": 2602,
+      "status": "ok"
+    }
+  ],
+  "summary": {
+    "downloaded": 54,
+    "unavailable": 0,
+    "team_game_log_seasons": 18,
+    "downloaded_bytes": 2839590
+  }
+}
