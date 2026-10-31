@@ -3,6 +3,7 @@
 import csv
 import io
 import json
+import re
 import sqlite3
 import tarfile
 from pathlib import Path
@@ -135,7 +136,7 @@ def main():
             if len(parts) < 2:
                 continue
             competition = " / ".join(parts[:-1])
-            season_match = re.search(r"(20\\d{2}(?:-\\d{2})?)", str(relative))
+            season_match = re.search(r"(20\d{2}(?:-\d{2})?)", str(relative))
             season = season_match.group(1) if season_match else "unknown"
             for match in parse_football_txt(p):
                 home_score, away_score = match["home_score"], match["away_score"]
@@ -153,7 +154,8 @@ def main():
         "built_at_utc": datetime.now(timezone.utc).isoformat(),
         "total_matches": str(total),
         "counts_by_sport": json.dumps(by_sport),
-        "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",\n        "regional_football_txt_counts": json.dumps(regional_counts, sort_keys=True),
+        "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
+        "regional_football_txt_counts": json.dumps(regional_counts, sort_keys=True),
     }
     db.executemany("INSERT INTO metadata VALUES(?,?)", metadata.items())
     db.commit()
