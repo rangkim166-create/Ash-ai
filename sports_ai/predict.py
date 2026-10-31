@@ -41,23 +41,21 @@ def football_ratings():
     return ratings
 
 def tennis_ratings():
+    """Use normalized tennis history from every imported source."""
     ratings = {}
-    matches = []
-    for path in sorted((RAW / "tennis").glob("*/*.csv")):
-        try:
-            with path.open(encoding="utf-8-sig", newline="") as f:
-                for row in csv.DictReader(f):
-                    winner = row.get("winner_name") or row.get("Winner") or row.get("winner")
-                    loser = row.get("loser_name") or row.get("Loser") or row.get("loser")
-                    if winner and loser:
-                        date = str(row.get("tourney_date") or row.get("date") or path.stem[-4:])
-                        matches.append((date, winner, loser))
-        except (OSError, UnicodeError, csv.Error):
+    if not DB.exists():
+        raise SystemExit("Sports history database missing. Run the history collection workflow first.")
+    with sqlite3.connect(DB) as db:
+        matches = db.execute(
+            "SELECT match_date, participant_a, participant_b, score_a, score_b "
+            "FROM matches WHERE sport='tennis' AND score_a IS NOT NULL AND score_b IS NOT NULL "
+            "ORDER BY match_date, id"
+        ).fetchall()
+    for _, winner_or_a, loser_or_b, sa, sb in matches:
+        if not winner_or_a or not loser_or_b:
             continue
-    for _, winner, loser in sorted(matches):
-        update(ratings, winner, loser, 1.0)
+        update(ratings, winner_or_a, loser_or_b, 1.0 if sa > sb else 0.0 if sa < sb else 0.5)
     return ratings
-
 
 def basketball_ratings():
     ratings = {}
