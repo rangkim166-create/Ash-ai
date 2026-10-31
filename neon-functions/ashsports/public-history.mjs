@@ -145,7 +145,7 @@ export async function importPublicFootballHistory() {
       if (result.missing) {
         filesMissing++;
         missingPaths.push(result.path);
-        await sql`INSERT INTO public_history_imports(source_path, imported_matches)
+        await sql`INSERT INTO public_history_imports(source_path, imported_matches, import_status)
           VALUES (${result.path}, 0, 'missing')
           ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, import_status = 'missing', imported_at = now()`;
         continue;
@@ -173,7 +173,7 @@ export async function importPublicFootballHistory() {
             source = 'openfootball', source_updated_at = now(), updated_at = now()
         `;
       }
-      await sql`INSERT INTO public_history_imports(source_path, imported_matches)
+      await sql`INSERT INTO public_history_imports(source_path, imported_matches, import_status)
         VALUES (${result.path}, ${rows.length}, 'imported')
         ON CONFLICT (source_path) DO UPDATE SET
           imported_matches = EXCLUDED.imported_matches, import_status = 'imported', imported_at = now()`;
@@ -204,7 +204,7 @@ export async function importPublicFootballHistory() {
       if (result.missing) {
         filesMissing++;
         missingPaths.push('world/' + result.path);
-        await sql`INSERT INTO public_history_imports(source_path, imported_matches)
+        await sql`INSERT INTO public_history_imports(source_path, imported_matches, import_status)
           VALUES (${'world/' + result.path}, 0, 'missing')
           ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, import_status = 'missing', imported_at = now()`;
         continue;
@@ -237,7 +237,7 @@ export async function importPublicFootballHistory() {
             source = 'openfootball_world', source_updated_at = now(), updated_at = now()
         `;
       }
-      await sql`INSERT INTO public_history_imports(source_path, imported_matches)
+      await sql`INSERT INTO public_history_imports(source_path, imported_matches, import_status)
         VALUES (${"world/" + result.path}, ${rows.length}, 'imported')
         ON CONFLICT (source_path) DO UPDATE SET
           imported_matches = EXCLUDED.imported_matches, import_status = 'imported', imported_at = now()`;
