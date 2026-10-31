@@ -1315,13 +1315,20 @@ class MainActivity : Activity() {
                         edge.text.generate(
                             prompt = prompt,
                             model = ModelSpec.localFile(modelFile),
-                            options = TextModelOptions(contextSize = 2048, numThreads = 4, generationThreads = 4, temperature = 0.7f),
-                            maxTokens = 256
+                            options = TextModelOptions(contextSize = 1024, numThreads = 2, generationThreads = 2, temperature = 0.7f),
+                            maxTokens = 192
                         )
                     }
                     addMessage("Ash Jarvis", answer.trim().ifBlank { "I couldn't generate a reply. Try again." })
                     tts?.speak(answer.take(3500), TextToSpeech.QUEUE_FLUSH, null, "ash-offline-reply")
                     footer.text = "Offline AI • replies run on this phone"
+                } catch (e: OutOfMemoryError) {
+                    try { offlineEdge?.close() } catch (_: Exception) {}
+                    offlineEdge = null
+                    System.gc()
+                    prefs.edit().putBoolean("offline_ai_enabled", false).apply()
+                    addMessage("Ash Jarvis", "This model exceeded the memory available on this phone. Select Qwen 2.5 0.5B Q4 first; 1.5B may work, while Dolphin 8B is too large for reliable use on this 8 GB phone.")
+                    footer.text = "Offline AI ran out of memory • choose a smaller model"
                 } catch (e: Exception) {
                     addMessage("Ash Jarvis", "Offline AI couldn't start: " + (e.message ?: "unknown error"))
                     footer.text = "Offline AI needs a valid downloaded model"
