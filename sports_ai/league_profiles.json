@@ -61,8 +61,8 @@
       "name": "Saudi Pro League",
       "key": "saudi-pro-league",
       "priority": "target",
-      "source_status": "needs_verified_source",
-      "reason": "requested Arab competition; do not report historical coverage until a valid source is confirmed"
+      "source_status": "openfootball-world-2024-25",
+      "reason": "CC0 OpenFootball world archive has a 2024/25 Saudi Professional League file; only that season is confirmed by the source tree"
     },
     {
       "name": "Egyptian Premier League",
@@ -84,6 +84,13 @@
       "priority": "target",
       "source_status": "openfootball-world-archive-target",
       "reason": "targeted via public-domain OpenFootball world data"
+    },
+    {
+      "name": "Nigerian Premier Football League",
+      "key": "nigeria-premier-football-league",
+      "priority": "target",
+      "source_status": "openfootball-world-2009-2026",
+      "reason": "CC0 OpenFootball world archive contains multiple seasons from 2009/10 onward; coverage must be confirmed per season"
     },
     {
       "name": "Qatar Stars League",
