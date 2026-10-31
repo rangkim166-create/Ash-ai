@@ -63,14 +63,32 @@ object TipResultsTracker {
         var voided = 0
         var pending = 0
         var profit = 0.0
+        var brierTotal = 0.0
+        var brierCount = 0
         val tips = all(context)
         for (i in 0 until tips.length()) {
             val tip = tips.optJSONObject(i) ?: continue
             val published = runCatching { Instant.parse(tip.optString("published_at")) }.getOrNull() ?: continue
             if (published.isBefore(cutoff)) continue
             when (tip.optString("status")) {
-                "won" -> { won++; profit += tip.optDouble("profit_units", 0.0) }
-                "lost" -> { lost++; profit += tip.optDouble("profit_units", -1.0) }
+                "won" -> {
+                    won++
+                    profit += tip.optDouble("profit_units", 0.0)
+                    val probability = tip.optDouble("market_probability_pct", Double.NaN) / 100.0
+                    if (probability.isFinite() && probability in 0.0..1.0) {
+                        brierTotal += (probability - 1.0) * (probability - 1.0)
+                        brierCount++
+                    }
+                }
+                "lost" -> {
+                    lost++
+                    profit += tip.optDouble("profit_units", -1.0)
+                    val probability = tip.optDouble("market_probability_pct", Double.NaN) / 100.0
+                    if (probability.isFinite() && probability in 0.0..1.0) {
+                        brierTotal += probability * probability
+                        brierCount++
+                    }
+                }
                 "void" -> voided++
                 else -> pending++
             }
@@ -87,5 +105,7 @@ object TipResultsTracker {
             .put("hit_rate_pct", if (settled > 0) won.toDouble() / settled * 100.0 else JSONObject.NULL)
             .put("profit_units", profit)
             .put("yield_pct", if (staked > 0.0) profit / staked * 100.0 else JSONObject.NULL)
+            .put("market_brier_score", if (brierCount > 0) brierTotal / brierCount else JSONObject.NULL)
+            .put("market_brier_samples", brierCount)
     }
 }
