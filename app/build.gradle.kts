@@ -11,7 +11,6 @@ android {
         applicationId = "com.ashjarvis"
         minSdk = 30
         targetSdk = 35
-        ndk { abiFilters += listOf("arm64-v8a") }
         versionCode = 1
         versionName = "0.1.0"
     }
