@@ -104,7 +104,7 @@ class SportsOddsActivity : Activity() {
         val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
         card("DAILY SHORTLIST", "Ash scans the competitions you selected across football, basketball and tennis. It researches up to six diversified candidates across 1.50–10.00 odds bands, then publishes only selections that pass evidence checks. No forced picks.") {}
         card("HOW ASH ANALYSES A MATCH",
-            "• Recent verified results, weighted toward newer games\n• Comparable bookmaker prices and best available price\n• Multi-bookmaker agreement and market-implied probability\n• Sport-specific online news: line-ups/injuries for football, rest/back-to-back and player availability for basketball, surface/form/fitness for tennis\n• Higher odds require deeper history and more bookmaker support\n\nThe evidence index is a ranking aid, not a win probability. Probability figures are bookmaker-derived until Ash has enough settled data to validate an independent model.") {}
+            "• Recent verified results, weighted toward newer games\n• Long-run historical Elo ratings from archived football, basketball and tennis results (supporting evidence only)\n• Comparable bookmaker prices and best available price\n• Multi-bookmaker agreement and market-implied probability\n• Sport-specific online news: line-ups/injuries for football, rest/back-to-back and player availability for basketball, surface/form/fitness for tennis\n• Higher odds require deeper history and more bookmaker support\n\nThe evidence index is a ranking aid, not a win probability. Probability figures are bookmaker-derived until Ash has enough settled data to validate an independent model.") {}
         val dailyPicks = OddsEngine.savedDailyPicks(this)
         val picksText = buildString {
             if (dailyPicks.length() == 0) {
@@ -125,6 +125,18 @@ class SportsOddsActivity : Activity() {
                     append(if (rawPct.isFinite()) "%.1f%%".format(java.util.Locale.US, rawPct) else "not available")
                     append("\\nEvidence index: ").append(pick.optInt("evidence_index"))
                         .append("/100 • Bookmakers: ").append(pick.optInt("bookmakers"))
+                    val eloHome = pick.optDouble("historical_elo_home", Double.NaN)
+                    val eloAway = pick.optDouble("historical_elo_away", Double.NaN)
+                    val eloProbability = pick.optDouble("historical_elo_home_probability_pct", Double.NaN)
+                    if (eloHome.isFinite() && eloAway.isFinite()) {
+                        append("\\nHistorical Elo prior: home ").append("%.0f".format(java.util.Locale.US, eloHome))
+                            .append(" vs away ").append("%.0f".format(java.util.Locale.US, eloAway))
+                            .append(" • samples ").append(pick.optInt("historical_elo_home_matches"))
+                            .append("/").append(pick.optInt("historical_elo_away_matches"))
+                        if (eloProbability.isFinite()) append("\\nElo baseline home estimate: ")
+                            .append("%.1f%%".format(java.util.Locale.US, eloProbability))
+                            .append(" (unvalidated historical baseline, not a betting probability)")
+                    }
                     append("\\nWhy: ").append(pick.optString("reason"))
                 }
                 append("\\n\\nEvidence index is a heuristic, not a measured chance of winning. Odds can change.")
@@ -197,7 +209,11 @@ class SportsOddsActivity : Activity() {
                 "${event.optString("sport_title")} • ${event.optString("commence_time")}\nBookmakers: ${event.optInt("bookmaker_count")} • First seen: ${event.optString("first_seen")}\nTap for team/player profiles, recent form and current news") { researchMatch(event) }
         }
         val last = getSharedPreferences("ash_jarvis", MODE_PRIVATE).getString("odds_last_sync", "not yet")
-        status.text = "Last sync: $last • Stored history: ${history.length()} games"
+        val ratingSnapshot = HistoricalRatingsEngine.snapshotInfo(this)
+        val ratingCount = ratingSnapshot?.optInt("participant_records_cached") ?: 0
+        val ratingDate = ratingSnapshot?.optString("generated_at").orEmpty().take(10)
+        status.text = "Last sync: $last • Stored odds fixtures: ${history.length()} • Historical Elo: " +
+            if (ratingCount > 0) "$ratingCount participants ($ratingDate)" else "not synced yet"
         val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
         actions.addView(button("REFRESH NOW") { refreshNow() }, LinearLayout.LayoutParams(0, -2, 1f))
         actions.addView(button("VIEW SPORTS API LIST") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
