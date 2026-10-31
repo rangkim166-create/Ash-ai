@@ -10,6 +10,9 @@ Never commit these values or provider keys.
 
 Routes:
 - GET /health (public)
+- GET /v1/public/history/summary (public historical results coverage)
+- GET /v1/public/history/team?team=Al%20Ahly (last 20 completed matches)
+- GET /v1/public/history/h2h?team_a=Al%20Ahly&team_b=Zamalek (last 20 meetings)
 - GET /v1/providers/status (Bearer token)
 - POST /v1/providers/the_odds_api with {"apiKey":"..."}
 - POST /v1/providers/openrouter with {"apiKey":"..."}
@@ -23,3 +26,6 @@ Routes:
 All routes except health require Authorization: Bearer ASH_APP_TOKEN.
 Requires provider_credentials and telegram_delivery_log tables in ash_sports.
 Deployment and endpoint verification are separate from committing source.
+
+
+Historical results are imported from OpenFootball football.json and OpenFootball world (CC0). They are match results only, not historical bookmaker odds. The public history endpoints expose form and head-to-head rows for Ash's research layer.
