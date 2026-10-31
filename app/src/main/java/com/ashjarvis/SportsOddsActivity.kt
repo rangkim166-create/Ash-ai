@@ -103,7 +103,6 @@ class SportsOddsActivity : Activity() {
         val upcoming = (0 until history.length()).mapNotNull { history.optJSONObject(it) }
             .filter { it.optString("commence_time").isNotBlank() && it.optString("commence_time") >= java.time.Instant.now().toString() }
             .sortedBy { it.optString("commence_time") }
-        val candidates = upcoming.filter { it.optString("candidate").isNotBlank() && it.optInt("candidate_bookmakers") >= 2 }
         card("ODDS OF THE DAY", "Today's approved selections only. Ash ranks real upcoming fixtures using bookmaker prices, recent verified results, historical ratings and match research. If nothing passes, the sheet stays empty — no forced picks.") {}
         card("HOW ASH ANALYSES A MATCH",
             "• Recent verified results, weighted toward newer games\n• Long-run historical Elo ratings from archived football, basketball and tennis results (supporting evidence only)\n• Comparable bookmaker prices and best available price\n• Multi-bookmaker agreement and market-implied probability\n• Sport-specific online news: line-ups/injuries for football, rest/back-to-back and player availability for basketball, surface/form/fitness for tennis\n• Higher odds require deeper history and more bookmaker support\n\nThe evidence index is a ranking aid, not a win probability. Probability figures are bookmaker-derived until Ash has enough settled data to validate an independent model.") {}
@@ -223,17 +222,19 @@ class SportsOddsActivity : Activity() {
             }
             startActivity(android.content.Intent.createChooser(intent, "Share Ash daily tips"))
         })
-        if (candidates.isEmpty()) body.addView(text("No qualifying games saved yet. Tap REFRESH to collect current bookmaker odds.", 14f, muted).apply { setPadding(12, 14, 12, 14) })
-        candidates.take(20).forEach { event ->
-            card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nKick-off: ${event.optString("commence_time")}\nMarket candidate: ${event.optString("candidate")} @ ${event.optString("candidate_price")}\nMarket-implied chance: ${if (event.optDouble("candidate_market_probability", Double.NaN).isFinite()) "%.1f%%".format(java.util.Locale.US, event.optDouble("candidate_market_probability") * 100.0) else "not available"}\nRaw odds-implied chance: ${if (event.optDouble("candidate_raw_implied_probability", Double.NaN).isFinite()) "%.1f%%".format(java.util.Locale.US, event.optDouble("candidate_raw_implied_probability") * 100.0) else "not available"}\nBookmakers checked: ${event.optInt("candidate_bookmakers")}\nProbability is market-derived, not a guarantee or independently validated Ash forecast. Tap to research team profiles, recent results, available players, performance news and possible injury clues.") { researchMatch(event) }
-        }
-        card("ALL UPCOMING GAMES", "Saved games found through your API key: ${upcoming.size}") {}
-        upcoming.filter { candidates.none { c -> c.optString("id") == it.optString("id") } }.take(30).forEach { event ->
-            card("${event.optString("away_team")}  vs  ${event.optString("home_team")}",
-                "${event.optString("sport_title")} • ${event.optString("commence_time")}\nBookmakers: ${event.optInt("bookmaker_count")} • First seen: ${event.optString("first_seen")}\nTap for team/player profiles, recent form and current news") { researchMatch(event) }
-        }
         val last = getSharedPreferences("ash_jarvis", MODE_PRIVATE).getString("odds_last_sync", "not yet")
+        val ratingSnapshot = HistoricalRatingsEngine.snapshotInfo(this)
+        val ratingCount = ratingSnapshot?.optInt("participant_records_cached") ?: 0
+        val ratingDate = ratingSnapshot?.optString("generated_at").orEmpty().take(10)
+        status.text = "Last sync: $last • ${upcoming.size} upcoming • ${dailyPicks.length()} approved picks • Historical Elo: " +
+            if (ratingCount > 0) "$ratingCount participants ($ratingDate)" else "not synced yet"
+        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
+        actions.addView(button("REFRESH NOW") { refreshNow() }, LinearLayout.LayoutParams(0, -2, 1f))
+        actions.addView(button("VIEW SPORTS API LIST") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
+        body.addView(actions, 0)
+    }
+
+            val last = getSharedPreferences("ash_jarvis", MODE_PRIVATE).getString("odds_last_sync", "not yet")
         val ratingSnapshot = HistoricalRatingsEngine.snapshotInfo(this)
         val ratingCount = ratingSnapshot?.optInt("participant_records_cached") ?: 0
         val ratingDate = ratingSnapshot?.optString("generated_at").orEmpty().take(10)
@@ -254,8 +255,7 @@ class SportsOddsActivity : Activity() {
             .filter { event ->
                 val kickoff = event.optString("commence_time")
                 val future = kickoff.isNotBlank() && runCatching { java.time.Instant.parse(kickoff).isAfter(now) }.getOrDefault(false)
-                future && event.optString("candidate").isNotBlank() &&
-                    event.optInt("candidate_bookmakers") >= 2 && event.optString("id") !in approvedIds
+                future && event.optString("id") !in approvedIds
             }
             .sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
                 .thenBy { it.optString("commence_time") })
@@ -267,12 +267,19 @@ class SportsOddsActivity : Activity() {
             status.text = "Parked watchlist • 0 fixtures"
             return
         }
-        parked.take(60).forEach { event ->
+        parked.take(100).forEach { event ->
             val books = event.optInt("candidate_bookmakers")
-            val reason = if (books < 3) "Too few bookmakers for the main shortlist" else
-                "Did not pass the full recent-form / research threshold"
+            val candidate = event.optString("candidate")
+            val marketText = if (candidate.isNotBlank()) {
+                "Market candidate: $candidate @ ${"%.2f".format(java.util.Locale.US, event.optDouble("candidate_price", 0.0))}"
+            } else "Market candidate: not available"
+            val reason = when {
+                candidate.isBlank() -> "No qualifying bookmaker market is available"
+                books < 3 -> "Too few bookmaker quotes for the main shortlist"
+                else -> "Did not pass the full recent-form / research threshold"
+            }
             card("${event.optString("away_team")} vs ${event.optString("home_team")}",
-                "${event.optString("sport_title")}\nMarket candidate: ${event.optString("candidate")} @ ${"%.2f".format(java.util.Locale.US, event.optDouble("candidate_price", 0.0))}\nBookmakers: $books\nKick-off: ${event.optString("commence_time")}\nPARKED — $reason. Not a pick.") {
+                "${event.optString("sport_title")}\n$marketText\nBookmakers: $books\nKick-off: ${event.optString("commence_time")}\nPARKED — $reason. Not a pick.") {
                 researchMatch(event)
             }
         }
