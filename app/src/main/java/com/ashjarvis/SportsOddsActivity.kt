@@ -404,72 +404,14 @@ class SportsOddsActivity : Activity() {
     }
 
     private fun checkFinishedResults() {
-        val all = TipResultsTracker.all(this)
-        val now = java.time.Instant.now()
-        val due = (0 until all.length()).mapNotNull { all.optJSONObject(it) }
-            .filter { tip ->
-                tip.optString("status") == "pending" &&
-                    runCatching { java.time.Instant.parse(tip.optString("commence_time")).isBefore(now) }.getOrDefault(false)
-            }
-        if (due.isEmpty()) {
-            Toast.makeText(this, "No pending tips have reached kick-off yet", Toast.LENGTH_LONG).show()
-            return
-        }
-        status.text = "Checking completed fixtures against saved result sources…"
+        status.text = "Checking completed match results…"
         scope.launch {
             val settled = withContext(Dispatchers.IO) {
-                var count = 0
-                fun norm(value: String) = value.lowercase().replace(Regex("[^a-z0-9]"), "")
-                fun findRow(rows: JSONArray, home: String, away: String): JSONObject? {
-                    for (i in 0 until rows.length()) {
-                        val row = rows.optJSONObject(i) ?: continue
-                        val rowHome = row.optString("home_team")
-                        val rowAway = row.optString("away_team")
-                        if (norm(rowHome) == norm(home) && norm(rowAway) == norm(away)) return row
-                    }
-                    return null
-                }
-                for (tip in due) {
-                    val home = tip.optString("home_team")
-                    val away = tip.optString("away_team")
-                    val sport = tip.optString("sport_title")
-                    val refreshed = runCatching {
-                        HistoricalDataEngine.collectMatchHistory(this@SportsOddsActivity, home, away, sport, forceRefresh = true)
-                    }.isSuccess
-                    if (!refreshed) continue
-                    val homeRows = HistoricalDataEngine.teamHistory(this@SportsOddsActivity, home, sport, 100)
-                    val awayRows = HistoricalDataEngine.teamHistory(this@SportsOddsActivity, away, sport, 100)
-                    val homeRow = findRow(homeRows, home, away) ?: continue
-                    val awayRow = findRow(awayRows, home, away)
-                    val statusText = homeRow.optString("status").lowercase()
-                    val completed = listOf("finished", "complete", "final", "full time", "ft", "ended")
-                        .any { statusText.contains(it) }
-                    if (!completed) continue
-                    val hs = homeRow.optString("home_score").toDoubleOrNull() ?: continue
-                    val ascore = homeRow.optString("away_score").toDoubleOrNull() ?: continue
-                    if (awayRow != null) {
-                        val otherHome = awayRow.optString("home_score").toDoubleOrNull()
-                        val otherAway = awayRow.optString("away_score").toDoubleOrNull()
-                        if (otherHome != null && otherAway != null && (otherHome != hs || otherAway != ascore)) continue
-                    }
-                    val selection = tip.optString("selection")
-                    val market = tip.optString("market_type")
-                    val result = if (market == "odd_even") {
-                        val goals = (hs + ascore).toInt()
-                        val actual = if (goals % 2 == 0) "even" else "odd"
-                        if (selection.lowercase().contains(actual)) "won" else "lost"
-                    } else when {
-                        selection.equals(home, true) -> if (hs > ascore) "won" else "lost"
-                        selection.equals(away, true) -> if (ascore > hs) "won" else "lost"
-                        selection.equals("draw", true) || selection.equals("tie", true) ->
-                            if (hs == ascore) "won" else "lost"
-                        else -> continue
-                    }
-                    if (TipResultsTracker.settle(this@SportsOddsActivity, tip.optString("tip_id"), result, hs.toInt(), ascore.toInt())) count++
-                }
-                count
+                TipResultsTracker.settleFinishedFromHistory(this@SportsOddsActivity)
             }
-            Toast.makeText(this@SportsOddsActivity, "Verified and settled $settled tips. Anything without a confirmed final score stays pending.", Toast.LENGTH_LONG).show()
+            Toast.makeText(this@SportsOddsActivity,
+                "Verified and settled $settled tips. Unconfirmed matches remain pending.",
+                Toast.LENGTH_LONG).show()
             render()
         }
     }
