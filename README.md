@@ -32,7 +32,7 @@ The daily ticket is read from the Render API at:
 
 `https://ash-sports-api.onrender.com/v1/public/odds/daily`
 
-The backend stores the Kampala-day ticket in its database and only publishes selections that pass its current odds/form checks. It must return no pick rather than force a bet when evidence is insufficient. This is a research filter, not a guarantee of profit.
+The backend stores the Kampala-day ticket in its database. It uses recent verified results when at least five are available for both sides; otherwise it can use the imported cross-sport Elo baseline from `data/history/ratings.json`. That archive covers about 1.8 million historical football, tennis, and basketball matches (best-effort, not exhaustive). Elo-only picks require deeper bookmaker agreement and are labelled separately; the baseline does not adjust for current lineups, injuries, court surface, venue, or roster changes. Ash must return no pick rather than force a bet when evidence is insufficient. This is a research filter, not a guarantee of profit.
 
 Historical match results and bookmaker odds are different datasets. Local odds history records snapshots observed by this app; it does not create a paid historical-odds archive.
 
