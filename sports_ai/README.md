@@ -16,7 +16,7 @@ The GitHub Actions workflow runs daily, on changes to the sports module, or manu
 
 - Football: OpenFootball JSON, public domain; selected leagues and seasons from 2000/01 onward. Coverage differs by league/season.
 - Tennis: ATP/WTA match results mirrored in `Aneeshers/tennis-sackmann-archive`, decades of historical results where available. The data retains Jeff Sackmann's CC BY-NC-SA 4.0 terms: attribution, share-alike, non-commercial use. Do not use it commercially without permission.
-- Basketball: NBA team game logs in `shufinskiy/nba_data`, regular season and playoffs from 1996 onward where archives exist. This is not every global basketball league.
+- Basketball: NBA team-game logs from the `llimllib/nba_data` stats.nba.com mirror, 2009/10 onward. This is NBA only, not every global basketball league; the mirror does not publish an explicit dataset reuse license, so it is not commercially cleared.
 
 No free source contains literally every match ever played, and match results are not historical bookmaker odds. Historical odds, line movement, injuries, lineups and current fixtures require separate sources.
 
@@ -55,7 +55,7 @@ The daily GitHub Actions job now attempts these additional imports:
 - A global ODC-BY football results dataset containing 1.2M+ match records across 207 domestic leagues and 20 international competitions, reported upstream from 1888–2023. Attribution is retained; old records may contain errors and team identities may vary.
 - OpenFootball's world archive for regional football text files. The parser imports only clearly dated, completed score lines it can recognize; parser unit tests run in CI and the audit report lists target leagues that were not detected.
 - Saudi Pro League CSV archive where available. Its upstream reuse licence is unclear, so treat it as research-only until permission is confirmed. Separately, OpenFootball world includes a CC0 Saudi 2024/25 text file.
-- NBA team-game archives from 1996/97 onward where available. Preserve Shufinskiy attribution and the Apache-2.0 licensing notice reported by the public archive mirror.
+- NBA team-game logs from the llimllib stats.nba.com mirror, 2009/10 onward. The repository does not publish an explicit dataset reuse license; use only for personal/research work until terms are clarified.
 - A coverage audit in `data/history/coverage-report.json` records imported match counts, competitions/seasons and Arab league targets not found.
 
 The workflow builds the SQLite database, imports additional sources, rebuilds `ratings.json`, packages the raw archive/database/report as the `ash-sports-history` Actions artifact, and commits small manifests/ratings to the repository. The artifact has a 90-day retention limit; each successful run removes older copies so the latest archive is easy to find. The full database is reproducible from source URLs but is not permanently stored in Git history.
