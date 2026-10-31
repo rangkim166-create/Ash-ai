@@ -2,7 +2,7 @@ name: Build Ash Jarvis APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, ash-neon-backend]
     paths:
       - "app/**"
       - "*.gradle.kts"
