@@ -234,19 +234,7 @@ class SportsOddsActivity : Activity() {
         body.addView(actions, 0)
     }
 
-            val last = getSharedPreferences("ash_jarvis", MODE_PRIVATE).getString("odds_last_sync", "not yet")
-        val ratingSnapshot = HistoricalRatingsEngine.snapshotInfo(this)
-        val ratingCount = ratingSnapshot?.optInt("participant_records_cached") ?: 0
-        val ratingDate = ratingSnapshot?.optString("generated_at").orEmpty().take(10)
-        status.text = "Last sync: $last • Stored odds fixtures: ${history.length()} • Historical Elo: " +
-            if (ratingCount > 0) "$ratingCount participants ($ratingDate)" else "not synced yet"
-        val actions = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER }
-        actions.addView(button("REFRESH NOW") { refreshNow() }, LinearLayout.LayoutParams(0, -2, 1f))
-        actions.addView(button("VIEW SPORTS API LIST") { showLeagues() }, LinearLayout.LayoutParams(0, -2, 1f))
-        body.addView(actions, 0)
-    }
-
-    private fun showParked() {
+            private fun showParked() {
         val history = OddsEngine.history(this)
         val dailyPicks = OddsEngine.savedDailyPicks(this)
         val approvedIds = (0 until dailyPicks.length()).mapNotNull { dailyPicks.optJSONObject(it)?.optString("id") }.toSet()
