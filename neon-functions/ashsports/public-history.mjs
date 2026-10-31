@@ -54,7 +54,7 @@ export async function importPublicFootballHistory() {
           return [{
             id: matchId, competition, home: String(m.team1).slice(0, 180),
             away: String(m.team2).slice(0, 180), starts: date + "T" + kickoff + ":00Z",
-            homeScore: Number(ft[0]), awayScore: Number(ft[1])
+            home_score: Number(ft[0]), away_score: Number(ft[1])
           }];
         });
         return { path, competition, matches };
