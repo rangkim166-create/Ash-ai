@@ -239,12 +239,22 @@ object HistoricalDataEngine {
     fun teamHistory(context: Context, teamName: String, sportTitle: String, limit: Int = 100): JSONArray {
         val sport = sportKey(sportTitle)
         val all = LocalSportsDatabase.get(context).list("team_result", 10000)
-        val out = JSONArray()
-        for (i in 0 until all.length()) {
-            val row = all.optJSONObject(i) ?: continue
-            if (row.optString("sport") == sport &&
-                normalize(row.optString("tracked_team")) == normalize(teamName)) out.put(row)
+        fun dateValue(value: String): Long {
+            return runCatching { Instant.parse(value).toEpochMilli() }.getOrElse {
+                runCatching { java.time.LocalDate.parse(value.take(10)).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli() }
+                    .getOrDefault(0L)
+            }
         }
+        val rows = (0 until all.length()).mapNotNull { all.optJSONObject(it) }
+            .filter {
+                it.optString("sport") == sport &&
+                    normalize(it.optString("tracked_team")) == normalize(teamName) &&
+                    it.optString("outcome") in setOf("W", "L", "D")
+            }
+            .sortedByDescending { dateValue(it.optString("date")) }
+            .take(limit.coerceIn(1, 1000))
+        val out = JSONArray()
+        rows.forEach(out::put)
         return out
     }
 }
