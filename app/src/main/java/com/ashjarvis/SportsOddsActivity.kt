@@ -387,7 +387,9 @@ class SportsOddsActivity : Activity() {
             body.addView(text("No tips archived yet. Generate the daily shortlist first.", 14f, muted).apply { setPadding(12, 12, 12, 12) })
         }
         rows.take(150).forEach { tip ->
-            val details = "${tip.optString("sport_title")} • ${tip.optString("market_type")}\nPick: ${tip.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, tip.optDouble("price", 0.0))}\nPublished: ${tip.optString("published_at")}\nStatus: ${tip.optString("status")}"
+            val scoreText = if (tip.has("home_score") && tip.has("away_score")) "\nFinal score: ${tip.optInt("home_score")}–${tip.optInt("away_score")}" else ""
+            val profitText = if (tip.has("profit_units")) "\nProfit: ${"%.2f".format(java.util.Locale.US, tip.optDouble("profit_units"))} units" else ""
+            val details = "${tip.optString("sport_title")} • ${tip.optString("market_type")}\nPick: ${tip.optString("selection")} @ ${"%.2f".format(java.util.Locale.US, tip.optDouble("price", 0.0))}\nPublished: ${tip.optString("published_at")}\nStatus: ${tip.optString("status")}$scoreText$profitText"
             card("${tip.optString("away_team")} vs ${tip.optString("home_team")}", details) {
                 if (tip.optString("status") == "pending") {
                     val options = arrayOf("WON", "LOST", "VOID")
