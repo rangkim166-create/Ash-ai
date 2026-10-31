@@ -548,7 +548,7 @@ object OddsEngine {
                 .put("confidence", if (strong) "Stronger evidence — still uncertain" else "Moderate evidence — still uncertain")
                 .put("reason", reason)
         }.sortedWith(compareByDescending<JSONObject> { it.optInt("evidence_index") }
-            .thenByDescending { it.optInt("bookmakers") }).take(3)
+            .thenByDescending { it.optInt("bookmakers") }).take(6)
 
         val result = JSONArray()
         ranked.forEach { result.put(it) }
