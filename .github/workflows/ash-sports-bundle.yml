@@ -1,10 +1,15 @@
 name: Build Ash Sports Function Bundle
 
 on:
+  push:
+    branches: [ash-neon-backend]
+    paths:
+      - "neon-functions/ashsports/**"
+      - ".github/workflows/ash-sports-bundle.yml"
   pull_request:
     paths:
-      - 'neon-functions/ashsports/**'
-      - '.github/workflows/ash-sports-api.yml'
+      - "neon-functions/ashsports/**"
+      - ".github/workflows/ash-sports-bundle.yml"
 
 permissions:
   contents: read
@@ -22,10 +27,12 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           node --check index.mjs
-          npx esbuild index.mjs --bundle --platform=node --target=node24 --format=esm --outfile=dist/index.mjs
+          npx esbuild index.mjs --bundle --platform=node --target=node24 --format=esm --minify --legal-comments=none --outfile=dist/index.mjs
           node --check dist/index.mjs
+          cd dist
+          zip -9 -j function.zip index.mjs
       - uses: actions/upload-artifact@v4
         with:
-          name: ash-sports-neon-function-bundle
-          path: neon-functions/ashsports/dist/index.mjs
+          name: ash-sports-neon-function-minified
+          path: neon-functions/ashsports/dist/function.zip
           retention-days: 7
