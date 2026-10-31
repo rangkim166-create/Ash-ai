@@ -84,6 +84,7 @@ object HistoricalRatingsEngine {
             require(root.optInt("schema_version") >= 2) { "Historical ratings file is an unsupported schema version." }
             val ratings = root.optJSONObject("ratings") ?: throw IllegalStateException("Ratings section missing.")
             val appearances = root.optJSONObject("appearances") ?: throw IllegalStateException("Sample counts missing.")
+            val recentFormRoot = root.optJSONObject("recent_form") ?: JSONObject()
             val matchCounts = root.optJSONObject("match_counts") ?: JSONObject()
             val participantCounts = root.optJSONObject("participant_counts") ?: JSONObject()
             val snapshotTime = root.optString("generated_at_utc").ifBlank { Instant.now().toString() }
@@ -98,11 +99,13 @@ object HistoricalRatingsEngine {
                     val value = sportRatings.optDouble(name, Double.NaN)
                     val played = sportAppearances.optInt(name, 0)
                     if (name.isBlank() || !value.isFinite() || played <= 0) continue
+                    val recentRows = recentFormRoot.optJSONObject(sport)?.optJSONArray(name) ?: org.json.JSONArray()
                     val record = JSONObject()
                         .put("sport", sport)
                         .put("team", name)
                         .put("elo", value)
                         .put("matches", played)
+                        .put("recent_form", recentRows)
                         .put("generated_at", snapshotTime)
                         .put("source", "Ash historical results Elo snapshot")
                     batch.add("$sport:${normalize(name)}" to record)
@@ -141,6 +144,14 @@ object HistoricalRatingsEngine {
         val matches = row.optInt("matches", 0)
         if (!elo.isFinite() || matches <= 0) return null
         return TeamRating(elo, matches, row.optString("generated_at"))
+    }
+
+    /** Recent verified match results from the same published archive, newest first. */
+    fun recentForm(context: Context, sport: String, participant: String): org.json.JSONArray {
+        if (participant.isBlank()) return org.json.JSONArray()
+        val key = "${sportKey(sport)}:${normalize(participant)}"
+        return LocalSportsDatabase.get(context).get(RECORD_TYPE, key)
+            ?.optJSONArray("recent_form") ?: org.json.JSONArray()
     }
 
     fun snapshotInfo(context: Context): JSONObject? =
