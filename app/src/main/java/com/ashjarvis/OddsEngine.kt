@@ -359,7 +359,7 @@ object OddsEngine {
         val candidatePool = upcoming.filter {
             it.optString("candidate").isNotBlank() &&
                 it.optInt("candidate_bookmakers") >= 3 &&
-                it.optDouble("candidate_price", 0.0) in 1.50..10.00
+                it.optDouble("candidate_price", 0.0) in 1.50..100.00
         }.sortedWith(compareByDescending<JSONObject> { it.optInt("candidate_bookmakers") }
             .thenBy { it.optDouble("candidate_price", 99.0) })
         val candidates = mutableListOf<JSONObject>()
@@ -370,7 +370,7 @@ object OddsEngine {
         addFirst { it.optString("sport_key").startsWith("soccer_") || it.optString("sport_title").contains("football", true) }
         addFirst { it.optString("sport_key").startsWith("basketball_") || it.optString("sport_title").contains("basket", true) }
         addFirst { it.optString("sport_key").startsWith("tennis_") || it.optString("sport_title").contains("tennis", true) }
-        listOf(1.50..2.00, 2.01..3.00, 3.01..5.00, 5.01..10.00).forEach { band ->
+        listOf(1.50..2.00, 2.01..3.00, 3.01..5.00, 5.01..10.00, 10.01..20.00, 20.01..50.00, 50.01..100.00).forEach { band ->
             candidatePool.filter { it.optDouble("candidate_price", 0.0) in band }
                 .forEach { candidate ->
                     if (candidates.size < 6 && candidates.none { it.optString("id") == candidate.optString("id") }) {
@@ -398,7 +398,7 @@ object OddsEngine {
                             event.optString("sport_title")
                         )
                     }
-                    val report = researchMatch(event.optString("home_team"), event.optString("away_team"), event.optString("sport_title"), includePlayerNews = false)
+                    val report = researchMatch(event.optString("home_team"), event.optString("away_team"), event.optString("sport_title"), includePlayerNews = true)
                     fun combineRecent(label: String, teamName: String): JSONArray {
                         val combined = JSONArray()
                         val existing = report.optJSONArray("${label}_recent") ?: JSONArray()
@@ -505,12 +505,30 @@ object OddsEngine {
 
             // Sport-neutral win-rate comparison; high-odds selections need more evidence.
             val highRisk = price >= 5.0
-            val requiredGames = if (highRisk) 8 else 5
-            val requiredBooks = if (highRisk) 5 else 3
+            val veryHighRisk = price >= 10.0
+            val extremeRisk = price >= 20.0
+            val requiredGames = when {
+                extremeRisk -> 15
+                veryHighRisk -> 12
+                highRisk -> 8
+                else -> 5
+            }
+            val requiredBooks = when {
+                extremeRisk -> 8
+                veryHighRisk -> 6
+                highRisk -> 5
+                else -> 3
+            }
+            val strongEdge = when {
+                extremeRisk -> 0.35
+                veryHighRisk -> 0.28
+                highRisk -> 0.20
+                else -> 0.12
+            }
             val strong = selectedIsKnownSide && books >= maxOf(4, requiredBooks) &&
                 homePlayed >= requiredGames && awayPlayed >= requiredGames &&
-                edge >= (if (highRisk) 0.20 else 0.12) && flags == 0
-            val moderate = selectedIsKnownSide && books >= requiredBooks &&
+                edge >= strongEdge && flags == 0
+            val moderate = !veryHighRisk && selectedIsKnownSide && books >= requiredBooks &&
                 homePlayed >= requiredGames && awayPlayed >= requiredGames &&
                 edge >= (if (highRisk) 0.12 else 0.06) && flags <= 1
             if (!strong && !moderate) return@mapNotNull null
@@ -518,6 +536,9 @@ object OddsEngine {
             val formDepth = minOf(homePlayed, 10) + minOf(awayPlayed, 10)
             val edgePoints = (edge * 35.0).toInt().coerceIn(0, 25)
             val oddsRiskPenalty = when {
+                price >= 50.0 -> 40
+                price >= 20.0 -> 32
+                price >= 10.0 -> 24
                 price >= 8.0 -> 18
                 price >= 5.0 -> 12
                 price >= 3.0 -> 6
