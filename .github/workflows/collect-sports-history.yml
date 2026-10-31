@@ -94,7 +94,19 @@ jobs:
           if [ -f data/history/raw/basketball_parquet/manifest.json ]; then git add data/history/raw/basketball_parquet/manifest.json; fi
           if ! git diff --cached --quiet; then
             git commit -m "Update sports history source manifest"
-            git push
+            # The branch can receive code commits while the long history job is running.
+            # Rebase the generated manifests on the latest branch before publishing.
+            for attempt in 1 2 3; do
+              git fetch origin "$GITHUB_REF_NAME"
+              git rebase "origin/$GITHUB_REF_NAME"
+              if git push origin "HEAD:$GITHUB_REF_NAME"; then
+                exit 0
+              fi
+              echo "Push raced with another branch update; retrying after fetch/rebase ($attempt/3)."
+              sleep 3
+            done
+            echo "Could not publish history manifests after three safe retries."
+            exit 1
           else
             echo "Manifest unchanged."
           fi
