@@ -30,6 +30,11 @@ server.listen(port, "0.0.0.0", () => {
     try {
       const result = await handler.runScheduledCollection();
       console.log("[ash-scout] scheduled collection", JSON.stringify(result));
+      // Publish as soon as fresh odds have been collected instead of waiting
+      // for the next hourly timer after the first startup attempt.
+      if (result && (result.status === "success" || result.status === "partial")) {
+        await runDailyPublish();
+      }
     } catch (error) {
       console.error("[ash-scout] scheduled collection failed", error);
     } finally {
