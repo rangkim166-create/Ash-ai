@@ -92,13 +92,13 @@ export async function importPublicFootballHistory() {
       imported_at timestamptz NOT NULL DEFAULT now()
     )
   `;
-  const doneRows = await sql`SELECT source_path FROM public_history_imports WHERE imported_matches > 0`;
+  const doneRows = await sql`SELECT source_path FROM public_history_imports WHERE imported_matches > 0 OR imported_at > now() - interval '7 days'`;
   const done = new Set(doneRows.map(r => r.source_path));
   const jobs = seasonNames().flatMap(season =>
     LEAGUES.map(([code]) => `${season}/${code}.json`)
   ).filter(path => !done.has(path));
 
-  let filesImported = 0, matchesImported = 0, filesMissing = 0, errors = [];
+  let filesImported = 0, matchesImported = 0, filesMissing = 0, errors = [], missingPaths = [];
   for (let i = 0; i < jobs.length; i += 4) {
     const batch = jobs.slice(i, i + 4);
     const results = await Promise.all(batch.map(async path => {
@@ -129,7 +129,14 @@ export async function importPublicFootballHistory() {
       }
     }));
     for (const result of results) {
-      if (result.missing) { filesMissing++; continue; }
+      if (result.missing) {
+        filesMissing++;
+        missingPaths.push(result.path);
+        await sql`INSERT INTO public_history_imports(source_path, imported_matches)
+          VALUES (${result.path}, 0)
+          ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, imported_at = now()`;
+        continue;
+      }
       if (result.error) { errors.push({ path: result.path, error: result.error }); continue; }
       const rows = result.matches || [];
       if (rows.length) {
@@ -181,7 +188,14 @@ export async function importPublicFootballHistory() {
       }
     }));
     for (const result of results) {
-      if (result.missing) { filesMissing++; continue; }
+      if (result.missing) {
+        filesMissing++;
+        missingPaths.push('world/' + result.path);
+        await sql`INSERT INTO public_history_imports(source_path, imported_matches)
+          VALUES (${'world/' + result.path}, 0)
+          ON CONFLICT (source_path) DO UPDATE SET imported_matches = 0, imported_at = now()`;
+        continue;
+      }
       if (result.error) { errors.push({ path: result.path, error: result.error }); continue; }
       const rows = result.matches || [];
       if (rows.length) {
@@ -225,5 +239,6 @@ export async function importPublicFootballHistory() {
   await sql.end({ timeout: 5 });
   return { source: "openfootball CC0 + OpenFootball world CC0", filesAttempted: jobs.length + worldJobs.length,
     filesImported, matchesImported, worldFilesImported, worldMatchesImported,
-    filesMissing, errors: errors.slice(0, 20), complete: errors.length === 0 };
+    filesMissing, missingPaths: missingPaths.slice(0, 30), errors: errors.slice(0, 20),
+    complete: errors.length === 0 && filesMissing === 0, partial: errors.length > 0 || filesMissing > 0 };
 }
