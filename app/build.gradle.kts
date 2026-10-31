@@ -15,6 +15,16 @@ android {
         versionName = "0.1.0"
     }
 
+    // Ship only the ARM64 APK used by the Galaxy A70, instead of a huge universal APK.
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a")
+            isUniversalApk = false
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
