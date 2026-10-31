@@ -862,7 +862,7 @@ class MainActivity : Activity() {
         if (fileName.isNullOrBlank() || downloadId < 0L) {
             AlertDialog.Builder(this)
                 .setTitle("No model download recorded")
-                .setMessage("Choose DOWNLOAD MODEL first. Ash will save the model under Downloads/AshJarvis.")
+                .setMessage("Choose USE SELECTED MODEL first. Ash will save the model in its private app storage.")
                 .setPositiveButton("OK", null)
                 .show()
             return
@@ -1027,11 +1027,11 @@ class MainActivity : Activity() {
             val manager = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
             val request = DownloadManager.Request(Uri.parse(model.url))
                 .setTitle("Ash Jarvis • " + model.name)
-                .setDescription("Downloading " + model.sizeLabel + " model to Downloads/AshJarvis")
+                .setDescription("Downloading " + model.sizeLabel + " model to Ash private app storage")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setAllowedOverMetered(false)
                 .setAllowedOverRoaming(false)
-                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + model.fileName)
+                .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "AshJarvis/" + model.fileName)
             val id = manager.enqueue(request)
             prefs.edit().putLong("offline_model_download_id", id).putString("offline_model_file", model.fileName).apply()
             showModelDownloadProgress(id, model.name)
@@ -1523,14 +1523,19 @@ class MainActivity : Activity() {
             ?: throw IllegalStateException("No offline model selected. Open OFFLINE AI and download one.")
         val internal = java.io.File(filesDir, fileName)
         if (internal.exists() && internal.length() > 1024 * 1024) return internal
-        val publicFile = java.io.File(
+        val appDownloadDir = java.io.File(getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), "AshJarvis")
+        val appDownload = java.io.File(appDownloadDir, fileName)
+        // Compatibility fallback for models downloaded by older builds to the public Downloads folder.
+        val legacyPublicFile = java.io.File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "AshJarvis/" + fileName
         )
-        if (!publicFile.exists() || publicFile.length() <= 1024 * 1024) {
-            throw IllegalStateException("Model download isn't complete yet. Check Wi-Fi and download status.")
+        val source = when {
+            appDownload.isFile && appDownload.length() > 1024 * 1024 -> appDownload
+            legacyPublicFile.isFile && legacyPublicFile.length() > 1024 * 1024 -> legacyPublicFile
+            else -> throw IllegalStateException("Model download isn't complete yet. Check Wi-Fi and download status.")
         }
-        publicFile.inputStream().use { input ->
+        source.inputStream().use { input ->
             internal.outputStream().use { output -> input.copyTo(output) }
         }
         return internal
@@ -1545,6 +1550,8 @@ class MainActivity : Activity() {
             updateStatus()
             return
         }
+        // A newly selected model must not inherit the previous model's ready flag.
+        prefs.edit().putBoolean("offline_ai_enabled", false).apply()
         footer.text = "Preparing local model • first load can take a minute"
         aiScope.launch {
             try {

@@ -36,11 +36,27 @@ server.listen(port, "0.0.0.0", () => {
       scoutRunning = false;
     }
   };
+  let dailyPublishRunning = false;
+  const runDailyPublish = async () => {
+    if (dailyPublishRunning) return console.log("[ash-daily] skipped: previous publish attempt still running");
+    dailyPublishRunning = true;
+    try {
+      const result = await handler.runScheduledDailyPublisher();
+      console.log("[ash-daily] Odds of the Day", JSON.stringify(result));
+    } catch (error) {
+      console.error("[ash-daily] publish attempt failed", error);
+    } finally {
+      dailyPublishRunning = false;
+    }
+  };
   setTimeout(() => void runScout(), 20000).unref();
   setTimeout(() => {
     importPublicFootballHistory()
       .then(result => console.log("[ash-history] import finished", JSON.stringify(result)))
       .catch(error => console.error("[ash-history] import failed", error));
   }, 45000).unref();
+  setTimeout(() => void runDailyPublish(), 60000).unref();
   setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
+  // Retry hourly until today's sheet is delivered; the database publication row prevents duplicates.
+  setInterval(() => void runDailyPublish(), 60 * 60 * 1000).unref();
 });
