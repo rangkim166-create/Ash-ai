@@ -814,11 +814,25 @@ class MainActivity : Activity() {
             .setView(panel)
             .setNegativeButton("CANCEL", null)
             .setNeutralButton("CHECK DOWNLOADED", null)
-            .setPositiveButton(if (prefs.getBoolean("offline_ai_enabled", false)) "USE OFFLINE AI" else "DOWNLOAD MODEL") { _, _ ->
+            .setPositiveButton("DOWNLOAD / USE SELECTED MODEL") { _, _ ->
                 val ram = selectedRam()
                 val chosen = compatibleModels().getOrNull(modelSpinner.selectedItemPosition) ?: offlineModels.first()
-                prefs.edit().putInt("offline_ram_gb", ram).putString("offline_model_name", chosen.name).putString("offline_model_file", chosen.fileName).apply()
-                if (prefs.getBoolean("offline_model_downloaded", false)) {
+                val previousModel = prefs.getString("offline_model_file", null)
+                if (previousModel != chosen.fileName) {
+                    try { offlineEdge?.close() } catch (_: Exception) {}
+                    offlineEdge = null
+                }
+                val localModel = java.io.File(filesDir, chosen.fileName)
+                val ready = localModel.isFile && localModel.length() > 1024 * 1024
+                prefs.edit()
+                    .putInt("offline_ram_gb", ram)
+                    .putString("offline_model_name", chosen.name)
+                    .putString("offline_model_file", chosen.fileName)
+                    .putBoolean("offline_model_downloaded", ready)
+                    .putString("offline_model_downloaded_file", if (ready) chosen.fileName else null)
+                    .putBoolean("offline_ai_enabled", false)
+                    .apply()
+                if (ready) {
                     setOfflineAiEnabled(true)
                 } else {
                     startOfflineModelDownload(chosen)
@@ -1514,6 +1528,20 @@ class MainActivity : Activity() {
     }
 
     private fun setOfflineAiEnabled(enabled: Boolean) {
+        if (enabled) {
+            try {
+                val model = getOfflineModelFile()
+                if (!model.isFile || model.length() <= 1024 * 1024) {
+                    throw IllegalStateException("The selected GGUF file is missing or incomplete.")
+                }
+            } catch (e: Exception) {
+                prefs.edit().putBoolean("offline_ai_enabled", false).apply()
+                footer.text = "Offline model not ready"
+                Toast.makeText(this, e.message ?: "Download or import a GGUF model first.", Toast.LENGTH_LONG).show()
+                updateStatus()
+                return
+            }
+        }
         prefs.edit().putBoolean("offline_ai_enabled", enabled).apply()
         Toast.makeText(this, if (enabled) "Offline AI selected. Replies will run on-device." else "Online AI selected.", Toast.LENGTH_LONG).show()
         updateStatus()
