@@ -228,11 +228,39 @@ object OddsEngine {
             val fresh = try { checkedAt.isNotBlank() && Instant.parse(checkedAt).isAfter(now.minusSeconds(24L * 3600L)) } catch (_: Exception) { false }
             if (!fresh) {
                 try {
+                    // Historical collection is independent of The Odds API quota.
+                    runCatching {
+                        HistoricalDataEngine.collectMatchHistory(
+                            context,
+                            event.optString("home_team"),
+                            event.optString("away_team"),
+                            event.optString("sport_title")
+                        )
+                    }
                     val report = researchMatch(event.optString("home_team"), event.optString("away_team"), event.optString("sport_title"), includePlayerNews = false)
+                    fun combineRecent(label: String, teamName: String): JSONArray {
+                        val combined = JSONArray()
+                        val existing = report.optJSONArray("${label}_recent") ?: JSONArray()
+                        val seen = linkedSetOf<String>()
+                        for (index in 0 until existing.length()) {
+                            val row = existing.optJSONObject(index) ?: continue
+                            val identity = "${row.optString("date")}|${row.optString("event")}"
+                            if (seen.add(identity)) combined.put(row)
+                        }
+                        val archived = HistoricalDataEngine.teamHistory(context, teamName, event.optString("sport_title"), 100)
+                        for (index in 0 until archived.length()) {
+                            val row = archived.optJSONObject(index) ?: continue
+                            val identity = "${row.optString("date")}|${row.optString("event")}"
+                            if (seen.add(identity)) combined.put(row)
+                        }
+                        return combined
+                    }
+                    val homeRecent = combineRecent("home", event.optString("home_team"))
+                    val awayRecent = combineRecent("away", event.optString("away_team"))
                     event.put("research_checked_at", now.toString())
-                        .put("research_has_results", report.optBoolean("has_results_history"))
-                        .put("research_home_recent", report.optJSONArray("home_recent") ?: JSONArray())
-                        .put("research_away_recent", report.optJSONArray("away_recent") ?: JSONArray())
+                        .put("research_has_results", homeRecent.length() > 0 && awayRecent.length() > 0)
+                        .put("research_home_recent", homeRecent)
+                        .put("research_away_recent", awayRecent)
                         .put("research_home_profile", report.optJSONObject("home_profile") ?: JSONObject())
                         .put("research_away_profile", report.optJSONObject("away_profile") ?: JSONObject())
                         .put("research_home_players", report.optJSONArray("home_players") ?: JSONArray())
