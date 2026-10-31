@@ -1513,17 +1513,31 @@ class MainActivity : Activity() {
         val fileName = prefs.getString("offline_model_file", null)
             ?: throw IllegalStateException("No offline model selected. Open OFFLINE AI and download one.")
         val internal = java.io.File(filesDir, fileName)
-        if (internal.exists() && internal.length() > 1024 * 1024) return internal
-        val publicFile = java.io.File(
+        if (internal.isFile && internal.length() > 1024 * 1024) return internal
+
+        // DownloadManager writes to app-specific external storage. Check that exact
+        // location before falling back to the older public Downloads location.
+        val appDownload = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            ?.let { java.io.File(it, "AshJarvis/" + fileName) }
+        val publicDownload = java.io.File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "AshJarvis/" + fileName
         )
-        if (!publicFile.exists() || publicFile.length() <= 1024 * 1024) {
-            throw IllegalStateException("Model download isn't complete yet. Check Wi-Fi and download status.")
-        }
-        publicFile.inputStream().use { input ->
+        val source = listOfNotNull(appDownload, publicDownload)
+            .firstOrNull { it.isFile && it.length() > 1024 * 1024 }
+            ?: throw IllegalStateException("Model download isn't complete yet. Open OFFLINE AI and check the download status.")
+
+        source.inputStream().use { input ->
             internal.outputStream().use { output -> input.copyTo(output) }
         }
+        if (!internal.isFile || internal.length() <= 1024 * 1024) {
+            internal.delete()
+            throw IllegalStateException("The downloaded GGUF file is incomplete. Check the download and try again.")
+        }
+        prefs.edit()
+            .putBoolean("offline_model_downloaded", true)
+            .putString("offline_model_downloaded_file", fileName)
+            .apply()
         return internal
     }
 
