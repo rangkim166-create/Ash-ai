@@ -1,0 +1,7 @@
+{
+  "name": "ash-sports-backend",
+  "private": true,
+  "type": "module",
+  "scripts": { "start": "node render-server.mjs" },
+  "dependencies": { "postgres": "^3.4.7" }
+}
