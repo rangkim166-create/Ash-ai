@@ -12,6 +12,7 @@ class OddsRefreshWorker(context: Context, params: WorkerParameters) : CoroutineW
         try {
             OddsEngine.sync(applicationContext, key)
             val picks = OddsEngine.buildDailyPicks(applicationContext)
+            OddsEngine.dailyOddEvenTip(applicationContext, key)
             DailyPicksNotifier.notify(applicationContext, picks)
             Result.success()
         } catch (_: Exception) {
