@@ -9,6 +9,13 @@ on:
       - "settings.gradle.kts"
       - "gradle/**"
       - ".github/workflows/build-ash-apk.yml"
+  pull_request:
+    paths:
+      - "app/**"
+      - "*.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle/**"
+      - ".github/workflows/build-ash-apk.yml"
   workflow_dispatch:
 
 permissions:
