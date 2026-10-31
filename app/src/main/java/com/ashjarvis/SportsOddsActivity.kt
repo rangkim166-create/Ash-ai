@@ -343,8 +343,9 @@ class SportsOddsActivity : Activity() {
             "Won: ${month.optInt("won")} • Lost: ${month.optInt("lost")} • Pending: ${month.optInt("pending")}\nHit rate: ${pct(month, "hit_rate_pct")}\nProfit: ${"%.2f".format(java.util.Locale.US, month.optDouble("profit_units"))} units • Yield: ${pct(month, "yield_pct")}\nMarket Brier score: ${if (month.isNull("market_brier_score")) "not enough samples" else "%.3f".format(java.util.Locale.US, month.optDouble("market_brier_score"))}") {}
         card("HOW TO READ THE NUMBERS",
             "Brier score checks how well the saved bookmaker-implied probabilities matched outcomes (lower is better). It is NOT Ash's independent prediction accuracy. A small sample is not proof of a long-term edge.") {}
+        body.addView(button("CHECK FINISHED MATCHES") { checkFinishedResults() })
         card("SAVED TIPS",
-            "${all.length()} records saved in SQLite. Tap a pending tip after its match to record WON, LOST or VOID.") {}
+            "${all.length()} records saved in SQLite. Ash can verify completed scores from its historical source; unverified matches remain pending. You can still settle a result manually.") {}
         val rows = (0 until all.length()).mapNotNull { all.optJSONObject(it) }
             .sortedByDescending { it.optString("published_at") }
         if (rows.isEmpty()) {
@@ -365,6 +366,76 @@ class SportsOddsActivity : Activity() {
             }
         }
         status.text = "Results ledger • pending tips can be settled after matches"
+    }
+
+    private fun checkFinishedResults() {
+        val all = TipResultsTracker.all(this)
+        val now = java.time.Instant.now()
+        val due = (0 until all.length()).mapNotNull { all.optJSONObject(it) }
+            .filter { tip ->
+                tip.optString("status") == "pending" &&
+                    runCatching { java.time.Instant.parse(tip.optString("commence_time")).isBefore(now) }.getOrDefault(false)
+            }
+        if (due.isEmpty()) {
+            Toast.makeText(this, "No pending tips have reached kick-off yet", Toast.LENGTH_LONG).show()
+            return
+        }
+        status.text = "Checking completed fixtures against saved result sources…"
+        scope.launch {
+            val settled = withContext(Dispatchers.IO) {
+                var count = 0
+                fun norm(value: String) = value.lowercase().replace(Regex("[^a-z0-9]"), "")
+                fun findRow(rows: JSONArray, home: String, away: String): JSONObject? {
+                    for (i in 0 until rows.length()) {
+                        val row = rows.optJSONObject(i) ?: continue
+                        val rowHome = row.optString("home_team")
+                        val rowAway = row.optString("away_team")
+                        if (norm(rowHome) == norm(home) && norm(rowAway) == norm(away)) return row
+                    }
+                    return null
+                }
+                for (tip in due) {
+                    val home = tip.optString("home_team")
+                    val away = tip.optString("away_team")
+                    val sport = tip.optString("sport_title")
+                    val collection = runCatching {
+                        HistoricalDataEngine.collectMatchHistory(this@SportsOddsActivity, home, away, sport)
+                    }.getOrNull() ?: continue
+                    val homeRows = HistoricalDataEngine.teamHistory(this@SportsOddsActivity, home, sport, 100)
+                    val awayRows = HistoricalDataEngine.teamHistory(this@SportsOddsActivity, away, sport, 100)
+                    val homeRow = findRow(homeRows, home, away) ?: continue
+                    val awayRow = findRow(awayRows, home, away)
+                    val statusText = homeRow.optString("status").lowercase()
+                    val completed = listOf("finished", "complete", "final", "full time", "ft", "ended")
+                        .any { statusText.contains(it) }
+                    if (!completed) continue
+                    val hs = homeRow.optString("home_score").toDoubleOrNull() ?: continue
+                    val ascore = homeRow.optString("away_score").toDoubleOrNull() ?: continue
+                    if (awayRow != null) {
+                        val otherHome = awayRow.optString("home_score").toDoubleOrNull()
+                        val otherAway = awayRow.optString("away_score").toDoubleOrNull()
+                        if (otherHome != null && otherAway != null && (otherHome != hs || otherAway != ascore)) continue
+                    }
+                    val selection = tip.optString("selection")
+                    val market = tip.optString("market_type")
+                    val result = if (market == "odd_even") {
+                        val goals = (hs + ascore).toInt()
+                        val actual = if (goals % 2 == 0) "even" else "odd"
+                        if (selection.lowercase().contains(actual)) "won" else "lost"
+                    } else when {
+                        selection.equals(home, true) -> if (hs > ascore) "won" else "lost"
+                        selection.equals(away, true) -> if (ascore > hs) "won" else "lost"
+                        selection.equals("draw", true) || selection.equals("tie", true) ->
+                            if (hs == ascore) "won" else "lost"
+                        else -> continue
+                    }
+                    if (TipResultsTracker.settle(this@SportsOddsActivity, tip.optString("tip_id"), result, hs.toInt(), ascore.toInt())) count++
+                }
+                count
+            }
+            Toast.makeText(this@SportsOddsActivity, "Verified and settled $settled tips. Anything without a confirmed final score stays pending.", Toast.LENGTH_LONG).show()
+            render()
+        }
     }
 
     private fun showHistory() {
