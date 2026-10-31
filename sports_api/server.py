@@ -14,7 +14,8 @@ PORT = int(os.getenv("PORT", "8000"))
 ODDS_API_KEY = os.getenv("ODDS_API_KEY", "").strip()
 ODDS_API_BASE = "https://api.the-odds-api.com/v4"
 CACHE_SECONDS = max(15, int(os.getenv("ODDS_CACHE_SECONDS", "60")))
-_cache: dict[str, tuple[float, object]] = {}\n_request_times: dict[str, list[float]] = {}
+_cache: dict[str, tuple[float, object]] = {}
+_request_times: dict[str, list[float]] = {}
 SPORT_KEY_RE = re.compile(r"^[a-z0-9_]{2,80}$")
 MARKET_RE = re.compile(r"^[a-z0-9_]{2,60}$")
 REGIONS_ALLOWED = {"uk", "eu", "us", "us2", "au"}
