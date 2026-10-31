@@ -144,7 +144,7 @@ class SportsOddsActivity : Activity() {
                 append("\n\nEvidence index is a heuristic, not a measured chance of winning. Odds can change.")
             }
         }
-        card("ASH DAILY MATCHES TO WATCH", picksText) {
+        card("TODAY'S APPROVED PICKS", picksText) {
             AlertDialog.Builder(this).setTitle("Daily researched shortlist")
                 .setMessage(picksText)
                 .setPositiveButton("OK", null).show()
