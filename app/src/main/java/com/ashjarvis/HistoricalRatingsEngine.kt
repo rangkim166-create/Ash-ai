@@ -5,6 +5,7 @@ import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import java.time.Instant
+import java.text.Normalizer
 import java.util.Locale
 
 /**
@@ -30,8 +31,12 @@ object HistoricalRatingsEngine {
 
     data class TeamRating(val rating: Double, val matches: Int, val generatedAt: String)
 
-    private fun normalize(value: String): String =
-        value.lowercase(Locale.ROOT).replace(Regex("[^a-z0-9]"), "")
+    private fun normalize(value: String): String {
+        val ascii = Normalizer.normalize(value.lowercase(Locale.ROOT), Normalizer.Form.NFD)
+            .replace(Regex("\\p{M}+"), "")
+        return ascii.replace(Regex("[^a-z0-9]"), "")
+            .replace(Regex("(afc|fc|cf|bc|sc|sk|fk|club)$"), "")
+    }
 
     private fun sportKey(value: String): String = when {
         value.contains("tennis", true) -> "tennis"
