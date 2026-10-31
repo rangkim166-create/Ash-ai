@@ -47,8 +47,8 @@ export async function importPublicFootballHistory() {
           if (!m.date || !m.team1 || !m.team2 || !Array.isArray(ft) ||
               !Number.isInteger(Number(ft[0])) || !Number.isInteger(Number(ft[1]))) return [];
           const date = String(m.date);
-          if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)) return [];
-          const kickoff = m.time && /^\\d{2}:\\d{2}$/.test(m.time) ? m.time : "12:00";
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return [];
+          const kickoff = m.time && /^\d{2}:\d{2}$/.test(m.time) ? m.time : "12:00";
           const matchId = "history:openfootball:" + createHash("sha1")
             .update(path + "|" + date + "|" + m.team1 + "|" + m.team2).digest("hex");
           return [{
