@@ -39,9 +39,6 @@ jobs:
       - name: Download Saudi Pro League historical archive
         continue-on-error: true
         run: python sports_ai/collect_saudi_history.py
-      - name: Download basketball results for NBA and international leagues
-        continue-on-error: true
-        run: python sports_ai/collect_basketball_history.py
       - name: Fetch additional Arab and African football source archive
         continue-on-error: true
         run: python sports_ai/collect_arab_football.py
@@ -55,8 +52,6 @@ jobs:
         run: python sports_ai/import_openfootball_txt.py
       - name: Import Saudi Pro League history
         run: python sports_ai/import_saudi_history.py
-      - name: Import NBA and international basketball history
-        run: python sports_ai/import_basketball_history.py
       - name: Publish compact Elo ratings for Ash
         run: python sports_ai/publish_ratings.py
       - name: Audit per-sport and per-league history coverage
