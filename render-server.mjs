@@ -103,4 +103,21 @@ server.listen(port, "0.0.0.0", () => {
   setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
   // Retry hourly until today's sheet is delivered; the database publication row prevents duplicates.
   setInterval(() => void runDailyPublish(), 60 * 60 * 1000).unref();
+  let resultsTrackerRunning = false;
+  const runResultsTracker = async () => {
+    if (resultsTrackerRunning) return;
+    resultsTrackerRunning = true;
+    try {
+      const result = await handler.runTipResultsTracker();
+      if (result.checked || result.settled || result.errors?.length) {
+        console.log("[ash-results] tracker", JSON.stringify(result));
+      }
+    } catch (error) {
+      console.error("[ash-results] tracker failed", error);
+    } finally {
+      resultsTrackerRunning = false;
+    }
+  };
+  setTimeout(() => void runResultsTracker(), 90000);
+  setInterval(() => void runResultsTracker(), 10 * 60 * 1000).unref();
 });
