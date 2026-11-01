@@ -1,5 +1,6 @@
 import postgres from "postgres";
 import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
+import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
 const sql=postgres(process.env.DATABASE_URL,{max:5,idle_timeout:20,connect_timeout:10});
 const db={query:async(text,values=[])=>{const rows=await sql.unsafe(text,values);return {rows,rowCount:rows.length};}};
@@ -128,6 +129,132 @@ async function collectOdds(maxSports=8){
 }
 
 
+
+async function ensureTipResultsTables(){
+ await db.query(`CREATE TABLE IF NOT EXISTS ash_tip_results(
+  tip_id text PRIMARY KEY,local_date date NOT NULL,match_id text NOT NULL,source_event_id text NOT NULL,
+  sport_key text NOT NULL,sport text NOT NULL,competition text NOT NULL,home_team text NOT NULL,away_team text NOT NULL,
+  commence_time timestamptz NOT NULL,selection text NOT NULL,market_key text NOT NULL DEFAULT 'h2h',
+  decimal_odds double precision NOT NULL,bookmakers integer NOT NULL DEFAULT 0,reason text,
+  status text NOT NULL DEFAULT 'pending',home_score integer,away_score integer,profit_units double precision,
+  result_source text,settled_at timestamptz,notification_status text NOT NULL DEFAULT 'pending',
+  notification_updated_at timestamptz,created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now()
+ )`);
+ await db.query("CREATE INDEX IF NOT EXISTS ash_tip_results_pending_idx ON ash_tip_results(status,commence_time)");
+ await db.query("CREATE INDEX IF NOT EXISTS ash_tip_results_settled_idx ON ash_tip_results(settled_at,status)");
+ await db.query(`CREATE TABLE IF NOT EXISTS ash_tip_result_summaries(
+  local_date date PRIMARY KEY,status text NOT NULL DEFAULT 'pending',message_text text,
+  sent_at timestamptz,created_at timestamptz NOT NULL DEFAULT now()
+ )`);
+}
+async function savePublishedTips(localDay,picks){
+ await ensureTipResultsTables();
+ for(const pick of picks||[]){
+  const matchId=String(pick.id||"");
+  const separator=matchId.indexOf(":");
+  if(separator<1)continue;
+  const sportKey=matchId.slice(0,separator),eventId=matchId.slice(separator+1);
+  const tipId=localDay+"|"+matchId+"|h2h|"+String(pick.selection||"");
+  await db.query(`INSERT INTO ash_tip_results(
+   tip_id,local_date,match_id,source_event_id,sport_key,sport,competition,home_team,away_team,
+   commence_time,selection,market_key,decimal_odds,bookmakers,reason
+  ) VALUES($1,$2::date,$3,$4,$5,$6,$7,$8,$9,$10::timestamptz,$11,'h2h',$12,$13,$14)
+  ON CONFLICT(tip_id) DO NOTHING`,[
+   tipId,localDay,matchId,eventId,sportKey,pick.sport||"unknown",pick.competition||"",
+   pick.home_team||"",pick.away_team||"",pick.commence_time,pick.selection,
+   Number(pick.price),Number(pick.bookmakers||0),pick.reason||""
+  ]);
+ }
+}
+async function runTipResultsTracker(){
+ await ensureTipResultsTables();
+ const apiKey=await read("the_odds_api");
+ if(!apiKey)return{checked:0,settled:0,reason:"odds_api_not_configured"};
+ // Keep old unresolved tips visible as unverified; never turn missing data into a loss or void.
+ await db.query("UPDATE ash_tip_results SET status='unverified',updated_at=now() WHERE status='pending' AND commence_time<now()-interval '4 days'");
+ const pending=await db.query("SELECT * FROM ash_tip_results WHERE status='pending' AND commence_time<=now()+interval '15 minutes' AND commence_time>=now()-interval '4 days' ORDER BY commence_time ASC LIMIT 250");
+ if(!pending.rowCount)return{checked:0,settled:0,reason:"no_due_tips"};
+ const groups=new Map();
+ for(const tip of pending.rows){if(!groups.has(tip.sport_key))groups.set(tip.sport_key,[]);groups.get(tip.sport_key).push(tip);}
+ let checked=0,settled=0;const errors=[];
+ for(const [sportKey,tips] of groups){
+  for(let offset=0;offset<tips.length;offset+=25){
+   const batch=tips.slice(offset,offset+25);
+   const eventIds=[...new Set(batch.map(x=>x.source_event_id).filter(x=>/^[A-Za-z0-9_-]{20,80}$/.test(x)))];
+   if(!eventIds.length)continue;
+   try{
+    const url="https://api.the-odds-api.com/v4/sports/"+encodeURIComponent(sportKey)+"/scores?daysFrom=3&eventIds="+encodeURIComponent(eventIds.join(","))+"&apiKey="+encodeURIComponent(apiKey);
+    const response=await fetch(url,{signal:AbortSignal.timeout(18000)});
+    const body=await response.text();
+    if(!response.ok)throw Error("Scores HTTP "+response.status+": "+body.slice(0,160));
+    const events=JSON.parse(body);checked+=batch.length;
+    const byId=new Map((Array.isArray(events)?events:[]).map(event=>[String(event.id),event]));
+    for(const tip of batch){
+     const event=byId.get(String(tip.source_event_id));
+     const score=parseFinalScore(event,tip.home_team,tip.away_team);
+     if(!score)continue;
+     const outcome=settleHeadToHead(tip.selection,tip.home_team,tip.away_team,score.homeScore,score.awayScore);
+     if(!outcome)continue;
+     const profit=outcome==="won"?Number(tip.decimal_odds)-1:-1;
+     const saved=await db.query(`UPDATE ash_tip_results SET status=$2,home_score=$3,away_score=$4,
+       profit_units=$5,result_source='the_odds_api_scores',settled_at=now(),updated_at=now()
+       WHERE tip_id=$1 AND status='pending' RETURNING tip_id,home_team,away_team,selection,decimal_odds,home_score,away_score,profit_units`,
+      [tip.tip_id,outcome,score.homeScore,score.awayScore,profit]);
+     if(!saved.rowCount)continue;
+     settled++;
+     const row=saved.rows[0];
+     const message="ASH • PICK RESULT\\n"+row.home_team+" "+row.home_score+" - "+row.away_score+" "+row.away_team+
+       "\\nPick: "+row.selection+" @ "+Number(row.decimal_odds).toFixed(2)+
+       "\\nResult: "+outcome.toUpperCase()+"\\nP/L: "+(Number(row.profit_units)>0?"+":"")+Number(row.profit_units).toFixed(2)+" units"+
+       "\\nFinal score source: The Odds API";
+     try{
+      await db.query("UPDATE ash_tip_results SET notification_status='sending',notification_updated_at=now() WHERE tip_id=$1 AND notification_status IN ('pending','failed')",[row.tip_id]);
+      await telegram(message);
+      await db.query("UPDATE ash_tip_results SET notification_status='sent',notification_updated_at=now() WHERE tip_id=$1",[row.tip_id]);
+     }catch(error){
+      await db.query("UPDATE ash_tip_results SET notification_status='failed',notification_updated_at=now() WHERE tip_id=$1",[row.tip_id]).catch(()=>{});
+      console.error("[ash-results] Telegram result notification failed",row.tip_id,String(error?.message||error).slice(0,160));
+     }
+    }
+   }catch(error){errors.push({sport:sportKey,error:String(error?.message||error).slice(0,180)});}
+  }
+ }
+ const summary=await maybeSendDailyResultsSummary();
+ return{checked,settled,errors,summary};
+}
+async function maybeSendDailyResultsSummary(){
+ const localNow=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
+ if(localNow<"23:00")return{sent:false,reason:"not_summary_time"};
+ const localDay=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
+ const prior=await db.query("SELECT status FROM ash_tip_result_summaries WHERE local_date=$1::date",[localDay]);
+ if(prior.rowCount&&prior.rows[0].status==="sent")return{sent:false,reason:"already_sent_today"};
+ const stats=await db.query(`SELECT
+  COUNT(*) FILTER(WHERE status='won')::int AS won,
+  COUNT(*) FILTER(WHERE status='lost')::int AS lost,
+  COUNT(*) FILTER(WHERE status='void')::int AS void,
+  COUNT(*) FILTER(WHERE status IN ('pending','unverified'))::int AS pending,
+  COALESCE(SUM(profit_units) FILTER(WHERE status IN ('won','lost')),0)::float8 AS profit
+  FROM ash_tip_results WHERE (settled_at AT TIME ZONE 'Africa/Kampala')::date=$1::date`,[localDay]);
+ const row=stats.rows[0],settled=Number(row.won)+Number(row.lost);
+ const hitRate=settled?((Number(row.won)/settled)*100).toFixed(1):"n/a";
+ const profit=Number(row.profit||0);
+ const message="ASH • DAILY RESULTS — "+localDay+
+  "\\nWon: "+row.won+" | Lost: "+row.lost+" | Void: "+row.void+
+  "\\nStill pending/unverified: "+row.pending+
+  "\\nHit rate: "+hitRate+"%"+
+  "\\nNet: "+(profit>0?"+":"")+profit.toFixed(2)+" units"+
+  "\\nOne unit stake per pick; results only where final scores were verified.";
+ await db.query("INSERT INTO ash_tip_result_summaries(local_date,status,message_text) VALUES($1::date,'sending',$2) ON CONFLICT(local_date) DO UPDATE SET status='sending',message_text=EXCLUDED.message_text",[localDay,message]);
+ try{
+  await telegram(message);
+  await db.query("UPDATE ash_tip_result_summaries SET status='sent',sent_at=now() WHERE local_date=$1::date",[localDay]);
+  return{sent:true,localDate:localDay,settled};
+ }catch(error){
+  await db.query("UPDATE ash_tip_result_summaries SET status='failed' WHERE local_date=$1::date",[localDay]);
+  return{sent:false,error:String(error?.message||error).slice(0,180)};
+ }
+}
+
 async function runScheduledDailyPublisher(){
  const localDay=new Intl.DateTimeFormat("en-CA",{timeZone:"Africa/Kampala",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
  await db.query(`CREATE TABLE IF NOT EXISTS ash_daily_publications(
@@ -195,6 +322,7 @@ async function runScheduledDailyPublisher(){
   const message=formatDailyPicks(dayLabel,picks);
   // Persist the complete ticket and structured selections even before Telegram is configured.
   await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,picks.length,message.slice(0,500),message,JSON.stringify(picks)]);
+  await savePublishedTips(localDay,picks);
   const bot=await read("telegram_bot");
   if(!bot?.botToken||!bot?.chatId){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_telegram_config',error_summary=$2 WHERE local_date=$1::date",[localDay,"Telegram bot token and chat ID are not configured."]);
@@ -210,7 +338,7 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-export default {async runScheduledCollection(){return await collectOdds(6);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
+export default {async runScheduledCollection(){return await collectOdds(6);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
@@ -237,6 +365,21 @@ return {id:row.id,sport_key:String(row.id).split(":")[0],sport_title:row.competi
 });
 return reply({data,observedAt:new Date().toISOString()});
 }
+
+if(p==="/v1/public/results/tips"&&req.method==="GET"){
+ await ensureTipResultsTables();
+ const url=new URL(req.url),limit=Math.min(200,Math.max(1,Number(url.searchParams.get("limit")||50)));
+ const rows=await db.query("SELECT tip_id,local_date,sport,competition,home_team,away_team,commence_time,selection,decimal_odds,bookmakers,status,home_score,away_score,profit_units,settled_at,result_source FROM ash_tip_results ORDER BY created_at DESC LIMIT $1",[limit]);
+ return reply({tips:rows.rows});
+}
+if(p==="/v1/public/results/summary"&&req.method==="GET"){
+ await ensureTipResultsTables();
+ const totals=await db.query("SELECT COUNT(*) FILTER(WHERE status='won')::int AS won,COUNT(*) FILTER(WHERE status='lost')::int AS lost,COUNT(*) FILTER(WHERE status='void')::int AS void,COUNT(*) FILTER(WHERE status='pending')::int AS pending,COUNT(*) FILTER(WHERE status='unverified')::int AS unverified,COALESCE(SUM(profit_units) FILTER(WHERE status IN ('won','lost')),0)::float8 AS profit FROM ash_tip_results");
+ const recent=await db.query("SELECT (settled_at AT TIME ZONE 'Africa/Kampala')::date AS local_date,COUNT(*) FILTER(WHERE status='won')::int AS won,COUNT(*) FILTER(WHERE status='lost')::int AS lost,COALESCE(SUM(profit_units) FILTER(WHERE status IN ('won','lost')),0)::float8 AS profit FROM ash_tip_results WHERE settled_at>=now()-interval '30 days' GROUP BY 1 ORDER BY 1 DESC");
+ const r=totals.rows[0],settled=Number(r.won)+Number(r.lost);
+ return reply({totals:{...r,settled,hit_rate_pct:settled?Number((Number(r.won)/settled*100).toFixed(1)):null,yield_pct:settled?Number((Number(r.profit)/settled*100).toFixed(1)):null},daily:recent.rows});
+}
+
 if(p==="/v1/public/odds/daily"&&req.method==="GET"){
 const daily=await db.query("SELECT local_date,status,picks_count,picks_json,message_text,sent_at,started_at FROM ash_daily_publications WHERE local_date=(now() AT TIME ZONE 'Africa/Kampala')::date LIMIT 1");
 return reply({daily:daily.rows[0]||null});
