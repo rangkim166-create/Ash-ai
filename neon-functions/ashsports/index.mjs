@@ -168,12 +168,13 @@ async function savePublishedTips(localDay,picks){
 }
 async function runTipResultsTracker(){
  await ensureTipResultsTables();
+ const backfill=await backfillPublishedTips();
  const apiKey=await read("the_odds_api");
  if(!apiKey)return{checked:0,settled:0,reason:"odds_api_not_configured"};
  // Keep old unresolved tips visible as unverified; never turn missing data into a loss or void.
  await db.query("UPDATE ash_tip_results SET status='unverified',updated_at=now() WHERE status='pending' AND commence_time<now()-interval '4 days'");
  const pending=await db.query("SELECT * FROM ash_tip_results WHERE status='pending' AND commence_time<=now()+interval '15 minutes' AND commence_time>=now()-interval '4 days' ORDER BY commence_time ASC LIMIT 250");
- if(!pending.rowCount)return{checked:0,settled:0,reason:"no_due_tips"};
+ if(!pending.rowCount){const notifications=await deliverPendingResultNotifications();const summary=await maybeSendDailyResultsSummary();return{checked:0,settled:0,backfill,notifications,summary,reason:"no_due_tips"};}
  const groups=new Map();
  for(const tip of pending.rows){if(!groups.has(tip.sport_key))groups.set(tip.sport_key,[]);groups.get(tip.sport_key).push(tip);}
  let checked=0,settled=0;const errors=[];
@@ -203,24 +204,14 @@ async function runTipResultsTracker(){
      if(!saved.rowCount)continue;
      settled++;
      const row=saved.rows[0];
-     const message="ASH • PICK RESULT\\n"+row.home_team+" "+row.home_score+" - "+row.away_score+" "+row.away_team+
-       "\\nPick: "+row.selection+" @ "+Number(row.decimal_odds).toFixed(2)+
-       "\\nResult: "+outcome.toUpperCase()+"\\nP/L: "+(Number(row.profit_units)>0?"+":"")+Number(row.profit_units).toFixed(2)+" units"+
-       "\\nFinal score source: The Odds API";
-     try{
-      await db.query("UPDATE ash_tip_results SET notification_status='sending',notification_updated_at=now() WHERE tip_id=$1 AND notification_status IN ('pending','failed')",[row.tip_id]);
-      await telegram(message);
-      await db.query("UPDATE ash_tip_results SET notification_status='sent',notification_updated_at=now() WHERE tip_id=$1",[row.tip_id]);
-     }catch(error){
-      await db.query("UPDATE ash_tip_results SET notification_status='failed',notification_updated_at=now() WHERE tip_id=$1",[row.tip_id]).catch(()=>{});
-      console.error("[ash-results] Telegram result notification failed",row.tip_id,String(error?.message||error).slice(0,160));
-     }
+     // Delivery is handled by the retryable notification outbox after all scores are saved.
     }
    }catch(error){errors.push({sport:sportKey,error:String(error?.message||error).slice(0,180)});}
   }
  }
+ const notifications=await deliverPendingResultNotifications();
  const summary=await maybeSendDailyResultsSummary();
- return{checked,settled,errors,summary};
+ return{checked,settled,backfill,notifications,errors,summary};
 }
 async function maybeSendDailyResultsSummary(){
  const localNow=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
