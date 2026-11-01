@@ -166,6 +166,40 @@ async function savePublishedTips(localDay,picks){
   ]);
  }
 }
+async function backfillPublishedTips(){
+ await ensureTipResultsTables();
+ const days=await db.query("SELECT local_date,picks_json FROM ash_daily_publications WHERE picks_count>0 AND local_date>=((now() AT TIME ZONE 'Africa/Kampala')::date-7) ORDER BY local_date");
+ let imported=0;
+ for(const row of days.rows){
+  const picks=Array.isArray(row.picks_json)?row.picks_json:[];
+  await savePublishedTips(String(row.local_date).slice(0,10),picks);
+  imported+=picks.length;
+ }
+ return{days:days.rowCount,picks:imported};
+}
+async function deliverPendingResultNotifications(){
+ const rows=await db.query("SELECT tip_id,home_team,away_team,selection,decimal_odds,home_score,away_score,status,profit_units FROM ash_tip_results WHERE status IN ('won','lost','void') AND notification_status IN ('pending','failed','sending') AND (notification_updated_at IS NULL OR notification_updated_at<now()-interval '10 minutes') ORDER BY settled_at ASC LIMIT 20");
+ let sent=0,failed=0;
+ for(const row of rows.rows){
+  const claimed=await db.query("UPDATE ash_tip_results SET notification_status='sending',notification_updated_at=now() WHERE tip_id=$1 AND notification_status IN ('pending','failed','sending') AND (notification_updated_at IS NULL OR notification_updated_at<now()-interval '10 minutes') RETURNING tip_id",[row.tip_id]);
+  if(!claimed.rowCount)continue;
+  const profit=Number(row.profit_units||0);
+  const message="ASH • PICK RESULT\\n"+row.home_team+" "+row.home_score+" - "+row.away_score+" "+row.away_team+
+   "\\nPick: "+row.selection+" @ "+Number(row.decimal_odds).toFixed(2)+
+   "\\nResult: "+row.status.toUpperCase()+"\\nP/L: "+(profit>0?"+":"")+profit.toFixed(2)+" units"+
+   "\\nFinal score source: The Odds API";
+  try{
+   await telegram(message);
+   await db.query("UPDATE ash_tip_results SET notification_status='sent',notification_updated_at=now() WHERE tip_id=$1",[row.tip_id]);
+   sent++;
+  }catch(error){
+   await db.query("UPDATE ash_tip_results SET notification_status='failed',notification_updated_at=now() WHERE tip_id=$1",[row.tip_id]);
+   failed++;
+   console.error("[ash-results] Telegram result notification failed",row.tip_id,String(error?.message||error).slice(0,160));
+  }
+ }
+ return{sent,failed};
+}
 async function runTipResultsTracker(){
  await ensureTipResultsTables();
  const backfill=await backfillPublishedTips();
