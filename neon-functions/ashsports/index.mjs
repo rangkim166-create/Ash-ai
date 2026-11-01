@@ -220,21 +220,21 @@ async function maybeSendDailyResultsSummary(){
  const prior=await db.query("SELECT status FROM ash_tip_result_summaries WHERE local_date=$1::date",[localDay]);
  if(prior.rowCount&&prior.rows[0].status==="sent")return{sent:false,reason:"already_sent_today"};
  const stats=await db.query(`SELECT
-  COUNT(*) FILTER(WHERE status='won')::int AS won,
-  COUNT(*) FILTER(WHERE status='lost')::int AS lost,
-  COUNT(*) FILTER(WHERE status='void')::int AS void,
+  COUNT(*) FILTER(WHERE status='won' AND (settled_at AT TIME ZONE 'Africa/Kampala')::date=$1::date)::int AS won,
+  COUNT(*) FILTER(WHERE status='lost' AND (settled_at AT TIME ZONE 'Africa/Kampala')::date=$1::date)::int AS lost,
+  COUNT(*) FILTER(WHERE status='void' AND (settled_at AT TIME ZONE 'Africa/Kampala')::date=$1::date)::int AS void,
   COUNT(*) FILTER(WHERE status IN ('pending','unverified'))::int AS pending,
-  COALESCE(SUM(profit_units) FILTER(WHERE status IN ('won','lost')),0)::float8 AS profit
-  FROM ash_tip_results WHERE (settled_at AT TIME ZONE 'Africa/Kampala')::date=$1::date`,[localDay]);
+  COALESCE(SUM(profit_units) FILTER(WHERE status IN ('won','lost') AND (settled_at AT TIME ZONE 'Africa/Kampala')::date=$1::date),0)::float8 AS profit
+  FROM ash_tip_results`,[localDay]);
  const row=stats.rows[0],settled=Number(row.won)+Number(row.lost);
  const hitRate=settled?((Number(row.won)/settled)*100).toFixed(1):"n/a";
  const profit=Number(row.profit||0);
  const message="ASH • DAILY RESULTS — "+localDay+
-  "\\nWon: "+row.won+" | Lost: "+row.lost+" | Void: "+row.void+
-  "\\nStill pending/unverified: "+row.pending+
-  "\\nHit rate: "+hitRate+"%"+
-  "\\nNet: "+(profit>0?"+":"")+profit.toFixed(2)+" units"+
-  "\\nOne unit stake per pick; results only where final scores were verified.";
+  "\nWon: "+row.won+" | Lost: "+row.lost+" | Void: "+row.void+
+  "\nStill pending/unverified: "+row.pending+
+  "\nHit rate: "+hitRate+"%"+
+  "\nNet: "+(profit>0?"+":"")+profit.toFixed(2)+" units"+
+  "\nOne unit stake per pick; results only where final scores were verified.";
  await db.query("INSERT INTO ash_tip_result_summaries(local_date,status,message_text) VALUES($1::date,'sending',$2) ON CONFLICT(local_date) DO UPDATE SET status='sending',message_text=EXCLUDED.message_text",[localDay,message]);
  try{
   await telegram(message);
