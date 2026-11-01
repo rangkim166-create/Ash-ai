@@ -184,10 +184,10 @@ async function deliverPendingResultNotifications(){
   const claimed=await db.query("UPDATE ash_tip_results SET notification_status='sending',notification_updated_at=now() WHERE tip_id=$1 AND notification_status IN ('pending','failed','sending') AND (notification_updated_at IS NULL OR notification_updated_at<now()-interval '10 minutes') RETURNING tip_id",[row.tip_id]);
   if(!claimed.rowCount)continue;
   const profit=Number(row.profit_units||0);
-  const message="ASH • PICK RESULT\\n"+row.home_team+" "+row.home_score+" - "+row.away_score+" "+row.away_team+
-   "\\nPick: "+row.selection+" @ "+Number(row.decimal_odds).toFixed(2)+
-   "\\nResult: "+row.status.toUpperCase()+"\\nP/L: "+(profit>0?"+":"")+profit.toFixed(2)+" units"+
-   "\\nFinal score source: The Odds API";
+  const message="ASH • PICK RESULT\n"+row.home_team+" "+row.home_score+" - "+row.away_score+" "+row.away_team+
+   "\nPick: "+row.selection+" @ "+Number(row.decimal_odds).toFixed(2)+
+   "\nResult: "+row.status.toUpperCase()+"\nP/L: "+(profit>0?"+":"")+profit.toFixed(2)+" units"+
+   "\nFinal score source: The Odds API";
   try{
    await telegram(message);
    await db.query("UPDATE ash_tip_results SET notification_status='sent',notification_updated_at=now() WHERE tip_id=$1",[row.tip_id]);
