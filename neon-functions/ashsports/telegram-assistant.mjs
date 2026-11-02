@@ -36,7 +36,7 @@ async function fetchLiveOdds(prompt,read){
   const preferredKeys=category==="soccer"?["soccer_epl","soccer_england_efl_cup","soccer_fa_cup","soccer_uefa_champs_league"]:category==="basketball"?["basketball_nba","basketball_euroleague","basketball_ncaab"]:sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes("tennis")).slice(0,4).map(s=>s.key);
   const preferred=sports.filter(s=>s.active&&preferredKeys.includes(s.key));
   const selected=[...new Map([...candidates,...preferred,...pool].map(s=>[s.key,s])).values()].slice(0,8);
-  const fixtureParts=prompt.split(/\b(?:vs?\\.?|versus)\b|\s+[–—-]\s+/i);
+  const fixtureParts=prompt.split(/\b(?:vs\.?|versus)\b|\s+[–—-]\s+/i);
   const stopWords=new Set(["analyse","analyze","predict","prediction","latest","available","information","show","current","injuries","injury","form","bookmaker","bookmakers","comparison","comparisons","timestamps","today","tomorrow","please","match","game","odds","value","research","using","including","with","the","and","for","from","what","about","can","you"]);
   const normalizeTeam=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
   const teamTokens=s=>normalizeTeam(s).split(" ").filter(w=>w.length>2&&!stopWords.has(w));
