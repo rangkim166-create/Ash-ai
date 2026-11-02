@@ -98,10 +98,20 @@ server.listen(port, "0.0.0.0", () => {
       dailyPublishRunning = false;
     }
   };
-  // Telegram chat assistant uses long polling; the poller self-guards against overlap.
-  console.log("[ash-telegram] poller scheduled", JSON.stringify({botTokenConfigured:!!process.env.TELEGRAM_BOT_TOKEN,chatIdConfigured:!!process.env.TELEGRAM_CHAT_ID,groqConfigured:!!process.env.GROQ_API_KEY,openrouterConfigured:!!process.env.OPENROUTER_API_KEY}));
-  setTimeout(() => void handler.runTelegramAssistantPoll(), 5000);
-  setInterval(() => void handler.runTelegramAssistantPoll(), 1000).unref();
+  // Configure a single Telegram webhook; avoids getUpdates conflicts across Render deploys.
+  let telegramWebhookReady = false;
+  const configureTelegramWebhook = async () => {
+    if (telegramWebhookReady) return;
+    try {
+      telegramWebhookReady = await handler.configureTelegramWebhook();
+      if (!telegramWebhookReady) setTimeout(() => void configureTelegramWebhook(), 60000).unref();
+    } catch (error) {
+      console.error("[ash-telegram] webhook setup failed", String(error.message || error));
+      setTimeout(() => void configureTelegramWebhook(), 60000).unref();
+    }
+  };
+  console.log("[ash-telegram] webhook setup scheduled", JSON.stringify({botTokenConfigured:!!process.env.TELEGRAM_BOT_TOKEN,chatIdConfigured:!!process.env.TELEGRAM_CHAT_ID,groqConfigured:!!process.env.GROQ_API_KEY,openrouterConfigured:!!process.env.OPENROUTER_API_KEY}));
+  setTimeout(() => void configureTelegramWebhook(), 5000);
   setTimeout(() => void runScout(), 20000);
   setTimeout(() => void runDailyPublish(), 60000);
   setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
