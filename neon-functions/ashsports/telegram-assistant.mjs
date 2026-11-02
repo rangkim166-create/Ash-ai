@@ -31,7 +31,7 @@ async function fetchLiveOdds(prompt){
   if(!sr.ok)return {status:"sports_catalog_http_"+sr.status,events:[]};
   const sports=await sr.json(),words=(prompt.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(x=>x.length>2);
   const candidates=sports.filter(s=>s.active&&words.some(w=>(s.title+" "+s.key).toLowerCase().includes(w)||w.includes((s.key||"").toLowerCase().replace(/_/g," "))));
-  const selected=(candidates.length?candidates:sports.filter(s=>s.active&&/soccer|basketball|tennis/.test(s.key||""))).slice(0,2);
+  const category=/\\b(nba|basketball|wnba|ncaa)\\b/i.test(prompt)?"basketball":/\\b(tennis|atp|wta|grand slam)\\b/i.test(prompt)?"tennis":/\\b(football|soccer|premier league|epl|la liga|bundesliga|serie a|champions league|afcon)\\b/i.test(prompt)?"soccer":"soccer";const pool=sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes(category));const selected=(candidates.length?candidates:pool).slice(0,3);
   const events=[];
   for(const sport of selected){try{
    const u="https://api.the-odds-api.com/v4/sports/"+encodeURIComponent(sport.key)+"/odds?regions=uk,eu,us&markets=h2h,totals&oddsFormat=decimal&dateFormat=iso&apiKey="+encodeURIComponent(key);
