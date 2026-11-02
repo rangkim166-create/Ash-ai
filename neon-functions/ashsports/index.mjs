@@ -84,7 +84,7 @@ async function collectOdds(maxSports=8){
  const sports=JSON.parse(st).filter(s=>s.active&&/^(soccer_|basketball_|tennis_)/.test(s.key||"")&&!/(championship_winner|outright|winner$)/i.test(s.key||""));
  const priority=["saudi","egypt","morocco","qatar","uae","tunisia","algeria","soccer_epl","championship","bundesliga","la_liga","serie_a","ligue_one","basketball_nba","euroleague","tennis_atp","tennis_wta"];
  sports.sort((a,b)=>{const rank=x=>{const i=priority.findIndex(p=>x.key.includes(p));return i<0?99:i;};return rank(a)-rank(b);});
- const limit=Math.min(12,Math.max(1,maxSports));const arab=sports.filter(s=>["saudi","egypt","morocco","qatar","uae","tunisia","algeria"].some(x=>s.key.includes(x)));const football=sports.filter(s=>s.key.startsWith("soccer_")&&!arab.includes(s));const basketball=sports.filter(s=>s.key.startsWith("basketball_"));const tennis=sports.filter(s=>s.key.startsWith("tennis_"));const selected=[...arab.slice(0,2),...football.slice(0,1),...basketball.slice(0,2),...tennis.slice(0,1)];for(const s of sports){if(selected.length>=limit)break;if(!selected.includes(s))selected.push(s);}
+ const limit=Math.min(12,Math.max(1,maxSports));const arab=sports.filter(s=>["saudi","egypt","morocco","qatar","uae","tunisia","algeria"].some(x=>s.key.includes(x)));const football=sports.filter(s=>s.key.startsWith("soccer_")&&!arab.includes(s));const basketball=sports.filter(s=>s.key.startsWith("basketball_"));const tennis=sports.filter(s=>s.key.startsWith("tennis_"));const selected=[...arab.slice(0,2),...football.slice(0,3),...basketball.slice(0,2),...tennis.slice(0,1)];for(const s of sports){if(selected.length>=limit)break;if(!selected.includes(s))selected.push(s);}
  const last=await db.query("SELECT id,started_at,status FROM daily_scout_runs ORDER BY started_at DESC LIMIT 1");
  if(last.rowCount){
   const prior=last.rows[0];
@@ -304,7 +304,7 @@ async function runScheduledDailyPublisher(){
  await db.query("INSERT INTO ash_daily_publications(local_date,status,attempts,started_at) VALUES($1::date,'sending',1,now()) ON CONFLICT(local_date) DO UPDATE SET status='sending',attempts=ash_daily_publications.attempts+1,started_at=now(),error_summary=NULL",[localDay]);
  try{
   let collection=null;
-  try{collection=await collectOdds(6);}catch(error){console.error("[ash-daily] odds refresh failed",String(error?.message||error).slice(0,180));}
+  try{collection=await collectOdds(8);}catch(error){console.error("[ash-daily] odds refresh failed",String(error?.message||error).slice(0,180));}
   const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND source='the_odds_api' AND starts_at>now() AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 250");
   const fixtures=fixturesResult.rows;
   if(!fixtures.length){
