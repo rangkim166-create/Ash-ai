@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 const TG="https://api.telegram.org";
 const timeout=(ms)=>AbortSignal.timeout(ms);
 const clean=(s,n=1200)=>String(s||"").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim().slice(0,n);
@@ -11,7 +12,7 @@ async function searchWeb(q){
  return {items:results,pages};
 }
 export function createTelegramAssistant({db,read,telegram}){
- let offset=0,running=false,connectedLogged=false;
+ let connectedLogged=false;
  async function send(chatId,text){const bot=await read("telegram_bot");for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);const r=await fetch(TG+"/bot"+bot.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});const j=await r.json();if(!r.ok||!j.ok)throw Error("Telegram send failed: "+(j.description||r.status));}}
  async function ai(messages,provider,key){const base=provider==="groq"?"https://api.groq.com/openai/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";const model=provider==="groq"?(process.env.ASH_GROQ_MODEL||"llama-3.3-70b-versatile"):(process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini");const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:1100}),signal:timeout(45000)});const j=await r.json();if(!r.ok)throw Error(provider+" HTTP "+r.status+" "+JSON.stringify(j).slice(0,180));return j.choices?.[0]?.message?.content||"";}
  async function answer(chatId,text){
@@ -34,9 +35,21 @@ export function createTelegramAssistant({db,read,telegram}){
   await db.query("DELETE FROM ash_telegram_memory WHERE chat_id=$1 AND created_at < now()-interval '14 days'",[String(chatId)]);
   await send(chatId,response);
  }
- async function poll(){
-  if(running)return;running=true;
-  try{const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId){console.error("[ash-telegram] missing bot token or owner chat ID");return;}const r=await fetch(TG+"/bot"+bot.botToken+"/getUpdates?timeout=20&offset="+offset+"&allowed_updates=%5B%22message%22%5D",{signal:timeout(26000)});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.description||"Telegram polling failed");if(!connectedLogged){const groq=!!(await read("groq")),openrouter=!!(await read("openrouter"));console.log("[ash-telegram] polling connected; AI credentials:",JSON.stringify({groq,openrouter}));connectedLogged=true;}for(const u of j.result||[]){offset=Math.max(offset,Number(u.update_id)+1);const m=u.message;if(!m?.text)continue;try{await answer(m.chat.id,m.text);}catch(e){console.error("[ash-telegram-ai]",e);if(String(m.chat.id)===String(bot.chatId))await send(m.chat.id,"I hit a temporary issue: "+String(e.message||e).slice(0,250)).catch(()=>{});}}}catch(e){console.error("[ash-telegram-poll]",String(e.message||e));}finally{running=false;}
+ function secretToken(bot){return createHash("sha256").update(bot.botToken+"|ash-telegram-webhook-v1").digest("hex");}
+ async function configureWebhook(){
+  const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId){console.error("[ash-telegram] webhook not configured: missing bot credentials");return false;}
+  const r=await fetch(TG+"/bot"+bot.botToken+"/setWebhook",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({url:"https://ash-sports-api.onrender.com/v1/telegram/webhook",secret_token:secretToken(bot),allowed_updates:["message"],drop_pending_updates:false}),signal:timeout(12000)});
+  const j=await r.json();if(!r.ok||!j.ok)throw Error(j.description||"Telegram setWebhook failed");
+  if(!connectedLogged){const groq=!!(await read("groq")),openrouter=!!(await read("openrouter"));console.log("[ash-telegram] webhook connected; AI credentials:",JSON.stringify({groq,openrouter}));connectedLogged=true;}
+  return true;
  }
- return {poll};
+ async function handleUpdate(update){
+  const message=update?.message;if(!message?.text||!message?.chat?.id)return;
+  await db.query("CREATE TABLE IF NOT EXISTS ash_telegram_updates(update_id bigint PRIMARY KEY,received_at timestamptz NOT NULL DEFAULT now())");
+  const inserted=await db.query("INSERT INTO ash_telegram_updates(update_id) VALUES($1) ON CONFLICT DO NOTHING RETURNING update_id",[String(update.update_id)]);
+  if(!inserted.rowCount)return;
+  try{await answer(message.chat.id,message.text);}catch(e){console.error("[ash-telegram-ai]",String(e.message||e));if(String(message.chat.id)===String((await read("telegram_bot"))?.chatId))await send(message.chat.id,"I hit a temporary issue: "+String(e.message||e).slice(0,250)).catch(()=>{});}
+ }
+ async function verifySecret(candidate){const bot=await read("telegram_bot");return !!bot?.botToken&&candidate===secretToken(bot);}
+ return {configureWebhook,handleUpdate,verifySecret};
 }
