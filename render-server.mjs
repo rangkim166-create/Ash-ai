@@ -98,6 +98,9 @@ server.listen(port, "0.0.0.0", () => {
       dailyPublishRunning = false;
     }
   };
+  // Telegram chat assistant uses long polling; the poller self-guards against overlap.
+  setTimeout(() => void handler.runTelegramAssistantPoll(), 5000);
+  setInterval(() => void handler.runTelegramAssistantPoll(), 1000).unref();
   setTimeout(() => void runScout(), 20000);
   setTimeout(() => void runDailyPublish(), 60000);
   setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
