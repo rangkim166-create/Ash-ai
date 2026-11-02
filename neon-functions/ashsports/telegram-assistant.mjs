@@ -5,7 +5,7 @@ const clean=(s,n=1200)=>String(s||"").replace(/<script[\s\S]*?<\/script>/gi," ")
 async function searchWeb(q){
  const results=[],seen=new Set(),now=Date.now();
  const d7=new Date(now-7*24*60*60*1000).toISOString().slice(0,10),d1=new Date(now-24*60*60*1000).toISOString().slice(0,10);
- const queries=[q+" after:"+d7,q+" team news injuries suspensions official after:"+d1,q+" recent form last matches results after:"+d7,q+" bookmaker odds odds comparison after:"+d7];
+ const queries=[q+" after:"+d7,q+" team news injuries suspensions official after:"+d7,q+" recent form last five matches results match reports",q+" upcoming fixtures schedule next 7 days",q+" bookmaker odds odds comparison after:"+d7];
  const add=(item)=>{if(item?.title&&item?.url&&/^https?:/.test(item.url)&&!seen.has(item.url)){seen.add(item.url);results.push(item);}};
  await Promise.all(queries.map(async(query)=>{try{
   const rss="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
@@ -15,11 +15,11 @@ async function searchWeb(q){
    if(results.length>=24)break;
   }
  }catch{}}));
- await Promise.all(queries.slice(0,3).map(async(query)=>{try{
+ await Promise.all(queries.slice(0,4).map(async(query)=>{try{
   const r=await fetch("https://html.duckduckgo.com/html/?q="+encodeURIComponent(query),{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(12000)});if(!r.ok)return;const h=await r.text();
    for(const m of h.matchAll(new RegExp('class="result__a"[^>]*href="([^"]+)"[^>]*>([\\s\\S]*?)</a>',"gi"))){let u=m[1];if(u.includes("uddg=")){try{u=decodeURIComponent(new URL(u,"https://duckduckgo.com").searchParams.get("uddg")||u)}catch{}}add({title:clean(m[2],200),url:u,source:"Web search"});if(results.length>=30)break;}
  }catch{}}));
- const ranked=results.filter(x=>x.ageHours==null||x.ageHours<=7*24).sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,12);
+ const ranked=results.filter(x=>x.ageHours==null||x.ageHours<=30*24).sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,12);
  const pages=[];
  for(const item of ranked.slice(0,9)){try{const r=await fetch(item.url,{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(9000),redirect:"follow"});if(!r.ok)continue;const type=r.headers.get("content-type")||"";if(!type.includes("text/html")&&!type.includes("text/plain"))continue;const body=clean(await r.text(),2600);if(body.length>180)pages.push({...item,excerpt:body.slice(0,1900)});}catch{}}
  return {items:ranked,pages,retrievedAt:new Date().toISOString()};
