@@ -32,13 +32,35 @@ async function fetchLiveOdds(prompt,read){
   const sports=await sr.json(),words=(prompt.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(x=>x.length>2);
   const candidates=sports.filter(s=>s.active&&words.some(w=>(s.title+" "+s.key).toLowerCase().includes(w)||w.includes((s.key||"").toLowerCase().replace(/_/g," "))));
    const category=/\b(nba|basketball|wnba|ncaa)\b/i.test(prompt)?"basketball":/\b(tennis|atp|wta|grand slam)\b/i.test(prompt)?"tennis":/\b(football|soccer|premier league|epl|la liga|bundesliga|serie a|champions league|afcon)\b/i.test(prompt)?"soccer":"soccer";const pool=sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes(category));const selected=(candidates.length?candidates:pool).slice(0,3);
+  const fixtureParts=prompt.split(/\\b(?:vs?\\.?|versus)\\b|\\s+[–—-]\\s+/i);
+  const stopWords=new Set(["analyse","analyze","predict","prediction","latest","available","information","show","current","injuries","injury","form","bookmaker","bookmakers","comparison","comparisons","timestamps","today","tomorrow","please","match","game","odds","value","research","using","including","with","the","and","for","from","what","about","can","you"]);
+  const normalizeTeam=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\\s+/g," ").trim();
+  const teamTokens=s=>normalizeTeam(s).split(" ").filter(w=>w.length>2&&!stopWords.has(w));
+  let requestedTeams=[];
+  if(fixtureParts.length===2){
+   const left=fixtureParts[0].split(/\\b(?:analyse|analyze|predict|check|research|show|what|tell me about)\\b/i).pop();
+   const right=fixtureParts[1].split(/\\b(?:using|with|including|and show|for today|today|tomorrow)\\b/i)[0];
+   const a=teamTokens(left),b=teamTokens(right);
+   if(a.length&&b.length)requestedTeams=[a,b];
+  }
   const events=[];
   for(const sport of selected){try{
    const u="https://api.the-odds-api.com/v4/sports/"+encodeURIComponent(sport.key)+"/odds?regions=uk,eu,us&markets=h2h,totals&oddsFormat=decimal&dateFormat=iso&apiKey="+encodeURIComponent(key);
    const r=await fetch(u,{signal:timeout(15000)});if(!r.ok)continue;const data=await r.json();
-   for(const e of data){const text=(e.home_team+" "+e.away_team).toLowerCase();if(words.some(w=>text.includes(w))||words.length<2)events.push({sport:sport.title,home:e.home_team,away:e.away_team,commence_time:e.commence_time,bookmakers:(e.bookmakers||[]).slice(0,8).map(b=>({name:b.title,updated:b.last_update,markets:b.markets}))});}
+   for(const e of data){
+    const home=teamTokens(e.home_team),away=teamTokens(e.away_team);
+    let matched=false;
+    if(requestedTeams.length===2){
+     const overlap=(a,b)=>a.some(x=>b.some(y=>x===y||x.startsWith(y)||y.startsWith(x)));
+     matched=(overlap(requestedTeams[0],home)&&overlap(requestedTeams[1],away))||(overlap(requestedTeams[0],away)&&overlap(requestedTeams[1],home));
+    }else{
+     const wanted=teamTokens(prompt),homeHit=wanted.filter(x=>home.some(y=>x===y||x.startsWith(y)||y.startsWith(x))).length,awayHit=wanted.filter(x=>away.some(y=>x===y||x.startsWith(y)||y.startsWith(x))).length;
+     matched=homeHit>0&&awayHit>0;
+    }
+    if(matched)events.push({sport:sport.title,home:e.home_team,away:e.away_team,commence_time:e.commence_time,bookmakers:(e.bookmakers||[]).slice(0,8).map(b=>({name:b.title,updated:b.last_update,markets:b.markets}))});
+   }
   }catch{}}
-  return {status:"ok",retrievedAt:new Date().toISOString(),events:events.slice(0,8)};
+  return {status:"ok",retrievedAt:new Date().toISOString(),events:events.slice(0,8),requestedTeams:requestedTeams.length?requestedTeams.map(x=>x.join(" ")):null};
  }catch(e){return {status:"error",message:String(e.message||e).slice(0,140),events:[]};}
 }
 export function createTelegramAssistant({db,read,telegram}){
@@ -95,8 +117,9 @@ export function createTelegramAssistant({db,read,telegram}){
    }catch(e){console.error("[ash-telegram-db-research]",String(e.message||e));}
   }
   const system="You are Ash Jarvis, a live sports research analyst and thoughtful conversational partner. For every time-sensitive match question, use the supplied current web research and live odds API results, not memory. Explicitly state the research retrieval timestamp and the publication/update dates of key sources. Prefer information from the last 24 hours for team news, last 7 days for form/context, and official club/league sources for injuries and suspensions. Verify important claims against two independent sources when possible. Separate confirmed facts, reported/expected information, and your own inference. Never call predicted lineups confirmed. Never present database snapshots as live odds. Only quote bookmaker prices from the live odds API data and identify bookmaker plus retrieval time. If the odds API returned no matching events, say current bookmaker prices could not be verified. If sources are stale, conflicting, or unavailable, flag that clearly and downgrade confidence. If a match date is ambiguous or already played, clarify/check fixture date before forecasting. Handle ANY sport, league, match, athlete, tactics, statistics or sports question. Ask one concise clarification only when essential. For match analysis, structure: quick verdict; evidence (recent form, home/away, head-to-head only when meaningful, injuries/suspensions/lineups, schedule/rest, surface/weather if relevant); bookmaker consensus and price/value if supplied; risks and what could change the view; confidence as a calibrated qualitative estimate, never certainty. Distinguish verified facts, reports and inference. Never invent odds, injuries, lineups, sources or statistics. Current web research and, where available, direct live bookmaker API data are supplied below; cite source titles and URLs in plain text. Treat timestamps as essential. If sources disagree or are stale, say so. If live info is unavailable, disclose it. Do not force a bet; explain no-bet when edge is unclear. Betting is risky; encourage small fixed stakes and never chase losses. Do not claim a pick is guaranteed. Be willing to challenge the user's assumptions respectfully. Answer non-betting sports questions too. Keep replies readable and under 3500 characters.";
-  const context=research.pages.slice(0,3).map((p,i)=>"["+(i+1)+"] "+p.title+" ("+(p.date||"date unavailable")+") "+p.url+"\\n"+String(p.excerpt||"").slice(0,650)).join("\\n\\n").slice(0,2600)+"\\nLIVE ODDS (retrieved "+(research.liveOdds?.retrievedAt||"not retrieved")+"): "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,1800)+"\\nResearch retrieved: "+(research.retrievedAt||"unknown");
-  const compactSystem=system.slice(0,1900);
+  const context=research.pages.slice(0,3).map((p,i)=>"["+(i+1)+"] "+p.title+" ("+(p.date||"date unavailable")+") "+p.url+"\\n"+String(p.excerpt||"").slice(0,650)).join("\\n\\n").slice(0,2400)+"\\n"+String(databaseResearch||"No matching stored fixture/odds records.") .slice(0,900)+"\\nLIVE ODDS (retrieved "+(research.liveOdds?.retrievedAt||"not retrieved")+"): "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,1600)+"\\nResearch retrieved: "+(research.retrievedAt||"unknown");
+  const ageRule="When describing source age, calculate elapsed time from the current retrieval timestamp. Do not call late-2025 material more than a year old unless it is actually over 12 months old. Mark any source older than 7 days as historical for current team news, and never use it as current injury/lineup evidence. If a requested fixture has no exact matching live odds event, say no matching market was found; never substitute another fixture. If requestedTeams is present, live odds must match both teams.\n";
+  const compactSystem=(system+ "\\n"+ageRule).slice(0,2100);
   const messages=[{role:"system",content:compactSystem+"\\n\\nCURRENT RESEARCH:\\n"+(context||"No current sources retrieved; disclose this.")},...history.rows.slice(0,4).reverse().map(x=>({role:x.role,content:String(x.content||"").slice(0,350)})),{role:"user",content:prompt.slice(0,1400)}];
   let response="",errors=[];
   for(const provider of ["groq","openrouter"]){try{const key=await read(provider);if(!key)continue;response=await ai(messages,provider,key);if(response)break;}catch(e){errors.push(String(e.message||e));}}
