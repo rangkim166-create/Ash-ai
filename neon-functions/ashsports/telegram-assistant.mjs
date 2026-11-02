@@ -32,14 +32,14 @@ async function fetchLiveOdds(prompt,read){
   const sports=await sr.json(),words=(prompt.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(x=>x.length>2);
   const candidates=sports.filter(s=>s.active&&words.some(w=>(s.title+" "+s.key).toLowerCase().includes(w)||w.includes((s.key||"").toLowerCase().replace(/_/g," "))));
    const category=/\b(nba|basketball|wnba|ncaa)\b/i.test(prompt)?"basketball":/\b(tennis|atp|wta|grand slam)\b/i.test(prompt)?"tennis":/\b(football|soccer|premier league|epl|la liga|bundesliga|serie a|champions league|afcon)\b/i.test(prompt)?"soccer":"soccer";const pool=sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes(category));const selected=(candidates.length?candidates:pool).slice(0,3);
-  const fixtureParts=prompt.split(/\\b(?:vs?\\.?|versus)\\b|\\s+[–—-]\\s+/i);
+  const fixtureParts=prompt.split(/\b(?:vs?\\.?|versus)\b|\s+[–—-]\s+/i);
   const stopWords=new Set(["analyse","analyze","predict","prediction","latest","available","information","show","current","injuries","injury","form","bookmaker","bookmakers","comparison","comparisons","timestamps","today","tomorrow","please","match","game","odds","value","research","using","including","with","the","and","for","from","what","about","can","you"]);
-  const normalizeTeam=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\\s+/g," ").trim();
+  const normalizeTeam=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
   const teamTokens=s=>normalizeTeam(s).split(" ").filter(w=>w.length>2&&!stopWords.has(w));
   let requestedTeams=[];
   if(fixtureParts.length===2){
-   const left=fixtureParts[0].split(/\\b(?:analyse|analyze|predict|check|research|show|what|tell me about)\\b/i).pop();
-   const right=fixtureParts[1].split(/\\b(?:using|with|including|and show|for today|today|tomorrow)\\b/i)[0];
+   const left=fixtureParts[0].split(/\b(?:analyse|analyze|predict|check|research|show|what|tell me about)\b/i).pop();
+   const right=fixtureParts[1].split(/\b(?:using|with|including|and show|for today|today|tomorrow)\b/i)[0];
    const a=teamTokens(left),b=teamTokens(right);
    if(a.length&&b.length)requestedTeams=[a,b];
   }
