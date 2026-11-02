@@ -49,11 +49,17 @@ export function createTelegramAssistant({db,read,telegram}){
   const models=provider==="groq"?[...new Set([process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","openai/gpt-oss-120b","openai/gpt-oss-20b"])]:[process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini"];
   const errors=[];
   for(const model of models){
-   const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:1100}),signal:timeout(45000)});
+   const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:650}),signal:timeout(45000)});
    const j=await r.json();
    if(r.ok)return j.choices?.[0]?.message?.content||"";
    const detail=JSON.stringify(j).slice(0,180);
    errors.push(model+" HTTP "+r.status+" "+detail);
+   if(provider==="groq"&&(r.status===413||r.status===429)&&messages[0]?.content?.length>2200){
+    const smaller=[{role:"system",content:messages[0].content.slice(0,1600)},...messages.slice(-3).map(x=>({role:x.role,content:String(x.content||"").slice(0,450)}))];
+    const retry=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key},body:JSON.stringify({model,messages:smaller,temperature:0.25,max_tokens:450}),signal:timeout(45000)});
+    const retryJson=await retry.json();if(retry.ok)return retryJson.choices?.[0]?.message?.content||"";
+    errors.push(model+" compact retry HTTP "+retry.status+" "+JSON.stringify(retryJson).slice(0,140));
+   }
    if(provider!=="groq"||!(r.status===404||j?.error?.code==="model_not_found"))break;
   }
   throw Error(errors.join(" | "));
@@ -89,8 +95,9 @@ export function createTelegramAssistant({db,read,telegram}){
    }catch(e){console.error("[ash-telegram-db-research]",String(e.message||e));}
   }
   const system="You are Ash Jarvis, a live sports research analyst and thoughtful conversational partner. For every time-sensitive match question, use the supplied current web research and live odds API results, not memory. Explicitly state the research retrieval timestamp and the publication/update dates of key sources. Prefer information from the last 24 hours for team news, last 7 days for form/context, and official club/league sources for injuries and suspensions. Verify important claims against two independent sources when possible. Separate confirmed facts, reported/expected information, and your own inference. Never call predicted lineups confirmed. Never present database snapshots as live odds. Only quote bookmaker prices from the live odds API data and identify bookmaker plus retrieval time. If the odds API returned no matching events, say current bookmaker prices could not be verified. If sources are stale, conflicting, or unavailable, flag that clearly and downgrade confidence. If a match date is ambiguous or already played, clarify/check fixture date before forecasting. Handle ANY sport, league, match, athlete, tactics, statistics or sports question. Ask one concise clarification only when essential. For match analysis, structure: quick verdict; evidence (recent form, home/away, head-to-head only when meaningful, injuries/suspensions/lineups, schedule/rest, surface/weather if relevant); bookmaker consensus and price/value if supplied; risks and what could change the view; confidence as a calibrated qualitative estimate, never certainty. Distinguish verified facts, reports and inference. Never invent odds, injuries, lineups, sources or statistics. Current web research and, where available, direct live bookmaker API data are supplied below; cite source titles and URLs in plain text. Treat timestamps as essential. If sources disagree or are stale, say so. If live info is unavailable, disclose it. Do not force a bet; explain no-bet when edge is unclear. Betting is risky; encourage small fixed stakes and never chase losses. Do not claim a pick is guaranteed. Be willing to challenge the user's assumptions respectfully. Answer non-betting sports questions too. Keep replies readable and under 3500 characters.";
-  const context=research.pages.map((p,i)=>"["+ (i+1)+"] "+p.title+" ("+(p.date||"date unavailable")+") "+" "+p.url+"\n"+p.excerpt).join("\n\n").slice(0,9500)+"\\n\\nLIVE ODDS API DATA (retrieved "+(research.liveOdds?.retrievedAt||"not retrieved")+"): "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,6500)+"\\nResearch retrieved at: "+(research.retrievedAt||"unknown");
-  const messages=[{role:"system",content:system+"\n\nWEB RESEARCH:\n"+(context||"No usable current web pages retrieved. Do not pretend web research was successful.")},...history.rows.reverse().map(x=>({role:x.role,content:x.content})),{role:"user",content:prompt}];
+  const context=research.pages.slice(0,3).map((p,i)=>"["+(i+1)+"] "+p.title+" ("+(p.date||"date unavailable")+") "+p.url+"\\n"+String(p.excerpt||"").slice(0,650)).join("\\n\\n").slice(0,2600)+"\\nLIVE ODDS (retrieved "+(research.liveOdds?.retrievedAt||"not retrieved")+"): "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,1800)+"\\nResearch retrieved: "+(research.retrievedAt||"unknown");
+  const compactSystem=system.slice(0,1900);
+  const messages=[{role:"system",content:compactSystem+"\\n\\nCURRENT RESEARCH:\\n"+(context||"No current sources retrieved; disclose this.")},...history.rows.slice(0,4).reverse().map(x=>({role:x.role,content:String(x.content||"").slice(0,350)})),{role:"user",content:prompt.slice(0,1400)}];
   let response="",errors=[];
   for(const provider of ["groq","openrouter"]){try{const key=await read(provider);if(!key)continue;response=await ai(messages,provider,key);if(response)break;}catch(e){errors.push(String(e.message||e));}}
   if(!response)response="I'm unable to reach my AI providers right now. "+(errors.join(" | ").slice(0,400)||"Check Groq/OpenRouter credentials in the Ash backend.");
