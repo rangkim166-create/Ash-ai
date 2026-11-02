@@ -14,7 +14,20 @@ async function searchWeb(q){
 export function createTelegramAssistant({db,read,telegram}){
  let connectedLogged=false;
  async function send(chatId,text){const bot=await read("telegram_bot");for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);const r=await fetch(TG+"/bot"+bot.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});const j=await r.json();if(!r.ok||!j.ok)throw Error("Telegram send failed: "+(j.description||r.status));}}
- async function ai(messages,provider,key){const base=provider==="groq"?"https://api.groq.com/openai/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";const model=provider==="groq"?(process.env.ASH_GROQ_MODEL||"llama-3.3-70b-versatile"):(process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini");const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:1100}),signal:timeout(45000)});const j=await r.json();if(!r.ok)throw Error(provider+" HTTP "+r.status+" "+JSON.stringify(j).slice(0,180));return j.choices?.[0]?.message?.content||"";}
+ async function ai(messages,provider,key){
+  const base=provider==="groq"?"https://api.groq.com/openai/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";
+  const models=provider==="groq"?[...new Set([process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","openai/gpt-oss-120b","openai/gpt-oss-20b"])]:[process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini"];
+  const errors=[];
+  for(const model of models){
+   const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:1100}),signal:timeout(45000)});
+   const j=await r.json();
+   if(r.ok)return j.choices?.[0]?.message?.content||"";
+   const detail=JSON.stringify(j).slice(0,180);
+   errors.push(model+" HTTP "+r.status+" "+detail);
+   if(provider!=="groq"||!(r.status===404||j?.error?.code==="model_not_found"))break;
+  }
+  throw Error(errors.join(" | "));
+ }
  async function answer(chatId,text){
   const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId)throw Error("Telegram bot is not configured");
   if(String(chatId)!==String(bot.chatId))return;
