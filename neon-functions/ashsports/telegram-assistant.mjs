@@ -23,8 +23,8 @@ async function searchWeb(q){
  for(const item of ranked.slice(0,9)){try{const r=await fetch(item.url,{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(9000),redirect:"follow"});if(!r.ok)continue;const type=r.headers.get("content-type")||"";if(!type.includes("text/html")&&!type.includes("text/plain"))continue;const body=clean(await r.text(),2600);if(body.length>180)pages.push({...item,excerpt:body.slice(0,1900)});}catch{}}
  return {items:ranked,pages,retrievedAt:new Date().toISOString()};
 }
-async function fetchLiveOdds(prompt){
- const key=await (async()=>{try{return await globalThis.__ashOddsKey?.()}catch{return null}})();
+async function fetchLiveOdds(prompt,read){
+ const key=await read("the_odds_api");
  if(!key)return {status:"not_configured",events:[]};
  try{
   const sr=await fetch("https://api.the-odds-api.com/v4/sports?apiKey="+encodeURIComponent(key),{signal:timeout(12000)});
@@ -67,7 +67,7 @@ export function createTelegramAssistant({db,read,telegram}){
   await db.query("CREATE TABLE IF NOT EXISTS ash_telegram_memory(chat_id text NOT NULL,role text NOT NULL,content text NOT NULL,created_at timestamptz NOT NULL DEFAULT now())");
   const history=await db.query("SELECT role,content FROM ash_telegram_memory WHERE chat_id=$1 ORDER BY created_at DESC LIMIT 12",[String(chatId)]);
   let research={items:[],pages:[],retrievedAt:null};let needsResearch=/(analyse|analy[sz]e|predict|prediction|odds|injur|lineup|line-up|form|fixture|match|game|today|tomorrow|league|team|player|bet|pick|score|who wins|longs|over|under)/i.test(prompt);
-  if(needsResearch){globalThis.__ashOddsKey=async()=>await read("the_odds_api");await fetch(TG+"/bot"+bot.botToken+"/sendChatAction",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,action:"typing"}),signal:timeout(5000)}).catch(()=>{});research=await searchWeb(prompt);research.liveOdds=await fetchLiveOdds(prompt);}
+  if(needsResearch){await fetch(TG+"/bot"+bot.botToken+"/sendChatAction",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,action:"typing"}),signal:timeout(5000)}).catch(()=>{});research=await searchWeb(prompt);research.liveOdds=await fetchLiveOdds(prompt,read);}
   let databaseResearch="";
   if(needsResearch){
    try{
