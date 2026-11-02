@@ -11,8 +11,8 @@ async function searchWeb(q){
  return {items:results,pages};
 }
 export function createTelegramAssistant({db,read,telegram}){
- let offset=0,running=false;
- async function send(chatId,text){for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);await fetch(TG+"/bot"+(await read("telegram_bot")).botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});}}
+ let offset=0,running=false,connectedLogged=false;
+ async function send(chatId,text){const bot=await read("telegram_bot");for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);const r=await fetch(TG+"/bot"+bot.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});const j=await r.json();if(!r.ok||!j.ok)throw Error("Telegram send failed: "+(j.description||r.status));}}
  async function ai(messages,provider,key){const base=provider==="groq"?"https://api.groq.com/openai/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";const model=provider==="groq"?(process.env.ASH_GROQ_MODEL||"llama-3.3-70b-versatile"):(process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini");const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:1100}),signal:timeout(45000)});const j=await r.json();if(!r.ok)throw Error(provider+" HTTP "+r.status+" "+JSON.stringify(j).slice(0,180));return j.choices?.[0]?.message?.content||"";}
  async function answer(chatId,text){
   const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId)throw Error("Telegram bot is not configured");
@@ -36,7 +36,7 @@ export function createTelegramAssistant({db,read,telegram}){
  }
  async function poll(){
   if(running)return;running=true;
-  try{const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId)return;const r=await fetch(TG+"/bot"+bot.botToken+"/getUpdates?timeout=20&offset="+offset+"&allowed_updates=%5B%22message%22%5D",{signal:timeout(26000)});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.description||"Telegram polling failed");for(const u of j.result||[]){offset=Math.max(offset,Number(u.update_id)+1);const m=u.message;if(!m?.text)continue;try{await answer(m.chat.id,m.text);}catch(e){console.error("[ash-telegram-ai]",e);if(String(m.chat.id)===String(bot.chatId))await send(m.chat.id,"I hit a temporary issue: "+String(e.message||e).slice(0,250)).catch(()=>{});}}}catch(e){console.error("[ash-telegram-poll]",String(e.message||e));}finally{running=false;}
+  try{const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId)return;const r=await fetch(TG+"/bot"+bot.botToken+"/getUpdates?timeout=20&offset="+offset+"&allowed_updates=%5B%22message%22%5D",{signal:timeout(26000)});const j=await r.json();if(!r.ok||!j.ok)throw Error(j.description||"Telegram polling failed");if(!connectedLogged){const groq=!!(await read("groq")),openrouter=!!(await read("openrouter"));console.log("[ash-telegram] polling connected; AI credentials:",JSON.stringify({groq,openrouter}));connectedLogged=true;}for(const u of j.result||[]){offset=Math.max(offset,Number(u.update_id)+1);const m=u.message;if(!m?.text)continue;try{await answer(m.chat.id,m.text);}catch(e){console.error("[ash-telegram-ai]",e);if(String(m.chat.id)===String(bot.chatId))await send(m.chat.id,"I hit a temporary issue: "+String(e.message||e).slice(0,250)).catch(()=>{});}}}catch(e){console.error("[ash-telegram-poll]",String(e.message||e));}finally{running=false;}
  }
  return {poll};
 }
