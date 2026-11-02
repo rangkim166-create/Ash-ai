@@ -25,6 +25,26 @@ export function createTelegramAssistant({db,read,telegram}){
   const history=await db.query("SELECT role,content FROM ash_telegram_memory WHERE chat_id=$1 ORDER BY created_at DESC LIMIT 12",[String(chatId)]);
   let research={items:[],pages:[]};let needsResearch=/(analyse|analy[sz]e|predict|prediction|odds|injur|lineup|line-up|form|fixture|match|game|today|tomorrow|league|team|player|bet|pick|score|who wins|longs|over|under)/i.test(prompt);
   if(needsResearch){await fetch(TG+"/bot"+bot.botToken+"/sendChatAction",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,action:"typing"}),signal:timeout(5000)}).catch(()=>{});research=await searchWeb(prompt);}
+  let databaseResearch="";
+  if(needsResearch){
+   try{
+    const stop=new Set(["analyse","analyze","predict","prediction","odds","injury","injuries","lineup","lineups","form","fixture","fixtures","match","matches","game","today","tomorrow","league","team","player","players","bet","bets","pick","picks","score","scores","who","wins","winner","long","longs","over","under","please","what","about","with","from","against","including","value","best","compare","research","sports","football","basketball","tennis"]);
+    const terms=[...new Set((prompt.match(/[A-Za-z][A-Za-z0-9.'-]{2,}/g)||[]).map(x=>x.replace(/[.'-]/g,"").toLowerCase()).filter(x=>x.length>=3&&!stop.has(x)))].slice(0,8);
+    if(terms.length){
+     const patterns=terms.map(x=>"%"+x+"%");
+     const matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status FROM sports_matches WHERE starts_at BETWEEN now()-interval '12 hours' AND now()+interval '14 days' AND (home_or_player_one ILIKE ANY($1::text[]) OR away_or_player_two ILIKE ANY($1::text[])) ORDER BY starts_at ASC LIMIT 12",[patterns]);
+     if(matches.rows.length){
+      const ids=matches.rows.map(x=>x.id);
+      const prices=await db.query("SELECT match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND observed_at>now()-interval '36 hours' ORDER BY match_id,observed_at DESC LIMIT 180",[ids]);
+      const lines=matches.rows.map(m=>{
+       const p=prices.rows.filter(x=>x.match_id===m.id).slice(0,24).map(x=>x.bookmaker_key+" "+x.market_key+" "+x.outcome_name+(x.line==null?"":" "+x.line)+" @ "+x.decimal_odds+" (seen "+new Date(x.observed_at).toISOString()+")");
+       return m.sport+" | "+m.competition+" | "+m.home_or_player_one+" vs "+m.away_or_player_two+" | "+new Date(m.starts_at).toISOString()+" | "+m.status+(p.length?"\\n  bookmaker prices: "+p.join("; "):"\\n  no fresh bookmaker prices stored");
+      });
+      databaseResearch="Stored fixture and bookmaker research (prices are historical snapshots, not guaranteed live):\\n"+lines.join("\\n");
+     }
+    }
+   }catch(e){console.error("[ash-telegram-db-research]",String(e.message||e));}
+  }
   const system="You are Ash Jarvis, a thoughtful, curious sports research partner chatting in Telegram. Be conversational and genuinely brainstorm with the user. Handle ANY sport, league, match, athlete, tactics, statistics or sports question. Ask one concise clarification only when essential. For match analysis, structure: quick verdict; evidence (recent form, home/away, head-to-head only when meaningful, injuries/suspensions/lineups, schedule/rest, surface/weather if relevant); bookmaker consensus and price/value if supplied; risks and what could change the view; confidence as a calibrated qualitative estimate, never certainty. Distinguish verified facts, reports and inference. Never invent odds, injuries, lineups, sources or statistics. Current web research is supplied below; cite source titles and URLs in plain text. If sources disagree or are stale, say so. If live info is unavailable, disclose it. Do not force a bet; explain no-bet when edge is unclear. Betting is risky; encourage small fixed stakes and never chase losses. Do not claim a pick is guaranteed. Be willing to challenge the user's assumptions respectfully. Answer non-betting sports questions too. Keep replies readable and under 3500 characters.";
   const context=research.pages.map((p,i)=>"["+ (i+1)+"] "+p.title+" ("+(p.date||"date unavailable")+") "+" "+p.url+"\n"+p.excerpt).join("\n\n").slice(0,7000);
   const messages=[{role:"system",content:system+"\n\nWEB RESEARCH:\n"+(context||"No usable current web pages retrieved. Do not pretend web research was successful.")},...history.rows.reverse().map(x=>({role:x.role,content:x.content})),{role:"user",content:prompt}];
