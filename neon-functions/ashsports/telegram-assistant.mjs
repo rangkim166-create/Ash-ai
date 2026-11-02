@@ -35,7 +35,7 @@ async function fetchLiveOdds(prompt,read){
    const category=/\b(nba|basketball|wnba|ncaa)\b/i.test(prompt)?"basketball":/\b(tennis|atp|wta|grand slam)\b/i.test(prompt)?"tennis":/\b(football|soccer|premier league|epl|la liga|bundesliga|serie a|champions league|afcon)\b/i.test(prompt)?"soccer":"soccer";const pool=sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes(category));
   const preferredKeys=category==="soccer"?["soccer_epl","soccer_england_efl_cup","soccer_fa_cup","soccer_uefa_champs_league"]:category==="basketball"?["basketball_nba","basketball_euroleague","basketball_ncaab"]:sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes("tennis")).slice(0,4).map(s=>s.key);
   const preferred=sports.filter(s=>s.active&&preferredKeys.includes(s.key));
-  const selected=[...new Map([...candidates,...preferred,...pool].map(s=>[s.key,s])).values()].slice(0,4);
+  const selected=[...new Map([...candidates,...preferred,...pool].map(s=>[s.key,s])).values()].slice(0,8);
   const fixtureParts=prompt.split(/\b(?:vs?\\.?|versus)\b|\s+[–—-]\s+/i);
   const stopWords=new Set(["analyse","analyze","predict","prediction","latest","available","information","show","current","injuries","injury","form","bookmaker","bookmakers","comparison","comparisons","timestamps","today","tomorrow","please","match","game","odds","value","research","using","including","with","the","and","for","from","what","about","can","you"]);
   const normalizeTeam=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
@@ -58,8 +58,8 @@ async function fetchLiveOdds(prompt,read){
      const overlap=(a,b)=>a.some(x=>b.some(y=>x===y||x.startsWith(y)||y.startsWith(x)));
      matched=(overlap(requestedTeams[0],home)&&overlap(requestedTeams[1],away))||(overlap(requestedTeams[0],away)&&overlap(requestedTeams[1],home));
     }else{
-     const wanted=teamTokens(prompt),homeHit=wanted.filter(x=>home.some(y=>x===y||x.startsWith(y)||y.startsWith(x))).length,awayHit=wanted.filter(x=>away.some(y=>x===y||x.startsWith(y)||y.startsWith(x))).length;
-     matched=homeHit>0&&awayHit>0;
+     // Broad fixture discovery: without two explicitly named teams, include the event.
+     matched=true;
     }
     if(matched)events.push({sport:sport.title,home:e.home_team,away:e.away_team,commence_time:e.commence_time,bookmakers:(e.bookmakers||[]).slice(0,8).map(b=>({name:b.title,updated:b.last_update,markets:b.markets}))});
    }
