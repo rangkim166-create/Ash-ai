@@ -99,6 +99,7 @@ server.listen(port, "0.0.0.0", () => {
     }
   };
   // Telegram chat assistant uses long polling; the poller self-guards against overlap.
+  console.log("[ash-telegram] poller scheduled", JSON.stringify({botTokenConfigured:!!process.env.TELEGRAM_BOT_TOKEN,chatIdConfigured:!!process.env.TELEGRAM_CHAT_ID,groqConfigured:!!process.env.GROQ_API_KEY,openrouterConfigured:!!process.env.OPENROUTER_API_KEY}));
   setTimeout(() => void handler.runTelegramAssistantPoll(), 5000);
   setInterval(() => void handler.runTelegramAssistantPoll(), 1000).unref();
   setTimeout(() => void runScout(), 20000);
