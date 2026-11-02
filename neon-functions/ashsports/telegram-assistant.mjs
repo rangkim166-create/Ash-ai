@@ -103,22 +103,44 @@ export function createTelegramAssistant({db,read,telegram}){
   let databaseResearch="";
   if(needsResearch){
    try{
-    const stop=new Set(["analyse","analyze","predict","prediction","odds","injury","injuries","lineup","lineups","form","fixture","fixtures","match","matches","game","today","tomorrow","league","team","player","players","bet","bets","pick","picks","score","scores","who","wins","winner","long","longs","over","under","please","what","about","with","from","against","including","value","best","compare","research","sports","football","basketball","tennis"]);
+    const stop=new Set(["analyse","analyze","predict","prediction","odds","injury","injuries","lineup","lineups","form","fixture","fixtures","match","matches","game","games","today","tomorrow","league","team","player","players","bet","bets","pick","picks","score","scores","who","wins","winner","long","longs","over","under","please","what","about","with","from","against","including","value","best","compare","research","sports","football","soccer","basketball","tennis","next","days","week","upcoming","genuinely","distinct","independently","confirm","confirmed","actual","seven"]);
     const terms=[...new Set((prompt.match(/[A-Za-z][A-Za-z0-9.'-]{2,}/g)||[]).map(x=>x.replace(/[.'-]/g,"").toLowerCase()).filter(x=>x.length>=3&&!stop.has(x)))].slice(0,8);
-    if(terms.length){
+    const fixtureIntent=/\b(upcoming|fixtures|next\s+\d+\s+days|next week|matches this week)\b/i.test(prompt);
+    let matches={rows:[]};
+    if(fixtureIntent&&terms.length===0){
+     matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status FROM sports_matches WHERE status='scheduled' AND starts_at>now() AND starts_at<=now()+interval '7 days' ORDER BY starts_at ASC LIMIT 40");
+    }else if(terms.length){
      const patterns=terms.map(x=>"%"+x+"%");
-     const matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status FROM sports_matches WHERE starts_at BETWEEN now()-interval '12 hours' AND now()+interval '14 days' AND (home_or_player_one ILIKE ANY($1::text[]) OR away_or_player_two ILIKE ANY($1::text[])) ORDER BY starts_at ASC LIMIT 12",[patterns]);
-     if(matches.rows.length){
-      const ids=matches.rows.map(x=>x.id);
-      const prices=await db.query("SELECT match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND observed_at>now()-interval '36 hours' ORDER BY match_id,observed_at DESC LIMIT 180",[ids]);
-      const lines=matches.rows.map(m=>{
-       const p=prices.rows.filter(x=>x.match_id===m.id).slice(0,24).map(x=>x.bookmaker_key+" "+x.market_key+" "+x.outcome_name+(x.line==null?"":" "+x.line)+" @ "+x.decimal_odds+" (seen "+new Date(x.observed_at).toISOString()+")");
-       return m.sport+" | "+m.competition+" | "+m.home_or_player_one+" vs "+m.away_or_player_two+" | "+new Date(m.starts_at).toISOString()+" | "+m.status+(p.length?"\\n  bookmaker prices: "+p.join("; "):"\\n  no fresh bookmaker prices stored");
-      });
-      databaseResearch="Stored fixture and bookmaker research (prices are historical snapshots, not guaranteed live):\\n"+lines.join("\\n");
+     matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status FROM sports_matches WHERE starts_at BETWEEN now()-interval '12 hours' AND now()+interval '14 days' AND (home_or_player_one ILIKE ANY($1::text[]) OR away_or_player_two ILIKE ANY($1::text[])) ORDER BY starts_at ASC LIMIT 20",[patterns]);
+    }
+    const teamNames=[...new Set(matches.rows.flatMap(x=>[x.home_or_player_one,x.away_or_player_two]).filter(Boolean))];
+    let formRows={rows:[]};
+    if(teamNames.length){
+     formRows=await db.query("SELECT sport,competition,home_or_player_one,away_or_player_two,starts_at,home_score,away_score FROM sports_matches WHERE status='completed' AND starts_at<now() AND home_score IS NOT NULL AND away_score IS NOT NULL AND (home_or_player_one=ANY($1::text[]) OR away_or_player_two=ANY($1::text[])) ORDER BY starts_at DESC LIMIT 120",[teamNames]);
+    }
+    let priceRows={rows:[]};
+    if(matches.rows.length){
+     const ids=matches.rows.map(x=>x.id);
+     priceRows=await db.query("SELECT match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND observed_at>now()-interval '36 hours' ORDER BY match_id,observed_at DESC LIMIT 240",[ids]);
+    }
+    const fixtureLines=matches.rows.map(m=>{
+     const p=priceRows.rows.filter(x=>x.match_id===m.id).slice(0,18).map(x=>x.bookmaker_key+" "+x.market_key+" "+x.outcome_name+(x.line==null?"":" "+x.line)+" @ "+x.decimal_odds+" (seen "+new Date(x.observed_at).toISOString()+")");
+     return m.sport+" | "+m.competition+" | "+m.home_or_player_one+" vs "+m.away_or_player_two+" | "+new Date(m.starts_at).toISOString()+" | "+m.status+(p.length?"\n bookmaker snapshots: "+p.join("; "):"\n no recent bookmaker prices stored");
+    });
+    const formByTeam=new Map();
+    for(const row of formRows.rows){
+     const home=row.home_or_player_one,away=row.away_or_player_two;
+     for(const team of teamNames){
+      if(home!==team&&away!==team)continue;
+      const isHome=home===team,forScore=Number(isHome?row.home_score:row.away_score),against=Number(isHome?row.away_score:row.home_score);
+      const outcome=forScore>against?"W":forScore<against?"L":"D";
+      if(!formByTeam.has(team))formByTeam.set(team,[]);
+      if(formByTeam.get(team).length<5)formByTeam.get(team).push(new Date(row.starts_at).toISOString().slice(0,10)+" "+outcome+" "+forScore+"-"+against+" vs "+(isHome?away:home)+" ("+row.competition+")");
      }
     }
-   }catch(e){console.error("[ash-telegram-db-research]",String(e.message||e));}
+    const formLines=[...formByTeam.entries()].map(([team,rows])=>team+" last five stored competitive results: "+rows.join(" | "));
+    databaseResearch="STORED UPCOMING FIXTURES (not independently verified):\n"+(fixtureLines.join("\n")||"No matching upcoming fixtures stored.")+"\nLAST FIVE STORED RESULTS (may be incomplete; do not imply complete if fewer than five):\n"+(formLines.join("\n")||"No stored completed results for these teams.");
+   }catch(e){console.error("[ash-telegram-db-research]",String(e.message||e));databaseResearch="Database research failed: "+String(e.message||e).slice(0,140);}
   }
   const system="You are Ash Jarvis, a live sports research analyst and thoughtful conversational partner. For every time-sensitive match question, use the supplied current web research and live odds API results, not memory. Explicitly state the research retrieval timestamp and the publication/update dates of key sources. Prefer information from the last 24 hours for team news, last 7 days for form/context, and official club/league sources for injuries and suspensions. Verify important claims against two independent sources when possible. Separate confirmed facts, reported/expected information, and your own inference. Never call predicted lineups confirmed. Never present database snapshots as live odds. Only quote bookmaker prices from the live odds API data and identify bookmaker plus retrieval time. If the odds API returned no matching events, say current bookmaker prices could not be verified. If sources are stale, conflicting, or unavailable, flag that clearly and downgrade confidence. If a match date is ambiguous or already played, clarify/check fixture date before forecasting. Handle ANY sport, league, match, athlete, tactics, statistics or sports question. Ask one concise clarification only when essential. For match analysis, structure: quick verdict; evidence (recent form, home/away, head-to-head only when meaningful, injuries/suspensions/lineups, schedule/rest, surface/weather if relevant); bookmaker consensus and price/value if supplied; risks and what could change the view; confidence as a calibrated qualitative estimate, never certainty. Distinguish verified facts, reports and inference. Never invent odds, injuries, lineups, sources or statistics. Current web research and, where available, direct live bookmaker API data are supplied below; cite source titles and URLs in plain text. Treat timestamps as essential. If sources disagree or are stale, say so. If live info is unavailable, disclose it. Do not force a bet; explain no-bet when edge is unclear. Betting is risky; encourage small fixed stakes and never chase losses. Do not claim a pick is guaranteed. Be willing to challenge the user's assumptions respectfully. Answer non-betting sports questions too. Keep replies readable and under 3500 characters.";
   const context="Research retrieved at "+(research.retrievedAt||"unknown")+". Sources older than 7 days were excluded from current-news research; undated pages are not proof of current team news.\\n"+research.pages.slice(0,3).map((p,i)=>"["+(i+1)+"] "+p.title+" ("+(p.date||"publication date unavailable")+") "+p.url+"\\n"+String(p.excerpt||"").slice(0,650)).join("\\n\\n").slice(0,2200)+"\\n"+String(databaseResearch||"No matching stored fixture/odds records.") .slice(0,900)+"\\nLIVE ODDS (retrieved "+(research.liveOdds?.retrievedAt||"not retrieved")+"): "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,1600);
