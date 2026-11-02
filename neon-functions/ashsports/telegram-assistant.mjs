@@ -9,14 +9,14 @@ async function searchWeb(q){
  await Promise.all(queries.map(async(query)=>{try{
   const rss="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
   const r=await fetch(rss,{signal:timeout(12000)});if(!r.ok)return;const x=await r.text();
-   for(const m of x.matchAll(new RegExp("<item>([\\\\s\\\\S]*?)</item>","gi"))){const b=m[1],title=clean((b.match(new RegExp("<title>([\\\\s\\\\S]*?)</title>","i"))||[])[1],240),link=(b.match(new RegExp("<link>([\\\\s\\\\S]*?)</link>","i"))||[])[1]?.trim(),raw=(b.match(new RegExp("<pubDate>([\\\\s\\\\S]*?)</pubDate>","i"))||[])[1],date=clean(raw,80),published=raw?Date.parse(raw):NaN;
+   for(const m of x.matchAll(new RegExp("<item>([\\s\\S]*?)</item>","gi"))){const b=m[1],title=clean((b.match(new RegExp("<title>([\\s\\S]*?)</title>","i"))||[])[1],240),link=(b.match(new RegExp("<link>([\\s\\S]*?)</link>","i"))||[])[1]?.trim(),raw=(b.match(new RegExp("<pubDate>([\\s\\S]*?)</pubDate>","i"))||[])[1],date=clean(raw,80),published=raw?Date.parse(raw):NaN;
    if(title&&link)add({title,url:link,date,publishedAt:Number.isFinite(published)?new Date(published).toISOString():null,ageHours:Number.isFinite(published)?Math.round((now-published)/3600000):null,source:"Google News"});
    if(results.length>=24)break;
   }
  }catch{}}));
  await Promise.all(queries.slice(0,3).map(async(query)=>{try{
   const r=await fetch("https://html.duckduckgo.com/html/?q="+encodeURIComponent(query),{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(12000)});if(!r.ok)return;const h=await r.text();
-   for(const m of h.matchAll(new RegExp('class="result__a"[^>]*href="([^"]+)"[^>]*>([\\\\s\\\\S]*?)</a>',"gi"))){let u=m[1];if(u.includes("uddg=")){try{u=decodeURIComponent(new URL(u,"https://duckduckgo.com").searchParams.get("uddg")||u)}catch{}}add({title:clean(m[2],200),url:u,source:"Web search"});if(results.length>=30)break;}
+   for(const m of h.matchAll(new RegExp('class="result__a"[^>]*href="([^"]+)"[^>]*>([\\s\\S]*?)</a>',"gi"))){let u=m[1];if(u.includes("uddg=")){try{u=decodeURIComponent(new URL(u,"https://duckduckgo.com").searchParams.get("uddg")||u)}catch{}}add({title:clean(m[2],200),url:u,source:"Web search"});if(results.length>=30)break;}
  }catch{}}));
  const ranked=results.sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,12);
  const pages=[];
