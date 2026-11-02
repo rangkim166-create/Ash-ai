@@ -107,7 +107,7 @@ export function createTelegramAssistant({db,read,telegram}){
     const terms=[...new Set((prompt.match(/[A-Za-z][A-Za-z0-9.'-]{2,}/g)||[]).map(x=>x.replace(/[.'-]/g,"").toLowerCase()).filter(x=>x.length>=3&&!stop.has(x)))].slice(0,8);
     const fixtureIntent=/\b(upcoming|fixtures|next\s+\d+\s+days|next week|matches this week)\b/i.test(prompt);
     let matches={rows:[]};
-    if(fixtureIntent&&!/\\b(?:vs\\.?|versus)\\b/i.test(prompt)){
+    if(fixtureIntent&&!/\b(?:vs\.?|versus)\b/i.test(prompt)){
      matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status FROM sports_matches WHERE status='scheduled' AND starts_at>now() AND starts_at<=now()+interval '7 days' ORDER BY starts_at ASC LIMIT 40");
     }else if(terms.length){
      const patterns=terms.map(x=>"%"+x+"%");
