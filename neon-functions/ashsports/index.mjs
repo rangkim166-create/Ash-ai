@@ -1,6 +1,7 @@
 import postgres from "postgres";
 import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
+import { createTelegramAssistant } from "./telegram-assistant.mjs";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
 const sql=postgres(process.env.DATABASE_URL,{max:5,idle_timeout:20,connect_timeout:10});
 const db={query:async(text,values=[])=>{const rows=await sql.unsafe(text,values);return {rows,rowCount:rows.length};}};
@@ -72,6 +73,8 @@ async function save(p,v){const e=encrypt(v);await db.query("INSERT INTO provider
 async function read(p){const env={the_odds_api:process.env.THE_ODDS_API_KEY,openrouter:process.env.OPENROUTER_API_KEY,groq:process.env.GROQ_API_KEY};if(p==="telegram_bot"&&process.env.TELEGRAM_BOT_TOKEN&&process.env.TELEGRAM_CHAT_ID)return{botToken:process.env.TELEGRAM_BOT_TOKEN,chatId:process.env.TELEGRAM_CHAT_ID};if(env[p])return env[p];const r=await db.query("SELECT encrypted_value,iv,auth_tag FROM provider_credentials WHERE provider=$1",[p]);return r.rowCount?decrypt(r.rows[0]):null;}
 async function test(p,k){let u,h={};if(p==="the_odds_api")u="https://api.the-odds-api.com/v4/sports?apiKey="+encodeURIComponent(k);else if(p==="openrouter"){u="https://openrouter.ai/api/v1/models";h.authorization="Bearer "+k;}else{u="https://api.groq.com/openai/v1/models";h.authorization="Bearer "+k;}const r=await fetch(u,{headers:h,signal:AbortSignal.timeout(12000)}),t=await r.text();if(!r.ok)throw Error("HTTP "+r.status+": "+t.slice(0,180));let j={};try{j=JSON.parse(t)}catch{}return{ok:true,available:Array.isArray(j)?j.length:(j.data?.length||0)};}
 async function telegram(message){const c=await read("telegram_bot");if(!c?.botToken||!c?.chatId)throw Error("Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in Render environment variables; Telegram requires both to send messages");const r=await fetch("https://api.telegram.org/bot"+c.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:c.chatId,text:message,disable_web_page_preview:true}),signal:AbortSignal.timeout(15000)}),j=await r.json();if(!r.ok||!j.ok)throw Error(j.description||"Telegram failed");await db.query("INSERT INTO telegram_delivery_log(chat_id,message_preview,status,provider_message_id,sent_at) VALUES($1,$2,'sent',$3,now())",[c.chatId,message.slice(0,240),String(j.result?.message_id||"")]);return{sent:true,messageId:j.result?.message_id};}
+const telegramAssistant=createTelegramAssistant({db,read,telegram});
+
 
 async function collectOdds(maxSports=8){
  const key=await read("the_odds_api");
@@ -363,7 +366,7 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-export default {async runScheduledCollection(){return await collectOdds(6);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
+export default {async runTelegramAssistantPoll(){return await telegramAssistant.poll();},async runScheduledCollection(){return await collectOdds(6);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
