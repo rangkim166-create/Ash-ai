@@ -132,7 +132,7 @@ export function createTelegramAssistant({db,read,telegram}){
    const detail=JSON.stringify(j).slice(0,180);
    errors.push(model+" HTTP "+r.status+" "+detail);
    if(provider==="groq"&&(r.status===413||r.status===429)&&messages[0]?.content?.length>2200){
-    const smaller=[{role:"system",content:messages[0].content.slice(0,1600)},...messages.slice(-3).map(x=>({role:x.role,content:String(x.content||"").slice(0,450)}))];
+    const full=String(messages[0].content||""),marker=full.indexOf("CURRENT RESEARCH:"),systemPart=full.slice(0,Math.min(marker<0?2200:marker,2200)),researchPart=marker>=0?full.slice(marker,marker+3600):full.slice(-3000);const smaller=[{role:"system",content:systemPart+"\\n\\n"+researchPart},...messages.slice(-3).map(x=>({role:x.role,content:String(x.content||"").slice(0,350)}))];
     const retry=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key},body:JSON.stringify({model,messages:smaller,temperature:0.25,max_tokens:450}),signal:timeout(45000)});
     const retryJson=await retry.json();if(retry.ok)return retryJson.choices?.[0]?.message?.content||"";
     errors.push(model+" compact retry HTTP "+retry.status+" "+JSON.stringify(retryJson).slice(0,140));
@@ -197,7 +197,7 @@ export function createTelegramAssistant({db,read,telegram}){
 
   const context="Research retrieved at "+(research.retrievedAt||"unknown")+". Search returned "+(research.items||[]).length+" results and extracted "+(research.pages||[]).length+" pages.\n"+research.pages.slice(0,5).map((p,i)=>"["+(i+1)+"] "+p.title+" ("+(p.date||"publication date unavailable")+") "+p.url+"\n"+String(p.excerpt||"").slice(0,450)).join("\n\n").slice(0,2300)+"\n"+String(databaseResearch||"No database research.").slice(0,900)+"\nLIVE SCORES + STATUS: "+JSON.stringify(research.liveOdds?.scores||[]).slice(0,2600)+"\nLIVE BOOKMAKER ODDS: "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,3000);
   const ageRule="If score feed marks completed=true, treat result as final; if phase=live, report the score as live with lastUpdate. If phase=started_unconfirmed, do not guess the score. For any pre-match recommendation, require at least two bookmakers with ageMinutes <= 15, a future kickoff, and an exact fixture. Otherwise NO BET. The live scores endpoint may cover only selected competitions; disclose coverage limits. Do not infer a team's chance from a single match or from bookmaker favourite status alone.\n";
-  const compactSystem=(system+ "\\n"+ageRule).slice(0,2100);
+  const compactSystem=(system+ "\\n"+ageRule).slice(0,2800);
   const messages=[{role:"system",content:compactSystem+"\\n\\nCURRENT RESEARCH:\\n"+(context||"No current sources retrieved; disclose this.")},...history.rows.slice(0,4).reverse().map(x=>({role:x.role,content:String(x.content||"").slice(0,350)})),{role:"user",content:prompt.slice(0,1400)}];
   let response="",errors=[];
   for(const provider of ["groq","openrouter"]){try{const key=await read(provider);if(!key)continue;response=await ai(messages,provider,key);if(response)break;}catch(e){errors.push(String(e.message||e));}}
