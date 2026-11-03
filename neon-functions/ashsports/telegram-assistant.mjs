@@ -248,7 +248,13 @@ export function createTelegramAssistant({db,read,telegram}){
     const title=clean(tagValue(block,"title"),240),link=tagValue(block,"link"),raw=tagValue(block,"pubDate");
     const published=raw?Date.parse(raw):NaN;
     if(title&&link&&/^https?:/.test(link)){
-     let domain="unknown";try{domain=new URL(link).hostname.replace(/^www[.]/,"")}catch{}
+     let domain="unknown";
+     try{
+      const sourceStart=block.indexOf("<source"),sourceEnd=sourceStart>=0?block.indexOf(">",sourceStart):-1;
+      const sourceHead=sourceStart>=0&&sourceEnd>sourceStart?block.slice(sourceStart,sourceEnd):"";
+      const sourceUrl=sourceHead.split('url="')[1]?.split('"')[0];
+      domain=new URL(sourceUrl||link).hostname.replace(/^www[.]/,"");
+     }catch{}
      items.push({title,url:link,date:raw?clean(raw,80):null,publishedAt:Number.isFinite(published)?new Date(published).toISOString():null,ageHours:Number.isFinite(published)?Math.max(0,Math.round((now-published)/3600000)):null,domain});
     }
     if(items.length>=8)break;
@@ -281,7 +287,9 @@ export function createTelegramAssistant({db,read,telegram}){
    }
    const unique=new Map();
    for(const item of [...matchItems.slice(0,4),...homeItems.slice(0,3),...awayItems.slice(0,3)])if(!unique.has(item.url))unique.set(item.url,item);
-   const candidatesToRead=[...unique.values()].sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,5);
+   const chosen=[...matchItems.slice(0,2),...homeItems.slice(0,1),...awayItems.slice(0,1)];
+   for(const item of unique.values())if(chosen.length<5&&!chosen.some(x=>x.url===item.url))chosen.push(item);
+   const candidatesToRead=[...new Map(chosen.map(item=>[item.url,item])).values()];
    const pages=[];
    for(const item of candidatesToRead){const page=await fetchArticle(item);if(page)pages.push(page);await pause(650);}
    const homePages=pages.filter(p=>homeItems.some(x=>x.url===p.url));
@@ -292,7 +300,7 @@ export function createTelegramAssistant({db,read,telegram}){
   }
   // One batch synthesis request per daily publication, never one AI call per team.
   const groqKey=await read("groq");
-  if(groqKey&&reports.length){
+  if(groqKey&&reports.some(report=>report.pages.length>0)){
    try{
     const evidence=reports.map(r=>({matchId:r.matchId,fixture:r.home+" vs "+r.away,competition:r.competition,coverage:r.quality,sources:r.pages.map(p=>({title:p.title,domain:p.domain,published:p.date,excerpt:p.excerpt.slice(0,650)}))}));
     const prompt="You are Ash's evidence auditor. Assess each candidate using ONLY supplied source excerpts. Do not invent tipster opinions, injuries, lineups or facts. Distinguish explicit predictions from news. Compare independent public tipster/pundit views, identify consensus and disagreement, and say when coverage is weak. Return ONLY JSON: {matches:[{matchId,decision:'SUPPORT'|'CONFLICT'|'INSUFFICIENT',confidence:0-100,tipsterConsensus,contraryViews,teamNews,reason}]} . SUPPORT only when multiple independent sources explicitly support the candidate side and there is no material unresolved contradiction. CONFLICT when credible reporting points against it. Otherwise INSUFFICIENT. Never use bookmaker favourite status as expert consensus. Candidate picks: "+JSON.stringify(candidates.map(p=>({id:p.id,fixture:p.home_team+" vs "+p.away_team,proposedSelection:p.selection,competition:p.competition})))+" Evidence: "+JSON.stringify(evidence).slice(0,11500);
