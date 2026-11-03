@@ -182,7 +182,7 @@ export function createTelegramAssistant({db,read,telegram}){
    return j.choices?.[0]?.message?.content||"";
   }
   return runGroqSerially(async()=>{
-   const models=[...new Set([process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","openai/gpt-oss-120b","openai/gpt-oss-20b"])];
+   const models=[...new Set([process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","qwen/qwen3.8-27b","openai/gpt-oss-20b"])];
    const marker="CURRENT RESEARCH:",systemText=String(messages[0]?.content||"");
    const markerAt=systemText.indexOf(marker);
    const researchText=markerAt>=0?systemText.slice(markerAt+marker.length).trim():"";
