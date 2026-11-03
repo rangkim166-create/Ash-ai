@@ -125,12 +125,8 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       const supported = [...uniqueBooks.values()];
       if (!supported.length) continue;
       const best = supported.reduce((a, b) => b.price > a.price ? b : a);
-      const requiredBooks = hasRecentForm
-        ? (best.price > 3.5 ? 5 : best.price > 2.25 ? 4 : 3)
-        : (best.price > 3.5 ? 5 : best.price > 2.25 ? 5 : 4);
-      const requiredEdge = hasRecentForm
-        ? (best.price > 3.5 ? 0.15 : 0.08)
-        : (best.price > 3.5 ? 0.12 : best.price > 2.25 ? 0.08 : 0.04);
+      const requiredBooks = best.price > 3.5 ? 5 : 4;
+      const requiredEdge = best.price > 3.5 ? 0.18 : 0.12;
       if (supported.length < requiredBooks || edge < requiredEdge) continue;
 
       const bookmakerNames = supported.map((row) => row.bookmaker).sort();
@@ -146,9 +142,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       const homeStrength = hasRecentForm ? `${homeForm.wins}W-${homeForm.draws}D-${homeForm.losses}L` : `Elo ${Math.round(homeRating)}`;
       const awayStrength = hasRecentForm ? `${awayForm.wins}W-${awayForm.draws}D-${awayForm.losses}L` : `Elo ${Math.round(awayRating)}`;
       const historyCount = Number(ratingMatchCounts[sport] || 0);
-      const reason = hasRecentForm
-        ? `${supported.length} bookmakers support this side; recent form ${selectedForm.wins}W-${selectedForm.draws}D-${selectedForm.losses}L (${selectedForm.played} matches) versus ${opponentForm.wins}W-${opponentForm.draws}D-${opponentForm.losses}L (${opponentForm.played} matches); weighted by verified results.`
-        : `${supported.length} bookmakers support this side; historical Elo ${Math.round(selectedRating)} versus ${Math.round(opponentRating)} (${Math.round(ratingDelta)}-point edge) from an archive of ${historyCount.toLocaleString("en-US")} ${sport} matches. No current lineup, injury, surface or venue adjustment is included.`;
+      const reason = `${supported.length} bookmakers support this side; recent form ${selectedForm.wins}W-${selectedForm.draws}D-${selectedForm.losses}L (${selectedForm.played} matches) versus ${opponentForm.wins}W-${opponentForm.draws}D-${opponentForm.losses}L (${opponentForm.played} matches). This is a screening signal only; current injuries, confirmed lineups and tactical news are not assessed by this automated collector.`;
       ranked.push({
         id: String(fixture.id),
         sport,
