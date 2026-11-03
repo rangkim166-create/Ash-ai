@@ -26,47 +26,98 @@ async function searchWeb(q){
 }
 async function fetchLiveOdds(prompt,read){
  const key=await read("the_odds_api");
- if(!key)return {status:"not_configured",events:[]};
+ if(!key)return {status:"not_configured",events:[],scores:[],diagnostics:{reason:"missing_api_key"}};
+ const now=Date.now(),retrievedAt=new Date(now).toISOString();
+ const diagnostics={catalogHttp:null,selectedSports:[],oddsRequests:0,scoreRequests:0,oddsErrors:[],scoreErrors:[],requestsRemaining:null,requestsUsed:null};
+ const normalize=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+ const stopWords=new Set(["analyse","analyze","predict","prediction","latest","available","information","show","current","injuries","injury","form","bookmaker","bookmakers","comparison","comparisons","timestamps","today","tomorrow","yesterday","please","match","matches","game","games","odds","value","research","using","including","with","the","and","for","from","what","about","can","you","live","score","scores","result","results","football","soccer","upcoming","next","week","days","pick","picks","bet","bets"]);
+ const teamTokens=s=>normalize(s).split(" ").filter(w=>w.length>2&&!stopWords.has(w));
+ const fixtureParts=prompt.split(/\b(?:vs\.?|versus)\b|\s+[–—-]\s+/i);
+ let requestedTeams=[];
+ if(fixtureParts.length===2){
+  const left=fixtureParts[0].split(/\b(?:analyse|analyze|predict|check|research|show|what|tell me about)\b/i).pop();
+  const right=fixtureParts[1].split(/\b(?:using|with|including|and show|for today|today|tomorrow|yesterday|next)\b/i)[0];
+  const a=teamTokens(left),b=teamTokens(right);
+  if(a.length&&b.length)requestedTeams=[a,b];
+ }
+ const overlap=(a,b)=>a.some(x=>b.some(y=>x===y||x.startsWith(y)||y.startsWith(x)));
+ const matchesTeams=(home,away)=>!requestedTeams.length||((overlap(requestedTeams[0],teamTokens(home))&&overlap(requestedTeams[1],teamTokens(away)))||(overlap(requestedTeams[0],teamTokens(away))&&overlap(requestedTeams[1],teamTokens(home))));
  try{
   const sr=await fetch("https://api.the-odds-api.com/v4/sports?apiKey="+encodeURIComponent(key),{signal:timeout(12000)});
-  if(!sr.ok)return {status:"sports_catalog_http_"+sr.status,events:[]};
-  const sports=await sr.json(),words=(prompt.toLowerCase().match(/[a-z0-9]+/g)||[]).filter(x=>x.length>2);
-  const candidates=sports.filter(s=>s.active&&words.some(w=>(s.title+" "+s.key).toLowerCase().includes(w)||w.includes((s.key||"").toLowerCase().replace(/_/g," "))));
-   const category=/\b(nba|basketball|wnba|ncaa)\b/i.test(prompt)?"basketball":/\b(tennis|atp|wta|grand slam)\b/i.test(prompt)?"tennis":/\b(football|soccer|premier league|epl|la liga|bundesliga|serie a|champions league|afcon)\b/i.test(prompt)?"soccer":"soccer";const pool=sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes(category));
-  const preferredKeys=category==="soccer"?["soccer_epl","soccer_england_efl_cup","soccer_fa_cup","soccer_uefa_champs_league"]:category==="basketball"?["basketball_nba","basketball_euroleague","basketball_ncaab"]:sports.filter(s=>s.active&&(s.key||"").toLowerCase().includes("tennis")).slice(0,4).map(s=>s.key);
-  const preferred=sports.filter(s=>s.active&&preferredKeys.includes(s.key));
-  const selected=[...new Map([...candidates,...preferred,...pool].map(s=>[s.key,s])).values()].slice(0,8);
-  const fixtureParts=prompt.split(/\b(?:vs\.?|versus)\b|\s+[–—-]\s+/i);
-  const stopWords=new Set(["analyse","analyze","predict","prediction","latest","available","information","show","current","injuries","injury","form","bookmaker","bookmakers","comparison","comparisons","timestamps","today","tomorrow","please","match","game","odds","value","research","using","including","with","the","and","for","from","what","about","can","you"]);
-  const normalizeTeam=s=>(s||"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
-  const teamTokens=s=>normalizeTeam(s).split(" ").filter(w=>w.length>2&&!stopWords.has(w));
-  let requestedTeams=[];
-  if(fixtureParts.length===2){
-   const left=fixtureParts[0].split(/\b(?:analyse|analyze|predict|check|research|show|what|tell me about)\b/i).pop();
-   const right=fixtureParts[1].split(/\b(?:using|with|including|and show|for today|today|tomorrow)\b/i)[0];
-   const a=teamTokens(left),b=teamTokens(right);
-   if(a.length&&b.length)requestedTeams=[a,b];
-  }
-  const events=[];
-  for(const sport of selected){try{
-   const u="https://api.the-odds-api.com/v4/sports/"+encodeURIComponent(sport.key)+"/odds?regions=uk,eu,us&markets=h2h,totals&oddsFormat=decimal&dateFormat=iso&apiKey="+encodeURIComponent(key);
-   const r=await fetch(u,{signal:timeout(15000)});if(!r.ok)continue;const data=await r.json();
-   for(const e of data){
-    const home=teamTokens(e.home_team),away=teamTokens(e.away_team);
-    let matched=false;
-    if(requestedTeams.length===2){
-     const overlap=(a,b)=>a.some(x=>b.some(y=>x===y||x.startsWith(y)||y.startsWith(x)));
-     matched=(overlap(requestedTeams[0],home)&&overlap(requestedTeams[1],away))||(overlap(requestedTeams[0],away)&&overlap(requestedTeams[1],home));
-    }else{
-     // Broad fixture discovery: without two explicitly named teams, include the event.
-     matched=true;
-    }
-    if(matched)events.push({sport:sport.title,home:e.home_team,away:e.away_team,commence_time:e.commence_time,bookmakers:(e.bookmakers||[]).slice(0,8).map(b=>({name:b.title,updated:b.last_update,markets:b.markets}))});
-   }
-  }catch{}}
-  return {status:"ok",retrievedAt:new Date().toISOString(),events:events.slice(0,8),requestedTeams:requestedTeams.length?requestedTeams.map(x=>x.join(" ")):null};
- }catch(e){return {status:"error",message:String(e.message||e).slice(0,140),events:[]};}
+  diagnostics.catalogHttp=sr.status;
+  if(!sr.ok)return {status:"sports_catalog_http_"+sr.status,retrievedAt,events:[],scores:[],diagnostics};
+  const sports=await sr.json();
+  const category=/\b(nba|basketball|wnba|ncaa|euroleague)\b/i.test(prompt)?"basketball":/\b(tennis|atp|wta|grand slam)\b/i.test(prompt)?"tennis":"soccer";
+  const active=sports.filter(s=>s.active&&(s.key||"").toLowerCase().startsWith(category+"_")&&!/(championship_winner|outright|winner$)/i.test(s.key||""));
+  const priority=category==="soccer"
+   ?["soccer_epl","soccer_saudi_professional_league","soccer_ksa_pro_league","soccer_egypt_premier_league","soccer_morocco_botola_pro","soccer_uefa_champs_league","soccer_uefa_europa_league","soccer_spain_la_liga","soccer_germany_bundesliga","soccer_italy_serie_a","soccer_france_ligue_one","soccer_england_efl_cup","soccer_fa_cup"]
+   :category==="basketball"?["basketball_nba","basketball_euroleague","basketball_ncaab","basketball_wnba"]:[];
+  active.sort((a,b)=>{
+   const rank=s=>{const i=priority.indexOf(s.key);if(i>=0)return i;const k=(s.key||"").toLowerCase();if(category==="soccer"&&/(saudi|egypt|morocco|qatar|uae|tunisia|algeria|africa)/.test(k))return 5;if(category==="tennis"&&/(atp|wta)/.test(k))return 10;return 50;};
+   return rank(a)-rank(b)||(a.title||"").localeCompare(b.title||"");
+  });
+  const selected=active.slice(0,8);
+  diagnostics.selectedSports=selected.map(s=>s.key);
+  const oddsNeeded=/\b(odds|bet|bets|pick|picks|predict|prediction|value|analyse|analyze|vs\.?|versus|bookmaker|tip)\b/i.test(prompt);
+  const scoreSports=selected.slice(0,(requestedTeams.length?8:5));
+  const [oddsResults,scoreResults]=await Promise.all([
+   oddsNeeded?Promise.all(selected.map(async sport=>{
+    diagnostics.oddsRequests++;
+    try{
+     const u="https://api.the-odds-api.com/v4/sports/"+encodeURIComponent(sport.key)+"/odds?regions=uk,eu&markets=h2h&oddsFormat=decimal&dateFormat=iso&apiKey="+encodeURIComponent(key);
+     const r=await fetch(u,{signal:timeout(16000)});
+     diagnostics.requestsRemaining=r.headers.get("x-requests-remaining")??diagnostics.requestsRemaining;
+     diagnostics.requestsUsed=r.headers.get("x-requests-used")??diagnostics.requestsUsed;
+     if(!r.ok)throw Error("HTTP "+r.status);
+     const data=await r.json(),events=[];
+     for(const e of (Array.isArray(data)?data:[])){
+      if(!matchesTeams(e.home_team,e.away_team))continue;
+      const start=Date.parse(e.commence_time||"");
+      if(!Number.isFinite(start)||start<now-3*86400000||start>now+14*86400000)continue;
+      const fresh=[],stale=[];
+      for(const b of(e.bookmakers||[])){
+       const updated=Date.parse(b.last_update||"");
+       const age=Number.isFinite(updated)?(now-updated)/60000:Infinity;
+       if(age>=0&&age<=15)fresh.push({name:b.title,updated:b.last_update,ageMinutes:Math.round(age),markets:(b.markets||[]).filter(m=>m.key==="h2h").map(m=>({key:m.key,outcomes:(m.outcomes||[]).map(o=>({name:o.name,price:o.price}))}))});
+       else stale.push({name:b.title,updated:b.last_update,ageMinutes:Number.isFinite(age)?Math.round(age):null});
+      }
+      events.push({id:e.id,sport:sport.title||sport.key,sportKey:sport.key,home:e.home_team,away:e.away_team,commence_time:e.commence_time,phase:start>now?"upcoming":"started_or_in_play",bookmakers:fresh,staleBookmakers:stale.length,hasFreshOdds:fresh.length>0});
+     }
+     return events;
+    }catch(e){diagnostics.oddsErrors.push({sport:sport.key,error:String(e.message||e).slice(0,100)});return [];}
+   })):Promise.resolve([]),
+   Promise.all(scoreSports.map(async sport=>{
+    diagnostics.scoreRequests++;
+    try{
+     const u="https://api.the-odds-api.com/v4/sports/"+encodeURIComponent(sport.key)+"/scores?daysFrom=3&dateFormat=iso&apiKey="+encodeURIComponent(key);
+     const r=await fetch(u,{signal:timeout(16000)});
+     diagnostics.requestsRemaining=r.headers.get("x-requests-remaining")??diagnostics.requestsRemaining;
+     diagnostics.requestsUsed=r.headers.get("x-requests-used")??diagnostics.requestsUsed;
+     if(!r.ok)throw Error("HTTP "+r.status);
+     const data=await r.json(),out=[];
+     for(const e of(Array.isArray(data)?data:[])){
+      if(!matchesTeams(e.home_team,e.away_team))continue;
+      const start=Date.parse(e.commence_time||"");
+      if(!Number.isFinite(start)||start<now-3*86400000||start>now+8*86400000)continue;
+      const scoreMap=new Map((e.scores||[]).map(x=>[x.name,String(x.score)]));
+      const homeScore=scoreMap.has(e.home_team)?scoreMap.get(e.home_team):null;
+      const awayScore=scoreMap.has(e.away_team)?scoreMap.get(e.away_team):null;
+      const completed=e.completed===true;
+      const phase=completed?"completed":start>now?"upcoming":(homeScore!==null||awayScore!==null)?"live":"started_unconfirmed";
+      const updated=Date.parse(e.last_update||"");
+      out.push({id:e.id,sport:sport.title||sport.key,sportKey:sport.key,home:e.home_team,away:e.away_team,commence_time:e.commence_time,completed,phase,homeScore,awayScore,lastUpdate:e.last_update||null,ageMinutes:Number.isFinite(updated)?Math.round((now-updated)/60000):null});
+     }
+     return out;
+    }catch(e){diagnostics.scoreErrors.push({sport:sport.key,error:String(e.message||e).slice(0,100)});return [];}
+   }))
+  ]);
+  const oddsEvents=oddsResults.flat().sort((a,b)=>Date.parse(a.commence_time)-Date.parse(b.commence_time)).slice(0,16);
+  const scoreEvents=scoreResults.flat().sort((a,b)=>Date.parse(b.commence_time)-Date.parse(a.commence_time)).slice(0,24);
+  const quotaRemaining=Number(diagnostics.requestsRemaining);
+  return {status:diagnostics.oddsErrors.length||diagnostics.scoreErrors.length?"partial":"ok",retrievedAt,requestedTeams:requestedTeams.length?requestedTeams.map(x=>x.join(" ")):null,events:oddsEvents,scores:scoreEvents,diagnostics:{...diagnostics,quotaRemaining:Number.isFinite(quotaRemaining)?quotaRemaining:null}};
+ }catch(e){return {status:"error",message:String(e.message||e).slice(0,140),retrievedAt,events:[],scores:[],diagnostics};}
 }
+
 export function createTelegramAssistant({db,read,telegram}){
  let connectedLogged=false;
  async function send(chatId,text){const bot=await read("telegram_bot");for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);const r=await fetch(TG+"/bot"+bot.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});const j=await r.json();if(!r.ok||!j.ok)throw Error("Telegram send failed: "+(j.description||r.status));}}
@@ -142,9 +193,10 @@ export function createTelegramAssistant({db,read,telegram}){
     databaseResearch="STORED UPCOMING FIXTURES (not independently verified):\n"+(fixtureLines.join("\n")||"No matching upcoming fixtures stored.")+"\nLAST FIVE STORED RESULTS (may be incomplete; do not imply complete if fewer than five):\n"+(formLines.join("\n")||"No stored completed results for these teams.");
    }catch(e){console.error("[ash-telegram-db-research]",String(e.message||e));databaseResearch="Database research failed: "+String(e.message||e).slice(0,140);}
   }
-  const system="You are Ash Jarvis, a live sports research analyst and thoughtful conversational partner. For every time-sensitive match question, use the supplied current web research and live odds API results, not memory. Explicitly state the research retrieval timestamp and the publication/update dates of key sources. Prefer information from the last 24 hours for team news, last 7 days for form/context, and official club/league sources for injuries and suspensions. Verify important claims against two independent sources when possible. Separate confirmed facts, reported/expected information, and your own inference. Never call predicted lineups confirmed. Never present database snapshots as live odds. Only quote bookmaker prices from the live odds API data and identify bookmaker plus retrieval time. If the odds API returned no matching events, say current bookmaker prices could not be verified. If sources are stale, conflicting, or unavailable, flag that clearly and downgrade confidence. If a match date is ambiguous or already played, clarify/check fixture date before forecasting. Handle ANY sport, league, match, athlete, tactics, statistics or sports question. Ask one concise clarification only when essential. For match analysis, structure: quick verdict; evidence (recent form, home/away, head-to-head only when meaningful, injuries/suspensions/lineups, schedule/rest, surface/weather if relevant); bookmaker consensus and price/value if supplied; risks and what could change the view; confidence as a calibrated qualitative estimate, never certainty. Distinguish verified facts, reports and inference. Never invent odds, injuries, lineups, sources or statistics. Current web research and, where available, direct live bookmaker API data are supplied below; cite source titles and URLs in plain text. Treat timestamps as essential. If sources disagree or are stale, say so. If live info is unavailable, disclose it. Do not force a bet; explain no-bet when edge is unclear. Betting is risky; encourage small fixed stakes and never chase losses. Do not claim a pick is guaranteed. Be willing to challenge the user's assumptions respectfully. Answer non-betting sports questions too. Keep replies readable and under 3500 characters.";
-  const context="Research retrieved at "+(research.retrievedAt||"unknown")+". Search returned "+(research.items||[]).length+" results and extracted "+(research.pages||[]).length+" pages.\\n"+research.pages.slice(0,5).map((p,i)=>"["+(i+1)+"] "+p.title+" ("+(p.date||"publication date unavailable")+") "+p.url+"\\n"+String(p.excerpt||"").slice(0,550)).join("\\n\\n").slice(0,2800)+"\\n"+String(databaseResearch||"No database research.").slice(0,1200)+"\\nLIVE ODDS: "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,2400);
-  const ageRule="When describing source age, calculate elapsed time from the current retrieval timestamp. Do not call late-2025 material more than a year old unless it is actually over 12 months old. Mark any source older than 7 days as historical for current team news, and never use it as current injury/lineup evidence. If a requested fixture has no exact matching live odds event, say no matching market was found; never substitute another fixture. If requestedTeams is present, live odds must match both teams.\n";
+  const system="You are Ash Jarvis, a live sports research analyst. Your first duty is to prevent stale or incorrect recommendations. For every match-related request, use the live scores feed, live bookmaker feed and fresh web research supplied below; do not rely on memory or old database snapshots for current facts. First establish the exact fixture, competition, kickoff time and status. If the game has started, label it LIVE and never issue a pre-match prediction. If completed, report the verified final score and never recommend a bet on it. The scores feed is authoritative for live/completed scores when its lastUpdate is recent; cite its timestamp. For pre-match picks, require exact fixture match, kickoff in the future, and at least two bookmakers with odds updated within 15 minutes. If any requirement fails, return NO BET and explain exactly what is missing. Never use odds older than 15 minutes as current prices. Never substitute another fixture or treat a similarly named team as a match. Check for postponed/cancelled status in current sources. For team news, use sources published within 24 hours; if not available, say unknown rather than reuse old articles. Use dated competitive results for last-five form, regardless of publication date, but verify the result dates and avoid confusing cup and league form. Verify important claims against two independent sources when possible. Separate confirmed facts, reports and inference. Never call predicted lineups confirmed. Never present stored database snapshots as live. Only quote bookmaker prices from the supplied live odds feed, with bookmaker name and exact update time. Explain implied probability and market overround correctly. A favourite is not automatically a value bet. Only recommend a selection when your independently assessed probability exceeds the vig-adjusted market probability by a meaningful margin and the evidence supports it; otherwise NO BET. State the research retrieval time, score-feed update time, bookmaker update times, source publication dates and links. If sources are stale, conflicting, incomplete or unavailable, downgrade confidence or refuse a pick. For a named match, check both teams and exact fixture date. For broad fixture discovery, list real upcoming events. Handle any sport, league, athlete, tactics or statistics question. No guaranteed wins, no forced bets, no chasing losses. Do not claim that live data guarantees a result. Keep replies readable and under 3500 characters.";
+
+  const context="Research retrieved at "+(research.retrievedAt||"unknown")+". Search returned "+(research.items||[]).length+" results and extracted "+(research.pages||[]).length+" pages.\n"+research.pages.slice(0,5).map((p,i)=>"["+(i+1)+"] "+p.title+" ("+(p.date||"publication date unavailable")+") "+p.url+"\n"+String(p.excerpt||"").slice(0,450)).join("\n\n").slice(0,2300)+"\n"+String(databaseResearch||"No database research.").slice(0,900)+"\nLIVE SCORES + STATUS: "+JSON.stringify(research.liveOdds?.scores||[]).slice(0,2600)+"\nLIVE BOOKMAKER ODDS: "+JSON.stringify(research.liveOdds||{status:"not_checked"}).slice(0,3000);
+  const ageRule="If score feed marks completed=true, treat result as final; if phase=live, report the score as live with lastUpdate. If phase=started_unconfirmed, do not guess the score. For any pre-match recommendation, require at least two bookmakers with ageMinutes <= 15, a future kickoff, and an exact fixture. Otherwise NO BET. The live scores endpoint may cover only selected competitions; disclose coverage limits. Do not infer a team's chance from a single match or from bookmaker favourite status alone.\n";
   const compactSystem=(system+ "\\n"+ageRule).slice(0,2100);
   const messages=[{role:"system",content:compactSystem+"\\n\\nCURRENT RESEARCH:\\n"+(context||"No current sources retrieved; disclose this.")},...history.rows.slice(0,4).reverse().map(x=>({role:x.role,content:String(x.content||"").slice(0,350)})),{role:"user",content:prompt.slice(0,1400)}];
   let response="",errors=[];
