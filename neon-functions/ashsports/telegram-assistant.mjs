@@ -292,18 +292,21 @@ export function createTelegramAssistant({db,read,telegram}){
    const candidatesToRead=[...new Map(chosen.map(item=>[item.url,item])).values()];
    const pages=[];
    for(const item of candidatesToRead){const page=await fetchArticle(item);if(page)pages.push(page);await pause(650);}
-   const homePages=pages.filter(p=>homeItems.some(x=>x.url===p.url));
-   const awayPages=pages.filter(p=>awayItems.some(x=>x.url===p.url));
-   const matchPages=pages.filter(p=>matchItems.some(x=>x.url===p.url));
-   const domains=[...new Set(pages.map(p=>p.domain))];
-   reports.push({matchId:pick.id,home,away,competition,retrievedAt:new Date().toISOString(),searchCounts:{match:matchItems.length,home:homeItems.length,away:awayItems.length},domains,homePages,awayPages,matchPages,pages,errors,quality:{homeCoverage:homePages.length>0,awayCoverage:awayPages.length>0,expertCoverage:matchPages.length>0,independentDomains:domains.length}});
+   // Old articles and undated pages cannot qualify a current fixture.
+   const freshPages=pages.filter(p=>Number.isFinite(Number(p.ageHours))&&Number(p.ageHours)>=0&&Number(p.ageHours)<=168);
+   const homePages=freshPages.filter(p=>homeItems.some(x=>x.url===p.url));
+   const awayPages=freshPages.filter(p=>awayItems.some(x=>x.url===p.url));
+   const matchPages=freshPages.filter(p=>matchItems.some(x=>x.url===p.url));
+   const domains=[...new Set(freshPages.map(p=>p.domain).filter(x=>x&&x!=="unknown"))];
+   const expertDomains=[...new Set(matchPages.map(p=>p.domain).filter(x=>x&&x!=="unknown"))];
+   reports.push({matchId:pick.id,home,away,competition,retrievedAt:new Date().toISOString(),searchCounts:{match:matchItems.length,home:homeItems.length,away:awayItems.length},domains,expertDomains,homePages,awayPages,matchPages,pages:freshPages,errors,quality:{homeCoverage:homePages.length>0,awayCoverage:awayPages.length>0,expertCoverage:expertDomains.length>=2,independentDomains:domains.length,independentExpertDomains:expertDomains.length}});
   }
   // One batch synthesis request per daily publication, never one AI call per team.
   const groqKey=await read("groq");
   if(groqKey&&reports.some(report=>report.pages.length>0)){
    try{
     const evidence=reports.map(r=>({matchId:r.matchId,fixture:r.home+" vs "+r.away,competition:r.competition,coverage:r.quality,sources:r.pages.map(p=>({title:p.title,domain:p.domain,published:p.date,excerpt:p.excerpt.slice(0,650)}))}));
-    const prompt="You are Ash's evidence auditor. Assess each candidate using ONLY supplied source excerpts. Do not invent tipster opinions, injuries, lineups or facts. Distinguish explicit predictions from news. Compare independent public tipster/pundit views, identify consensus and disagreement, and say when coverage is weak. Return ONLY JSON: {matches:[{matchId,decision:'SUPPORT'|'CONFLICT'|'INSUFFICIENT',confidence:0-100,tipsterConsensus,contraryViews,teamNews,reason}]} . SUPPORT only when multiple independent sources explicitly support the candidate side and there is no material unresolved contradiction. CONFLICT when credible reporting points against it. Otherwise INSUFFICIENT. Never use bookmaker favourite status as expert consensus. Candidate picks: "+JSON.stringify(candidates.map(p=>({id:p.id,fixture:p.home_team+" vs "+p.away_team,proposedSelection:p.selection,competition:p.competition})))+" Evidence: "+JSON.stringify(evidence).slice(0,11500);
+    const prompt="You are Ash's evidence auditor. Assess each candidate using ONLY supplied source excerpts. Do not invent tipster opinions, injuries, lineups or facts. Distinguish explicit predictions from news. Compare independent public tipster/pundit views, identify consensus and disagreement, and say when coverage is weak. Return ONLY JSON: {matches:[{matchId,decision:'SUPPORT'|'CONFLICT'|'INSUFFICIENT',confidence:0-100,tipsterConsensus,contraryViews,teamNews,reason}]} . SUPPORT only when at least two independent, recent expert/tipster/pundit sources explicitly support the exact proposed selection and there is no material unresolved contradiction. Team-news reporting alone is not expert support. CONFLICT when credible reporting points against it. Otherwise INSUFFICIENT. Never use bookmaker favourite status, odds movement, generic previews, or AI-generated claims as expert consensus. Candidate picks: "+JSON.stringify(candidates.map(p=>({id:p.id,fixture:p.home_team+" vs "+p.away_team,proposedSelection:p.selection,competition:p.competition})))+" Evidence: "+JSON.stringify(evidence).slice(0,11500);
     const response=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+groqKey},body:JSON.stringify({model:process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b",messages:[{role:"system",content:"Be conservative, source-grounded and concise. Output valid JSON only."},{role:"user",content:prompt}],temperature:0.1,max_tokens:900}),signal:timeout(45000)});
     if(!response.ok)throw Error("Groq research synthesis HTTP "+response.status);
     const body=await response.json(),content=body.choices?.[0]?.message?.content||"";
