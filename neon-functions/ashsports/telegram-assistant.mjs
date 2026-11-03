@@ -230,6 +230,21 @@ export function createTelegramAssistant({db,read,telegram}){
   await db.query("DELETE FROM ash_telegram_memory WHERE chat_id=$1 AND created_at < now()-interval '14 days'",[String(chatId)]);
   await send(chatId,response);
  }
+ async function researchDailyPicks(picks=[]){
+  const candidates=(Array.isArray(picks)?picks:[]).slice(0,3);
+  return await Promise.all(candidates.map(async pick=>{
+   const query='"'+pick.home_team+'" "'+pick.away_team+'" "'+(pick.competition||"")+'" match preview team news injuries suspensions tactics recent results';
+   try{
+    const found=await searchWeb(query);
+    const home=String(pick.home_team||"").toLowerCase(),away=String(pick.away_team||"").toLowerCase();
+    const relevant=(found.pages||[]).filter(page=>{
+     const hay=(String(page.title||"")+" "+String(page.excerpt||"")).toLowerCase();
+     return (home.length>3&&hay.includes(home))||(away.length>3&&hay.includes(away));
+    }).slice(0,4);
+    return {matchId:pick.id,retrievedAt:found.retrievedAt,resultsCount:(found.items||[]).length,relevantPages:relevant.map(p=>({title:p.title,url:p.url,date:p.date||null,publishedAt:p.publishedAt||null,ageHours:p.ageHours??null,source:p.source||"Web",excerpt:String(p.excerpt||"").slice(0,850)})),headlines:(found.items||[]).slice(0,6).map(p=>({title:p.title,url:p.url,date:p.date||null,source:p.source||"Web"}))};
+   }catch(error){console.error("[ash-daily-web-research]",String(error?.message||error).slice(0,160));return {matchId:pick.id,retrievedAt:new Date().toISOString(),resultsCount:0,relevantPages:[],headlines:[],error:String(error?.message||error).slice(0,160)};}
+  }));
+ }
  function secretToken(bot){return createHash("sha256").update(bot.botToken+"|ash-telegram-webhook-v1").digest("hex");}
  async function configureWebhook(){
   const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId){console.error("[ash-telegram] webhook not configured: missing bot credentials");return false;}
@@ -246,5 +261,5 @@ export function createTelegramAssistant({db,read,telegram}){
   try{await answer(message.chat.id,message.text);}catch(e){console.error("[ash-telegram-ai]",String(e.message||e));if(String(message.chat.id)===String((await read("telegram_bot"))?.chatId))await send(message.chat.id,"I hit a temporary issue: "+String(e.message||e).slice(0,250)).catch(()=>{});}
  }
  async function verifySecret(candidate){const bot=await read("telegram_bot");return !!bot?.botToken&&candidate===secretToken(bot);}
- return {configureWebhook,handleUpdate,verifySecret};
+ return {configureWebhook,handleUpdate,verifySecret,researchDailyPicks};
 }
