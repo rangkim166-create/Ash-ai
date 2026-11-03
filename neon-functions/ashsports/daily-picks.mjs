@@ -46,7 +46,7 @@ function eloEdge(selectedRating, opponentRating) {
 export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
   const now = options.now ? new Date(options.now) : new Date();
   const maxPicks = Math.max(1, Math.min(5, Number(options.maxPicks) || 3));
-  const cutoff = now.getTime() - 6 * 60 * 60 * 1000;
+  const cutoff = now.getTime() - 15 * 60 * 1000;
   const byMatch = new Map();
   const ratings = options.ratings || {};
   const ratingMatchCounts = options.ratingMatchCounts || options.ratingsMeta?.match_counts || {};
@@ -70,7 +70,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
   const ranked = [];
   for (const fixture of fixtures || []) {
     const kickoff = Date.parse(fixture.starts_at);
-    if (!Number.isFinite(kickoff) || kickoff <= now.getTime() || kickoff > now.getTime() + 36 * 60 * 60 * 1000) continue;
+    if (!Number.isFinite(kickoff) || kickoff <= now.getTime() + 30 * 60 * 1000 || kickoff > now.getTime() + 36 * 60 * 60 * 1000) continue;
     const home = String(fixture.home || "").trim();
     const away = String(fixture.away || "").trim();
     const sport = String(fixture.sport || "").trim().toLowerCase();
@@ -84,7 +84,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
     const homeRating = ratingFor(ratings, sport, home);
     const awayRating = ratingFor(ratings, sport, away);
     const hasRatings = homeRating !== null && awayRating !== null;
-    if (!hasRecentForm && !hasRatings) continue;
+    // Historical Elo alone is not enough to publish a betting candidate.\n    if (!hasRecentForm) continue;
 
     const candidates = [];
     for (const [bookmaker, outcomes] of books.entries()) {
@@ -115,7 +115,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       const opponentRating = side === "home" ? awayRating : homeRating;
       const formEdge = selectedForm.score - opponentForm.score;
       const ratingDelta = hasRatings ? selectedRating - opponentRating : null;
-      const edge = hasRecentForm ? formEdge : eloEdge(selectedRating, opponentRating);
+      const edge = formEdge;
       const selected = candidates.filter((candidate) => candidate.side === side);
       const uniqueBooks = new Map();
       for (const candidate of selected) {
@@ -167,7 +167,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
         away_form: awayStrength,
         home_form_count: homeForm.played,
         away_form_count: awayForm.played,
-        edge_type: hasRecentForm ? "recent_form" : "elo_rating",
+        edge_type: "recent_form",
         ...(hasRecentForm ? { form_edge_pct: Number((formEdge * 100).toFixed(1)) } : {}),
         ...(hasRatings ? {
           home_rating: Number(homeRating.toFixed(1)),
@@ -197,7 +197,7 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
   if (!picks?.length) {
     return `${header}\n\nNo selection passed today's checks for fresh bookmaker odds, multi-bookmaker support and verified recent form or historical ratings. No forced bets today.`;
   }
-  const lines = [header, "", "Verified upcoming matches • decimal odds • prices can move", ""];
+  const lines = [header, "", "Screening shortlist only • live bookmaker snapshots ≤15 min • prices can move", "Do not stake until Ash checks current injuries, lineups and match status.", ""];
   picks.forEach((pick, index) => {
     const kickoff = new Intl.DateTimeFormat("en-GB", {
       timeZone: timezone, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false,
@@ -221,6 +221,6 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
     }
     lines.push(`Kick-off (Kampala): ${kickoff}`, "");
   });
-  lines.push("Research filter, not a guarantee. Recheck the price before placing any bet.");
+  lines.push("Not a final betting recommendation. Run a fresh live analysis before any decision. No selection is guaranteed.");
   return lines.join("\n").slice(0, 3900);
 }
