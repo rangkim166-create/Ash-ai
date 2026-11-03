@@ -347,8 +347,17 @@ async function runScheduledDailyPublisher(){
   const ratingMatchCounts=ratingMetaResult.rowCount?(ratingMetaResult.rows[0].match_counts||{}):{};
   const picks=selectDailyPicks(fixtures,oddsResult.rows,formResult.rows,{now:new Date(),maxPicks:3,ratings,ratingMatchCounts});
   const dayLabel=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",day:"2-digit",month:"short",year:"numeric"}).format(new Date());
-  const message=formatDailyPicks(dayLabel,picks);
-  // Persist the complete ticket and structured selections even before Telegram is configured.
+  const sportOrder=["football","basketball","tennis"];
+  const sportLabels={football:"⚽ FOOTBALL",soccer:"⚽ FOOTBALL",basketball:"🏀 BASKETBALL",tennis:"🎾 TENNIS"};
+  const groups=new Map();
+  for(const pick of picks){const key=String(pick.sport||"other").toLowerCase();if(!groups.has(key))groups.set(key,[]);groups.get(key).push(pick);}
+  const orderedKeys=[...sportOrder.filter(key=>groups.has(key)),...([...groups.keys()].filter(key=>!sportOrder.includes(key)).sort())];
+  const messages=orderedKeys.map(key=>{
+   const label=sportLabels[key]||("🏆 "+key.toUpperCase());
+   return label+"\\n"+formatDailyPicks(dayLabel,groups.get(key));
+  });
+  const message=messages.length?messages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n"):"ASH • ODDS OF THE DAY — "+dayLabel+"\\n\\nNo selection passed today's checks. NO BET.";
+  // Persist the complete grouped publication before delivery.
   await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,picks.length,message.slice(0,500),message,JSON.stringify(picks)]);
   await savePublishedTips(localDay,picks);
   const bot=await read("telegram_bot");
@@ -356,9 +365,11 @@ async function runScheduledDailyPublisher(){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_telegram_config',error_summary=$2 WHERE local_date=$1::date",[localDay,"Telegram bot token and chat ID are not configured."]);
    return{sent:false,reason:"telegram_not_configured",picks:picks.length,localDate:localDay};
   }
-  const delivery=await telegram(message);
+  const deliveries=[];
+  for(let i=0;i<messages.length;i++){deliveries.push(await telegram(messages[i]));}
+  if(!messages.length)deliveries.push(await telegram(message));
   await db.query("UPDATE ash_daily_publications SET status='sent',error_summary=NULL,sent_at=now() WHERE local_date=$1::date",[localDay]);
-  return{sent:true,picks:picks.length,localDate:localDay,delivery,collection};
+  return{sent:true,picks:picks.length,sports:orderedKeys,localDate:localDay,deliveries,collection};
  }catch(error){
   const detail=String(error?.message||error).slice(0,300);
   await db.query("UPDATE ash_daily_publications SET status='failed',error_summary=$2 WHERE local_date=$1::date",[localDay,detail]).catch(()=>{});
