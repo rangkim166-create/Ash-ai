@@ -238,12 +238,19 @@ export function createTelegramAssistant({db,read,telegram}){
    const response=await fetch(url,{signal:timeout(12000)});
    if(!response.ok)throw Error("Google News RSS HTTP "+response.status);
    const xml=await response.text(),now=Date.now(),items=[];
-   for(const match of xml.matchAll(/<item>([\\s\\S]*?)<\\/item>/gi)){
-    const block=match[1],title=clean((block.match(/<title>([\\s\\S]*?)<\\/title>/i)||[])[1],240);
-    const link=(block.match(/<link>([\\s\\S]*?)<\\/link>/i)||[])[1]?.trim();
-    const raw=(block.match(/<pubDate>([\\s\\S]*?)<\\/pubDate>/i)||[])[1];
+   const tagValue=(block,tag)=>{
+    const open="<"+tag+">",close="</"+tag+">",start=block.indexOf(open);
+    if(start<0)return "";
+    const end=block.indexOf(close,start+open.length);
+    return end<0?"":block.slice(start+open.length,end).trim();
+   };
+   for(const block of xml.split("<item>").slice(1).map(part=>part.split("</item>")[0])){
+    const title=clean(tagValue(block,"title"),240),link=tagValue(block,"link"),raw=tagValue(block,"pubDate");
     const published=raw?Date.parse(raw):NaN;
-    if(title&&link&&/^https?:/.test(link))items.push({title,url:link,date:raw?clean(raw,80):null,publishedAt:Number.isFinite(published)?new Date(published).toISOString():null,ageHours:Number.isFinite(published)?Math.max(0,Math.round((now-published)/3600000)):null,domain:(()=>{try{return new URL(link).hostname.replace(/^www\\./,"")}catch{return "unknown"}})()});
+    if(title&&link&&/^https?:/.test(link)){
+     let domain="unknown";try{domain=new URL(link).hostname.replace(/^www[.]/,"")}catch{}
+     items.push({title,url:link,date:raw?clean(raw,80):null,publishedAt:Number.isFinite(published)?new Date(published).toISOString():null,ageHours:Number.isFinite(published)?Math.max(0,Math.round((now-published)/3600000)):null,domain});
+    }
     if(items.length>=8)break;
    }
    return items;
