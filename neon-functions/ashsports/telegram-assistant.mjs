@@ -3,26 +3,29 @@ const TG="https://api.telegram.org";
 const timeout=(ms)=>AbortSignal.timeout(ms);
 const clean=(s,n=1200)=>String(s||"").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim().slice(0,n);
 async function searchWeb(q){
- const results=[],seen=new Set(),now=Date.now();
- const d7=new Date(now-7*24*60*60*1000).toISOString().slice(0,10),d1=new Date(now-24*60*60*1000).toISOString().slice(0,10);
- const queries=[q+" after:"+d7,q+" team news injuries suspensions official after:"+d7,q+" recent form last five matches results match reports",q+" upcoming fixtures schedule next 7 days",q+" bookmaker odds odds comparison after:"+d7];
+ const results=[],seen=new Set(),errors=[],now=Date.now();
+ const d7=new Date(now-7*24*60*60*1000).toISOString().slice(0,10);
+ const sportsQuery=/(football|soccer|basketball|tennis|match|fixture|team|league|player|odds|bet|injur|lineup|score|sport)/i.test(q);
+ const queries=sportsQuery
+  ?[q+" after:"+d7,q+" team news injuries suspensions official after:"+d7,q+" recent form last five matches results match reports",q+" upcoming fixtures schedule next 7 days",q+" bookmaker odds odds comparison after:"+d7]
+  :[q,q+" latest news recent updates",q+" official announcement",q+" analysis reliable sources"];
  const add=(item)=>{if(item?.title&&item?.url&&/^https?:/.test(item.url)&&!seen.has(item.url)){seen.add(item.url);results.push(item);}};
  await Promise.all(queries.map(async(query)=>{try{
   const rss="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
-  const r=await fetch(rss,{signal:timeout(12000)});if(!r.ok)return;const x=await r.text();
+  const r=await fetch(rss,{signal:timeout(12000)});if(!r.ok){errors.push("Google News HTTP "+r.status);return;}const x=await r.text();
    for(const m of x.matchAll(new RegExp("<item>([\\s\\S]*?)</item>","gi"))){const b=m[1],title=clean((b.match(new RegExp("<title>([\\s\\S]*?)</title>","i"))||[])[1],240),link=(b.match(new RegExp("<link>([\\s\\S]*?)</link>","i"))||[])[1]?.trim(),raw=(b.match(new RegExp("<pubDate>([\\s\\S]*?)</pubDate>","i"))||[])[1],date=clean(raw,80),published=raw?Date.parse(raw):NaN;
    if(title&&link)add({title,url:link,date,publishedAt:Number.isFinite(published)?new Date(published).toISOString():null,ageHours:Number.isFinite(published)?Math.round((now-published)/3600000):null,source:"Google News"});
    if(results.length>=24)break;
   }
- }catch{}}));
+ }catch(e){errors.push("Google News: "+String(e.message||e).slice(0,100));}}));
  await Promise.all(queries.slice(0,4).map(async(query)=>{try{
-  const r=await fetch("https://html.duckduckgo.com/html/?q="+encodeURIComponent(query),{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(12000)});if(!r.ok)return;const h=await r.text();
+  const r=await fetch("https://html.duckduckgo.com/html/?q="+encodeURIComponent(query),{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(12000)});if(!r.ok){errors.push("DuckDuckGo HTTP "+r.status);return;}const h=await r.text();
    for(const m of h.matchAll(new RegExp('class="result__a"[^>]*href="([^"]+)"[^>]*>([\\s\\S]*?)</a>',"gi"))){let u=m[1];if(u.includes("uddg=")){try{u=decodeURIComponent(new URL(u,"https://duckduckgo.com").searchParams.get("uddg")||u)}catch{}}add({title:clean(m[2],200),url:u,source:"Web search"});if(results.length>=30)break;}
- }catch{}}));
+ }catch(e){errors.push("DuckDuckGo: "+String(e.message||e).slice(0,100));}}));
  const ranked=results.filter(x=>x.ageHours==null||x.ageHours<=90*24).sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,12);
  const pages=[];
- for(const item of ranked.slice(0,9)){try{const r=await fetch(item.url,{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(9000),redirect:"follow"});if(!r.ok)continue;const type=r.headers.get("content-type")||"";if(!type.includes("text/html")&&!type.includes("text/plain"))continue;const body=clean(await r.text(),2600);if(body.length>180)pages.push({...item,excerpt:body.slice(0,1900)});}catch{}}
- return {items:ranked,pages,retrievedAt:new Date().toISOString()};
+ for(const item of ranked.slice(0,9)){try{const r=await fetch(item.url,{headers:{"user-agent":"Mozilla/5.0 AshSportsResearch/2.0"},signal:timeout(9000),redirect:"follow"});if(!r.ok){errors.push("Article HTTP "+r.status+" "+item.url.slice(0,100));continue;}const type=r.headers.get("content-type")||"";if(!type.includes("text/html")&&!type.includes("text/plain"))continue;const body=clean(await r.text(),2600);if(body.length>180)pages.push({...item,excerpt:body.slice(0,1900)});}catch(e){errors.push("Article fetch: "+String(e.message||e).slice(0,100));}}
+ return {items:ranked,pages,errors,retrievedAt:new Date().toISOString()};
 }
 async function fetchLiveOdds(prompt,read){
  const key=await read("the_odds_api");
@@ -173,8 +176,8 @@ export function createTelegramAssistant({db,read,telegram}){
   const prompt=text.replace(/^\/\w+\s*/,"").trim();if(!prompt)return;
   await db.query("CREATE TABLE IF NOT EXISTS ash_telegram_memory(chat_id text NOT NULL,role text NOT NULL,content text NOT NULL,created_at timestamptz NOT NULL DEFAULT now())");
   const history=await db.query("SELECT role,content FROM ash_telegram_memory WHERE chat_id=$1 ORDER BY created_at DESC LIMIT 12",[String(chatId)]);
-  let research={items:[],pages:[],retrievedAt:null};let needsResearch=/(analyse|analy[sz]e|predict|prediction|odds|injur|lineup|line-up|form|fixture|match|game|today|tomorrow|league|team|player|bet|pick|score|who wins|longs|over|under)/i.test(prompt);
-  if(needsResearch){await fetch(TG+"/bot"+bot.botToken+"/sendChatAction",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,action:"typing"}),signal:timeout(5000)}).catch(()=>{});research=await searchWeb(prompt);research.liveOdds=await fetchLiveOdds(prompt,read);await saveLiveResearchSnapshots(db,research.liveOdds).catch(e=>console.warn("[ash-live-snapshot-save]",String(e.message||e).slice(0,140)));console.log("[ash-research]",JSON.stringify({retrievedAt:research.retrievedAt,searchResults:research.items?.length||0,extractedPages:research.pages?.length||0,oddsStatus:research.liveOdds?.status,requestedTeams:research.liveOdds?.requestedTeams,selectedSports:research.liveOdds?.diagnostics?.selectedSports,eventCount:research.liveOdds?.events?.length||0,perSport:research.liveOdds?.diagnostics?.perSport,requestsRemaining:research.liveOdds?.diagnostics?.requestsRemaining}));}
+  let research={items:[],pages:[],retrievedAt:null};let needsResearch=/(analyse|analy[sz]e|predict|prediction|odds|injur|lineup|line-up|form|fixture|match|game|today|tomorrow|league|team|player|bet|pick|score|who wins|longs|over|under|browse|internet|web search|search online|look up|find online|latest news|current news|recent news|research|sources|what happened|updates)/i.test(prompt);
+  if(needsResearch){await fetch(TG+"/bot"+bot.botToken+"/sendChatAction",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,action:"typing"}),signal:timeout(5000)}).catch(()=>{});research=await searchWeb(prompt);research.liveOdds=await fetchLiveOdds(prompt,read);await saveLiveResearchSnapshots(db,research.liveOdds).catch(e=>console.warn("[ash-live-snapshot-save]",String(e.message||e).slice(0,140)));console.log("[ash-research]",JSON.stringify({retrievedAt:research.retrievedAt,searchResults:research.items?.length||0,extractedPages:research.pages?.length||0,searchErrors:(research.errors||[]).slice(0,8),oddsStatus:research.liveOdds?.status,requestedTeams:research.liveOdds?.requestedTeams,selectedSports:research.liveOdds?.diagnostics?.selectedSports,eventCount:research.liveOdds?.events?.length||0,perSport:research.liveOdds?.diagnostics?.perSport,requestsRemaining:research.liveOdds?.diagnostics?.requestsRemaining}));}
   let databaseResearch="";
   if(needsResearch){
    try{
