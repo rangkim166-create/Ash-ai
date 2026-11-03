@@ -79,6 +79,15 @@ const telegramAssistant=createTelegramAssistant({db,read,telegram});
 async function collectOdds(maxSports=8){
  const key=await read("the_odds_api");
  if(!key)throw Error("The Odds API is not configured");
+ // Check persisted scout state BEFORE touching the provider. A quota-exhausted
+ // account must not burn requests on every scheduler tick or publisher retry.
+ const priorRun=await db.query("SELECT id,started_at,status,error_summary FROM daily_scout_runs ORDER BY started_at DESC LIMIT 1");
+ if(priorRun.rowCount){
+  const prior=priorRun.rows[0],age=Date.now()-new Date(prior.started_at).getTime();
+  const quotaBlocked=String(prior.error_summary||"").includes("OUT_OF_USAGE_CREDITS");
+  const cooldown=quotaBlocked?24*60*60*1000:prior.status==="failed"?60*1000:prior.status==="partial"?5*60*1000:prior.status==="running"?5*60*1000:60*60*1000;
+  if(Number.isFinite(age)&&age>=0&&age<cooldown)return{skipped:true,reason:quotaBlocked?"provider_quota_exhausted":"recent_scout_run",lastStatus:prior.status,lastStartedAt:prior.started_at,retryAfterSeconds:Math.ceil((cooldown-age)/1000)};
+ }
  const sr=await fetch("https://api.the-odds-api.com/v4/sports?apiKey="+encodeURIComponent(key),{signal:AbortSignal.timeout(15000)});
  const st=await sr.text(); if(!sr.ok)throw Error("Odds sports list HTTP "+sr.status+": "+st.slice(0,160));
  const sports=JSON.parse(st).filter(s=>s.active&&/^(soccer_|basketball_|tennis_)/.test(s.key||"")&&!/(championship_winner|outright|winner$)/i.test(s.key||""));
@@ -87,19 +96,15 @@ async function collectOdds(maxSports=8){
  const limit=Math.min(12,Math.max(1,maxSports));const arab=sports.filter(s=>["saudi","egypt","morocco","qatar","uae","tunisia","algeria"].some(x=>s.key.includes(x)));const football=sports.filter(s=>s.key.startsWith("soccer_")&&!arab.includes(s));const basketball=sports.filter(s=>s.key.startsWith("basketball_"));const tennis=sports.filter(s=>s.key.startsWith("tennis_"));const selected=[...arab.slice(0,2),...football.slice(0,3),...basketball.slice(0,2),...tennis.slice(0,1)];for(const s of sports){if(selected.length>=limit)break;if(!selected.includes(s))selected.push(s);}
  const last=await db.query("SELECT id,started_at,status FROM daily_scout_runs ORDER BY started_at DESC LIMIT 1");
  if(last.rowCount){
-  const prior=last.rows[0];
-  const age=Date.now()-new Date(prior.started_at).getTime();
-  const cooldown=prior.status==="failed"?60*1000:prior.status==="partial"?5*60*1000:prior.status==="running"?5*60*1000:60*60*1000;
-  if(Number.isFinite(age)&&age<cooldown)return{skipped:true,reason:"recent_scout_run",lastStatus:prior.status,lastStartedAt:prior.started_at};
-  // A process can restart while a provider request is in flight. Recover stale
-  // "running" rows after the maximum expected collection window so scouting resumes.
-  if(prior.status==="running"&&Number.isFinite(age)&&age>=cooldown){
+  const prior=last.rows[0],age=Date.now()-new Date(prior.started_at).getTime();
+  // Recover a stale in-flight run after a process restart.
+  if(prior.status==="running"&&Number.isFinite(age)&&age>=5*60*1000){
    await db.query("UPDATE daily_scout_runs SET status='failed',finished_at=now(),error_summary='Recovered stale run after process restart' WHERE id=$1 AND status='running'",[prior.id]);
   }
  }
  const run=await db.query("INSERT INTO daily_scout_runs(status) VALUES('running') RETURNING id");
  const runId=run.rows[0].id, observedAt=new Date().toISOString();
- let fixtures=0, saved=0; const errors=[], results=[];
+ let fixtures=0, saved=0, quotaExhausted=false; const errors=[], results=[];
  for(const sport of selected){
   const kind=sport.key.startsWith("soccer_")?"football":sport.key.startsWith("basketball_")?"basketball":"tennis";
   const markets=kind==="basketball"?"h2h,spreads,totals":kind==="tennis"?"h2h":"h2h,totals";
@@ -123,12 +128,20 @@ async function collectOdds(maxSports=8){
     }}
    }
    results.push({sport:sport.key,fixtures:n,odds:o});
-  }catch(e){errors.push({sport:sport.key,error:String(e.message||e).slice(0,180)});results.push({sport:sport.key,error:String(e.message||e).slice(0,180)});}
+  }catch(e){
+   const detail=String(e.message||e).slice(0,180);
+   errors.push({sport:sport.key,error:detail});results.push({sport:sport.key,error:detail});
+   if(/OUT_OF_USAGE_CREDITS|usage quota has been reached/i.test(detail)){
+    quotaExhausted=true;
+    console.error("[ash-scout] provider quota exhausted; stopping remaining sports to prevent wasted requests");
+    break;
+   }
+  }
  }
  const status=errors.length?(fixtures?"partial":"failed"):"success";
  await db.query("UPDATE daily_scout_runs SET finished_at=now(),status=$1,fixtures_seen=$2,odds_snapshots_saved=$3,error_summary=$4 WHERE id=$5",
  [status,fixtures,saved,errors.length?JSON.stringify(errors).slice(0,2500):null,runId]);
- return{runId,status,sportsAttempted:selected.length,fixturesSeen:fixtures,oddsSnapshotsSaved:saved,observedAt,results,errors};
+ return{runId,status,sportsAttempted:results.length,fixturesSeen:fixtures,oddsSnapshotsSaved:saved,observedAt,results,errors,quotaExhausted};
 }
 
 
