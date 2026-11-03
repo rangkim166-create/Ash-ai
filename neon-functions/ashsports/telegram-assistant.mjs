@@ -148,25 +148,83 @@ async function saveLiveResearchSnapshots(db,live){
 export function createTelegramAssistant({db,read,telegram}){
  let connectedLogged=false;
  async function send(chatId,text){const bot=await read("telegram_bot");for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);const r=await fetch(TG+"/bot"+bot.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});const j=await r.json();if(!r.ok||!j.ok)throw Error("Telegram send failed: "+(j.description||r.status));}}
- async function ai(messages,provider,key){
-  const base=provider==="groq"?"https://api.groq.com/openai/v1/chat/completions":"https://openrouter.ai/api/v1/chat/completions";
-  const models=provider==="groq"?[...new Set([process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","openai/gpt-oss-120b","openai/gpt-oss-20b"])]:[process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini"];
-  const errors=[];
-  for(const model of models){
-   const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:650}),signal:timeout(45000)});
-   const j=await r.json();
+ let groqQueue=Promise.resolve();
+ const runGroqSerially=(task)=>{const result=groqQueue.then(task,task);groqQueue=result.catch(()=>{});return result;};
+ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+ function retryDelay(response,attempt){
+  const header=Number(response?.headers?.get("retry-after"));
+  if(Number.isFinite(header)&&header>0)return Math.min(90000,Math.max(1500,header*1000));
+  return Math.min(90000,20000*Math.pow(2,attempt));
+ }
+ async function groqRequest(key,model,messages,maxTokens=450){
+  const base="https://api.groq.com/openai/v1/chat/completions";
+  let lastError="";
+  for(let attempt=0;attempt<4;attempt++){
+   let r,j;
+   try{
+    r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key},body:JSON.stringify({model,messages,temperature:0.25,max_tokens:maxTokens}),signal:timeout(60000)});
+    j=await r.json();
+   }catch(e){lastError=model+" network error "+String(e.message||e).slice(0,120);if(attempt<3){await sleep(Math.min(30000,3000*Math.pow(2,attempt)));continue;}throw Error(lastError);}
    if(r.ok)return j.choices?.[0]?.message?.content||"";
-   const detail=JSON.stringify(j).slice(0,180);
-   errors.push(model+" HTTP "+r.status+" "+detail);
-   if(provider==="groq"&&(r.status===413||r.status===429)&&messages[0]?.content?.length>2200){
-    const full=String(messages[0].content||""),marker=full.indexOf("CURRENT RESEARCH:"),systemPart=full.slice(0,Math.min(marker<0?2200:marker,2200)),researchPart=marker>=0?full.slice(marker,marker+3600):full.slice(-3000);const smaller=[{role:"system",content:systemPart+"\\n\\n"+researchPart},...messages.slice(-3).map(x=>({role:x.role,content:String(x.content||"").slice(0,350)}))];
-    const retry=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key},body:JSON.stringify({model,messages:smaller,temperature:0.25,max_tokens:450}),signal:timeout(45000)});
-    const retryJson=await retry.json();if(retry.ok)return retryJson.choices?.[0]?.message?.content||"";
-    errors.push(model+" compact retry HTTP "+retry.status+" "+JSON.stringify(retryJson).slice(0,140));
-   }
-   if(provider!=="groq"||!(r.status===404||j?.error?.code==="model_not_found"))break;
+   lastError=model+" HTTP "+r.status+" "+JSON.stringify(j).slice(0,180);
+   if(r.status===429&&attempt<3){const wait=retryDelay(r,attempt);console.warn("[ash-groq-retry]",JSON.stringify({model,attempt:attempt+1,waitMs:wait,reason:"rate_limited"}));await sleep(wait);continue;}
+   if(r.status>=500&&attempt<2){await sleep(3000*Math.pow(2,attempt));continue;}
+   throw Error(lastError);
   }
-  throw Error(errors.join(" | "));
+  throw Error(lastError||"Groq request exhausted retries");
+ }
+ async function ai(messages,provider,key){
+  if(provider!=="groq"){
+   const base="https://openrouter.ai/api/v1/chat/completions";
+   const model=process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini";
+   const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:650}),signal:timeout(45000)});
+   const j=await r.json();if(!r.ok)throw Error(model+" HTTP "+r.status+" "+JSON.stringify(j).slice(0,180));
+   return j.choices?.[0]?.message?.content||"";
+  }
+  return runGroqSerially(async()=>{
+   const models=[...new Set([process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","openai/gpt-oss-120b","openai/gpt-oss-20b"])];
+   const marker="CURRENT RESEARCH:",systemText=String(messages[0]?.content||"");
+   const markerAt=systemText.indexOf(marker);
+   const researchText=markerAt>=0?systemText.slice(markerAt+marker.length).trim():"";
+   const systemPrefix=markerAt>=0?systemText.slice(0,markerAt+marker.length):systemText;
+   const userMessages=messages.slice(1);
+   const chunks=[];
+   if(researchText.length>2600){
+    const paragraphs=researchText.split(/\n+/).filter(Boolean);let batch="";
+    for(const paragraph of paragraphs){
+     const parts=paragraph.match(/[\s\S]{1,2200}/g)||[paragraph];
+     for(const part of parts){if(batch&&batch.length+part.length+1>2600){chunks.push(batch);batch="";}batch+=(batch?"\n":"")+part;}
+    }
+    if(batch)chunks.push(batch);
+   }
+   const callWithFallback=async(batchMessages,maxTokens)=>{
+    const failures=[];
+    for(const model of models){
+     try{return await groqRequest(key,model,batchMessages,maxTokens);}
+     catch(e){failures.push(String(e.message||e));console.warn("[ash-groq-model-fallback]",JSON.stringify({model,error:String(e.message||e).slice(0,180)}));}
+    }
+    throw Error(failures.join(" | ").slice(0,700));
+   };
+   if(chunks.length>1){
+    const notes=[];
+    console.log("[ash-groq-batches]",JSON.stringify({batches:chunks.length,mode:"sequential"}));
+    for(let i=0;i<chunks.length;i++){
+     const batchMessages=[
+      {role:"system",content:"You are Ash's research extraction assistant. Extract only useful verified facts, exact dates, source names/links, contradictions and unknowns from this batch. Do not make predictions. Be concise and preserve important details."},
+      {role:"user",content:"Research batch "+(i+1)+" of "+chunks.length+":\n"+chunks[i]}
+     ];
+     const note=await callWithFallback(batchMessages,300);
+     notes.push("BATCH "+(i+1)+"/"+chunks.length+": "+note);
+    }
+    const finalMessages=[
+     {role:"system",content:systemPrefix+"\nBATCHED RESEARCH NOTES (all "+chunks.length+" batches processed sequentially):\n"+notes.join("\n\n").slice(0,8500)},
+     ...userMessages.slice(-5)
+    ];
+    return callWithFallback(finalMessages,650);
+   }
+   const compact=messages.map((m,i)=>i===0?{...m,content:String(m.content||"").slice(0,9000)}:{...m,content:String(m.content||"").slice(-1600)});
+   return callWithFallback(compact,650);
+  });
  }
  async function answer(chatId,text){
   const bot=await read("telegram_bot");if(!bot?.botToken||!bot?.chatId)throw Error("Telegram bot is not configured");
