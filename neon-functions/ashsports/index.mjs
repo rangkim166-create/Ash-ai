@@ -2,6 +2,7 @@ import postgres from "postgres";
 import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
+import { enqueueFixtureResearch, processFixtureResearch } from "./fixture-research.mjs";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
 const sql=postgres(process.env.DATABASE_URL,{max:5,idle_timeout:20,connect_timeout:10});
 const db={query:async(text,values=[])=>{const rows=await sql.unsafe(text,values);return {rows,rowCount:rows.length};}};
@@ -141,7 +142,8 @@ async function collectOdds(maxSports=8){
  const status=errors.length?(fixtures?"partial":"failed"):"success";
  await db.query("UPDATE daily_scout_runs SET finished_at=now(),status=$1,fixtures_seen=$2,odds_snapshots_saved=$3,error_summary=$4 WHERE id=$5",
  [status,fixtures,saved,errors.length?JSON.stringify(errors).slice(0,2500):null,runId]);
- return{runId,status,sportsAttempted:results.length,fixturesSeen:fixtures,oddsSnapshotsSaved:saved,observedAt,results,errors,quotaExhausted};
+ const researchQueue=await enqueueFixtureResearch(db).catch(e=>({error:String(e.message||e).slice(0,160)}));
+ return{runId,status,sportsAttempted:results.length,fixturesSeen:fixtures,oddsSnapshotsSaved:saved,observedAt,results,errors,quotaExhausted,researchQueue};
 }
 
 
@@ -405,7 +407,7 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-export default {async configureTelegramWebhook(){return await telegramAssistant.configureWebhook();},async runScheduledCollection(){return await collectOdds(8);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/v1/telegram/webhook"&&req.method==="POST"){try{const secret=req.headers.get("x-telegram-bot-api-secret-token")||"";if(!(await telegramAssistant.verifySecret(secret)))return reply({error:"unauthorized"},401);const update=await req.json();void telegramAssistant.handleUpdate(update).catch(e=>console.error("[ash-telegram-webhook]",String(e.message||e)));return reply({ok:true});}catch(e){console.error("[ash-telegram-webhook]",e);return reply({error:"invalid_update"},400);}}if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
+export default {async configureTelegramWebhook(){return await telegramAssistant.configureWebhook();},async runScheduledCollection(){let collection=null;try{collection=await collectOdds(8);}catch(e){console.error("[ash-research-queue] collection",String(e.message||e).slice(0,160));}const queued=await enqueueFixtureResearch(db).catch(e=>({error:String(e.message||e).slice(0,160)}));const research=await processFixtureResearch(db,{limit:8,groqKey:await read("groq")}).catch(e=>({error:String(e.message||e).slice(0,160)}));return{collection,queued,research};},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/v1/telegram/webhook"&&req.method==="POST"){try{const secret=req.headers.get("x-telegram-bot-api-secret-token")||"";if(!(await telegramAssistant.verifySecret(secret)))return reply({error:"unauthorized"},401);const update=await req.json();void telegramAssistant.handleUpdate(update).catch(e=>console.error("[ash-telegram-webhook]",String(e.message||e)));return reply({ok:true});}catch(e){console.error("[ash-telegram-webhook]",e);return reply({error:"invalid_update"},400);}}if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
@@ -447,7 +449,7 @@ if(p==="/v1/public/results/summary"&&req.method==="GET"){
  return reply({totals:{...r,settled,hit_rate_pct:settled?Number((Number(r.won)/settled*100).toFixed(1)):null,yield_pct:settled?Number((Number(r.profit)/settled*100).toFixed(1)):null},daily:recent.rows});
 }
 
-if(p==="/v1/public/odds/daily"&&req.method==="GET"){
+if(p==="/v1/public/research/summary"&&req.method==="GET"){const totals=await db.query("SELECT COUNT(*)::int AS fixtures,COUNT(*) FILTER(WHERE q.status='pending')::int AS pending,COUNT(*) FILTER(WHERE q.status='researching')::int AS researching,COUNT(*) FILTER(WHERE q.status='completed')::int AS completed,COUNT(*) FILTER(WHERE q.status='failed')::int AS failed FROM ash_fixture_research_queue q");const recent=await db.query("SELECT m.id,m.sport,m.competition,m.home_or_player_one AS home,m.away_or_player_two AS away,m.starts_at,r.researched_at,r.source_count,r.independent_domains,r.coverage,r.assessment FROM ash_fixture_research r JOIN sports_matches m ON m.id=r.match_id ORDER BY r.researched_at DESC LIMIT 30");return reply({totals:totals.rows[0],recent:recent.rows});}\nif(p==="/v1/public/research/fixture"&&req.method==="GET"){const url=new URL(req.url),id=(url.searchParams.get("id")||"").trim();if(!id||id.length>180)return reply({error:"fixture_id_required"},400);const r=await db.query("SELECT m.id,m.sport,m.competition,m.home_or_player_one AS home,m.away_or_player_two AS away,m.starts_at,x.researched_at,x.source_count,x.independent_domains,x.sources,x.assessment,x.coverage FROM sports_matches m LEFT JOIN ash_fixture_research x ON x.match_id=m.id WHERE m.id=$1",[id]);return reply({fixture:r.rows[0]||null});}\nif(p==="/v1/public/odds/daily"&&req.method==="GET"){
 const daily=await db.query("SELECT local_date,status,picks_count,picks_json,message_text,sent_at,started_at FROM ash_daily_publications WHERE local_date=(now() AT TIME ZONE 'Africa/Kampala')::date LIMIT 1");
 return reply({daily:daily.rows[0]||null});
 }
