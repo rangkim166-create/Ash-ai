@@ -114,13 +114,13 @@ async function collectOdds(maxSports=8){
     await db.query("INSERT INTO sports_matches(id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source,source_updated_at,updated_at) VALUES($1,$2,$3,$4,$5,$6::timestamptz,'scheduled','the_odds_api',$7::timestamptz,now()) ON CONFLICT(id) DO UPDATE SET competition=EXCLUDED.competition,home_or_player_one=EXCLUDED.home_or_player_one,away_or_player_two=EXCLUDED.away_or_player_two,starts_at=EXCLUDED.starts_at,source_updated_at=EXCLUDED.source_updated_at,updated_at=now()",
     [id,kind,sport.title||sport.key,e.home_team,e.away_team,e.commence_time||null,observedAt]);
     fixtures++;n++;
-    for(const b of(e.bookmakers||[]))for(const m of(b.markets||[]))for(const v of(m.outcomes||[])){
+    for(const b of(e.bookmakers||[])){const bookUpdated=Date.parse(b.last_update||"");const bookAgeMinutes=(Date.now()-bookUpdated)/60000;if(!Number.isFinite(bookUpdated)||bookAgeMinutes<0||bookAgeMinutes>15)continue;for(const m of(b.markets||[]))for(const v of(m.outcomes||[])){
      const price=Number(v.price);if(!v.name||!Number.isFinite(price)||price<=1)continue;
      const point=v.point==null?null:Number(v.point);
      const inserted=await db.query("INSERT INTO bookmaker_odds(match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at,source) VALUES($1,$2,$3,$4,$5,$6,$7::timestamptz,'the_odds_api') ON CONFLICT DO NOTHING RETURNING id",
      [id,b.key||b.title||"unknown",m.key||"unknown",v.name,price,Number.isFinite(point)?point:null,observedAt]);
      saved+=inserted.rowCount;o+=inserted.rowCount;
-    }
+    }}
    }
    results.push({sport:sport.key,fixtures:n,odds:o});
   }catch(e){errors.push({sport:sport.key,error:String(e.message||e).slice(0,180)});results.push({sport:sport.key,error:String(e.message||e).slice(0,180)});}
@@ -305,14 +305,14 @@ async function runScheduledDailyPublisher(){
  try{
   let collection=null;
   try{collection=await collectOdds(8);}catch(error){console.error("[ash-daily] odds refresh failed",String(error?.message||error).slice(0,180));}
-  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND source='the_odds_api' AND starts_at>now() AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 250");
+  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND source='the_odds_api' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 250");
   const fixtures=fixturesResult.rows;
   if(!fixtures.length){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No upcoming bookmaker fixtures are available yet."]);
    return{sent:false,reason:"no_upcoming_fixtures",collection,localDate:localDay};
   }
   const ids=fixtures.map(row=>row.id);
-  const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND observed_at>now()-interval '6 hours' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
+  const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND observed_at>now()-interval '15 minutes' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
   if(!oddsResult.rows.length){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No fresh head-to-head bookmaker prices are available."]);
    return{sent:false,reason:"no_fresh_bookmaker_odds",collection,localDate:localDay};
@@ -366,7 +366,7 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-export default {async configureTelegramWebhook(){return await telegramAssistant.configureWebhook();},async runScheduledCollection(){return await collectOdds(6);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/v1/telegram/webhook"&&req.method==="POST"){try{const secret=req.headers.get("x-telegram-bot-api-secret-token")||"";if(!(await telegramAssistant.verifySecret(secret)))return reply({error:"unauthorized"},401);const update=await req.json();void telegramAssistant.handleUpdate(update).catch(e=>console.error("[ash-telegram-webhook]",String(e.message||e)));return reply({ok:true});}catch(e){console.error("[ash-telegram-webhook]",e);return reply({error:"invalid_update"},400);}}if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
+export default {async configureTelegramWebhook(){return await telegramAssistant.configureWebhook();},async runScheduledCollection(){return await collectOdds(8);},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/v1/telegram/webhook"&&req.method==="POST"){try{const secret=req.headers.get("x-telegram-bot-api-secret-token")||"";if(!(await telegramAssistant.verifySecret(secret)))return reply({error:"unauthorized"},401);const update=await req.json();void telegramAssistant.handleUpdate(update).catch(e=>console.error("[ash-telegram-webhook]",String(e.message||e)));return reply({ok:true});}catch(e){console.error("[ash-telegram-webhook]",e);return reply({error:"invalid_update"},400);}}if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
