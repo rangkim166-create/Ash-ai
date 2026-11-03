@@ -349,10 +349,18 @@ async function runScheduledDailyPublisher(){
   // The Odds API finds candidate fixtures; independent web reporting adds match context.
   const webResearch=await telegramAssistant.researchDailyPicks(picks);
   const researchByMatch=new Map(webResearch.map(item=>[String(item.matchId),item]));
+  const researchedPicks=[];
   for(const pick of picks){
    const research=researchByMatch.get(String(pick.id));
-   pick.web_research=research?{retrieved_at:research.retrievedAt,results_count:research.resultsCount,relevant_pages:research.relevantPages,headlines:research.headlines,status:research.relevantPages.length?"sources_found":"no_relevant_reporting_found"}:{status:"research_unavailable",relevant_pages:[],headlines:[]};
+   pick.web_research=research||{status:"research_unavailable",pages:[],quality:{homeCoverage:false,awayCoverage:false,expertCoverage:false,independentDomains:0}};
+   const quality=pick.web_research.quality||{};
+   const analysis=pick.web_research.analysis||{};
+   const approved=quality.homeCoverage&&quality.awayCoverage&&quality.expertCoverage&&Number(quality.independentDomains)>=3&&analysis.decision==="SUPPORT"&&Number(analysis.confidence)>=65;
+   pick.research_gate=approved?"approved":"held_no_bet";
+   if(approved)researchedPicks.push(pick);
+   else console.log("[ash-daily-pick-held]",JSON.stringify({match:pick.home_team+" vs "+pick.away_team,quality,decision:analysis.decision||"missing",confidence:analysis.confidence||0}));
   }
+  picks.splice(0,picks.length,...researchedPicks);
   const dayLabel=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",day:"2-digit",month:"short",year:"numeric"}).format(new Date());
   const sportOrder=["football","basketball","tennis"];
   const sportLabels={football:"⚽ FOOTBALL",soccer:"⚽ FOOTBALL",basketball:"🏀 BASKETBALL",tennis:"🎾 TENNIS"};
