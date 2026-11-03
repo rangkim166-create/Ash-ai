@@ -63,8 +63,8 @@ export async function enqueueFixtureResearch(db){
   SELECT m.id,'pending',now() FROM sports_matches m
   WHERE m.source='the_odds_api' AND m.starts_at>now()-interval '12 hours'
   ON CONFLICT(match_id) DO UPDATE SET status='pending',due_at=now(),updated_at=now(),last_error=NULL
-  WHERE ash_fixture_research_queue.status IN ('failed','completed')
-    AND (ash_fixture_research_queue.status='failed' OR NOT EXISTS(
+  WHERE (ash_fixture_research_queue.status='failed' AND ash_fixture_research_queue.due_at<=now())
+    OR (ash_fixture_research_queue.status='completed' AND NOT EXISTS(
       SELECT 1 FROM ash_fixture_research x WHERE x.match_id=EXCLUDED.match_id AND x.researched_at>now()-interval '6 hours'))
   RETURNING match_id`);
  return {queued:r.rowCount};
@@ -107,8 +107,15 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
    independent_domains=EXCLUDED.independent_domains,sources=EXCLUDED.sources,assessment=EXCLUDED.assessment,
    coverage=EXCLUDED.coverage,updated_at=now()`,
    [f.id,payload.length,domains.length,JSON.stringify(payload),JSON.stringify(assessment||{}),JSON.stringify(coverage)]);
+  const enoughEvidence=payload.length>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0;
+  if(!enoughEvidence){
+   const reason="Insufficient independent public reporting; do not treat as a researched pick";
+   await db.query("UPDATE ash_fixture_research_queue SET status='failed',due_at=now()+interval '6 hours',updated_at=now(),last_error=$2 WHERE match_id=$1",[f.id,reason]);
+   reports.push({matchId:f.id,sources:payload.length,domains:domains.length,coverage,status:"insufficient_evidence",assessmentStatus:assessment?.error?"unavailable":"saved"});
+   continue;
+  }
   await db.query("UPDATE ash_fixture_research_queue SET status='completed',completed_at=now(),updated_at=now(),last_error=NULL WHERE match_id=$1",[f.id]);
-  reports.push({matchId:f.id,sources:payload.length,domains:domains.length,coverage,assessmentStatus:assessment?.error?"unavailable":"saved"});
+  reports.push({matchId:f.id,sources:payload.length,domains:domains.length,coverage,status:"researched",assessmentStatus:assessment?.error?"unavailable":"saved"});
  }
  return {claimed:claimed.rowCount,completed:reports.length,reports};
 }
