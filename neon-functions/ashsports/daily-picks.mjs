@@ -213,7 +213,19 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
         `Recent form: home ${pick.home_form} • away ${pick.away_form}`,
       );
     }
-    lines.push(`Kick-off (Kampala): ${kickoff}`, "");
+    lines.push(`Kick-off (Kampala): ${kickoff}`);
+    const web=pick.web_research;
+    if(web?.relevant_pages?.length){
+      lines.push("WORLD NEWS / MATCH RESEARCH:");
+      for(const page of web.relevant_pages.slice(0,2)){
+        lines.push("• "+String(page.title||"").slice(0,150)+(page.date?" ("+page.date+")":""));
+        lines.push(String(page.url||"").slice(0,240));
+      }
+      lines.push("Research checked: "+(web.retrieved_at||"timestamp unavailable"));
+    }else{
+      lines.push("World news check: no relevant independent reports found — team news remains unverified.");
+    }
+    lines.push("");
   });
   lines.push("Not a final betting recommendation. Run a fresh live analysis before any decision. No selection is guaranteed.");
   return lines.join("\n").slice(0, 3900);
