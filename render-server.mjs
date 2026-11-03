@@ -90,6 +90,12 @@ server.listen(port, "0.0.0.0", () => {
     dailyPublishRunning = true;
     try {
       await ensureReferenceData();
+      try {
+        const research = await handler.runScheduledFixtureResearch();
+        console.log("[ash-research-queue] hourly live research", JSON.stringify(research));
+      } catch (researchError) {
+        console.error("[ash-research-queue] hourly research failed", String(researchError.message || researchError).slice(0, 180));
+      }
       const result = await handler.runScheduledDailyPublisher();
       console.log("[ash-daily] Odds of the Day", JSON.stringify(result));
     } catch (error) {
