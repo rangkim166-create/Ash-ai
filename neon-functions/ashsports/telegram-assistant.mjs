@@ -118,6 +118,30 @@ async function fetchLiveOdds(prompt,read){
  }catch(e){return {status:"error",message:String(e.message||e).slice(0,140),retrievedAt,events:[],scores:[],diagnostics};}
 }
 
+
+async function saveLiveResearchSnapshots(db,live){
+ const scores=Array.isArray(live?.scores)?live.scores:[];
+ const odds=Array.isArray(live?.events)?live.events:[];
+ const byEvent=new Map();
+ for(const item of scores){
+  const key=String(item.sportKey||"")+":"+String(item.id||"");
+  if(!item.id||!item.sportKey)continue;
+  byEvent.set(key,{event_id:String(item.id),sport_key:String(item.sportKey),sport_title:String(item.sport||""),home_team:String(item.home||""),away_team:String(item.away||""),commence_time:item.commence_time||null,phase:String(item.phase||"unknown"),home_score:item.homeScore,away_score:item.awayScore,score_updated_at:item.lastUpdate||null,bookmakers:[],retrieved_at:live.retrievedAt||new Date().toISOString()});
+ }
+ for(const item of odds){
+  const key=String(item.sportKey||"")+":"+String(item.id||"");
+  if(!item.id||!item.sportKey)continue;
+  const row=byEvent.get(key)||{event_id:String(item.id),sport_key:String(item.sportKey),sport_title:String(item.sport||""),home_team:String(item.home||""),away_team:String(item.away||""),commence_time:item.commence_time||null,phase:String(item.phase||"unknown"),home_score:null,away_score:null,score_updated_at:null,bookmakers:[],retrieved_at:live.retrievedAt||new Date().toISOString()};
+  row.bookmakers=item.bookmakers||[];
+  byEvent.set(key,row);
+ }
+ const rows=[...byEvent.values()].slice(0,32);
+ if(!rows.length)return {saved:0};
+ await db.query("CREATE TABLE IF NOT EXISTS ash_live_research_snapshots(id bigserial PRIMARY KEY,event_id text NOT NULL,sport_key text NOT NULL,sport_title text,home_team text NOT NULL,away_team text NOT NULL,commence_time timestamptz,phase text NOT NULL,home_score text,away_score text,score_updated_at timestamptz,bookmakers jsonb NOT NULL DEFAULT '[]'::jsonb,retrieved_at timestamptz NOT NULL)");
+ await db.query("INSERT INTO ash_live_research_snapshots(event_id,sport_key,sport_title,home_team,away_team,commence_time,phase,home_score,away_score,score_updated_at,bookmakers,retrieved_at) SELECT x.event_id,x.sport_key,x.sport_title,x.home_team,x.away_team,x.commence_time::timestamptz,x.phase,x.home_score,x.away_score,x.score_updated_at::timestamptz,x.bookmakers::jsonb,x.retrieved_at::timestamptz FROM jsonb_to_recordset($1::jsonb) AS x(event_id text,sport_key text,sport_title text,home_team text,away_team text,commence_time text,phase text,home_score text,away_score text,score_updated_at text,bookmakers jsonb,retrieved_at text)",[JSON.stringify(rows)]);
+ return {saved:rows.length};
+}
+
 export function createTelegramAssistant({db,read,telegram}){
  let connectedLogged=false;
  async function send(chatId,text){const bot=await read("telegram_bot");for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);const r=await fetch(TG+"/bot"+bot.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});const j=await r.json();if(!r.ok||!j.ok)throw Error("Telegram send failed: "+(j.description||r.status));}}
@@ -150,7 +174,7 @@ export function createTelegramAssistant({db,read,telegram}){
   await db.query("CREATE TABLE IF NOT EXISTS ash_telegram_memory(chat_id text NOT NULL,role text NOT NULL,content text NOT NULL,created_at timestamptz NOT NULL DEFAULT now())");
   const history=await db.query("SELECT role,content FROM ash_telegram_memory WHERE chat_id=$1 ORDER BY created_at DESC LIMIT 12",[String(chatId)]);
   let research={items:[],pages:[],retrievedAt:null};let needsResearch=/(analyse|analy[sz]e|predict|prediction|odds|injur|lineup|line-up|form|fixture|match|game|today|tomorrow|league|team|player|bet|pick|score|who wins|longs|over|under)/i.test(prompt);
-  if(needsResearch){await fetch(TG+"/bot"+bot.botToken+"/sendChatAction",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,action:"typing"}),signal:timeout(5000)}).catch(()=>{});research=await searchWeb(prompt);research.liveOdds=await fetchLiveOdds(prompt,read);console.log("[ash-research]",JSON.stringify({retrievedAt:research.retrievedAt,searchResults:research.items?.length||0,extractedPages:research.pages?.length||0,oddsStatus:research.liveOdds?.status,requestedTeams:research.liveOdds?.requestedTeams,selectedSports:research.liveOdds?.diagnostics?.selectedSports,eventCount:research.liveOdds?.events?.length||0,perSport:research.liveOdds?.diagnostics?.perSport,requestsRemaining:research.liveOdds?.diagnostics?.requestsRemaining}));}
+  if(needsResearch){await fetch(TG+"/bot"+bot.botToken+"/sendChatAction",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,action:"typing"}),signal:timeout(5000)}).catch(()=>{});research=await searchWeb(prompt);research.liveOdds=await fetchLiveOdds(prompt,read);await saveLiveResearchSnapshots(db,research.liveOdds).catch(e=>console.warn("[ash-live-snapshot-save]",String(e.message||e).slice(0,140)));console.log("[ash-research]",JSON.stringify({retrievedAt:research.retrievedAt,searchResults:research.items?.length||0,extractedPages:research.pages?.length||0,oddsStatus:research.liveOdds?.status,requestedTeams:research.liveOdds?.requestedTeams,selectedSports:research.liveOdds?.diagnostics?.selectedSports,eventCount:research.liveOdds?.events?.length||0,perSport:research.liveOdds?.diagnostics?.perSport,requestsRemaining:research.liveOdds?.diagnostics?.requestsRemaining}));}
   let databaseResearch="";
   if(needsResearch){
    try{
