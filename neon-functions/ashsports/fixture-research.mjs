@@ -1,14 +1,14 @@
 const timeout=(ms)=>AbortSignal.timeout(ms);
-const strip=(s,n=1600)=>String(s||"").replace(/<script[\\s\\S]*?<\\/script>/gi," ").replace(/<style[\\s\\S]*?<\\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/&#x27;/g,"'").replace(/\\s+/g," ").trim().slice(0,n);
-const esc=s=>String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const strip=(s,n=1600)=>String(s||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/ +/g," ").trim().slice(0,n);
+
 function parseRss(xml){
  const out=[];
  for(const block of xml.split("<item>").slice(1).map(x=>x.split("</item>")[0])){
   const value=tag=>{const m=block.match(new RegExp("<"+tag+"[^>]*>([\\s\\S]*?)</"+tag+">","i"));return m?m[1].trim():"";};
   const title=strip(value("title"),240),url=value("link"),raw=value("pubDate"),ts=raw?Date.parse(raw):NaN;
-  if(!title||!/^https?:\\/\\//.test(url))continue;
+  if(!title||!(url.startsWith("https://")||url.startsWith("http://")))continue;
   let domain="unknown";
-  try{const m=block.match(/<source[^>]*url="([^"]+)"/i);domain=new URL(m?.[1]||url).hostname.replace(/^www\\./,"");}catch{}
+  try{const m=block.match(/<source[^>]*url="([^"]+)"/i);domain=new URL(m?.[1]||url).hostname.replace(/^www[.]/,"");}catch{}
   out.push({title,url,date:raw||null,publishedAt:Number.isFinite(ts)?new Date(ts).toISOString():null,ageHours:Number.isFinite(ts)?Math.max(0,Math.round((Date.now()-ts)/3600000)):null,domain});
   if(out.length>=10)break;
  }
@@ -25,7 +25,7 @@ async function readArticle(item){
   const r=await fetch(item.url,{redirect:"follow",headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/4.0)"},signal:timeout(10000)});
   if(!r.ok)return null;
   const type=r.headers.get("content-type")||"";
-  if(!/text\\/(html|plain)/i.test(type))return null;
+  if(!(type.includes("text/html")||type.includes("text/plain")))return null;
   const excerpt=strip(await r.text(),3500);
   return excerpt.length>180?{...item,excerpt:excerpt.slice(0,1800)}:null;
  }catch{return null;}
