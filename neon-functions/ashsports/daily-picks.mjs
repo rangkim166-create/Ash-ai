@@ -215,17 +215,19 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
     }
     lines.push(`Kick-off (Kampala): ${kickoff}`);
     const web=pick.web_research;
-    if(web?.relevant_pages?.length){
-      lines.push("WORLD NEWS / MATCH RESEARCH:");
-      for(const page of web.relevant_pages.slice(0,2)){
-        lines.push("• "+String(page.title||"").slice(0,150)+(page.date?" ("+page.date+")":""));
-        lines.push(String(page.url||"").slice(0,240));
-      }
-      lines.push("Research checked: "+(web.retrieved_at||"timestamp unavailable"));
-    }else{
-      lines.push("World news check: no relevant independent reports found — team news remains unverified.");
+    if(web?.analysis){
+      lines.push("WORLD TIPSTER / EXPERT REVIEW: "+web.analysis.decision+" • confidence "+web.analysis.confidence+"/100");
+      lines.push("Consensus: "+web.analysis.tipsterConsensus);
+      lines.push("Contrary views: "+web.analysis.contraryViews);
+      lines.push("Team news: "+web.analysis.teamNews);
+      lines.push("Ash assessment: "+web.analysis.reason);
     }
-    lines.push("");
+    lines.push("Independent sources: "+(web?.quality?.independentDomains||0)+" domains • home coverage "+(web?.quality?.homeCoverage?"yes":"no")+" • away coverage "+(web?.quality?.awayCoverage?"yes":"no")+" • expert coverage "+(web?.quality?.expertCoverage?"yes":"no"));
+    for(const page of (web?.pages||[]).slice(0,3)){
+      lines.push("• "+String(page.title||"").slice(0,125)+(page.domain?" — "+page.domain:"")+(page.date?" ("+page.date+")":""));
+      lines.push(String(page.url||"").slice(0,220));
+    }
+    lines.push("Research checked: "+(web?.retrievedAt||"timestamp unavailable"),"");
   });
   lines.push("Not a final betting recommendation. Run a fresh live analysis before any decision. No selection is guaranteed.");
   return lines.join("\n").slice(0, 3900);
