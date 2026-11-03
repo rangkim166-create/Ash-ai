@@ -232,18 +232,78 @@ export function createTelegramAssistant({db,read,telegram}){
  }
  async function researchDailyPicks(picks=[]){
   const candidates=(Array.isArray(picks)?picks:[]).slice(0,3);
-  return await Promise.all(candidates.map(async pick=>{
-   const query='"'+pick.home_team+'" "'+pick.away_team+'" "'+(pick.competition||"")+'" match preview team news injuries suspensions tactics recent results';
+  const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+  const retrieveRss=async(query)=>{
+   const url="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
+   const response=await fetch(url,{signal:timeout(12000)});
+   if(!response.ok)throw Error("Google News RSS HTTP "+response.status);
+   const xml=await response.text(),now=Date.now(),items=[];
+   for(const match of xml.matchAll(/<item>([\\s\\S]*?)<\\/item>/gi)){
+    const block=match[1],title=clean((block.match(/<title>([\\s\\S]*?)<\\/title>/i)||[])[1],240);
+    const link=(block.match(/<link>([\\s\\S]*?)<\\/link>/i)||[])[1]?.trim();
+    const raw=(block.match(/<pubDate>([\\s\\S]*?)<\\/pubDate>/i)||[])[1];
+    const published=raw?Date.parse(raw):NaN;
+    if(title&&link&&/^https?:/.test(link))items.push({title,url:link,date:raw?clean(raw,80):null,publishedAt:Number.isFinite(published)?new Date(published).toISOString():null,ageHours:Number.isFinite(published)?Math.max(0,Math.round((now-published)/3600000)):null,domain:(()=>{try{return new URL(link).hostname.replace(/^www\\./,"")}catch{return "unknown"}})()});
+    if(items.length>=8)break;
+   }
+   return items;
+  };
+  const fetchArticle=async(item)=>{
    try{
-    const found=await searchWeb(query);
-    const home=String(pick.home_team||"").toLowerCase(),away=String(pick.away_team||"").toLowerCase();
-    const relevant=(found.pages||[]).filter(page=>{
-     const hay=(String(page.title||"")+" "+String(page.excerpt||"")).toLowerCase();
-     return (home.length>3&&hay.includes(home))||(away.length>3&&hay.includes(away));
-    }).slice(0,4);
-    return {matchId:pick.id,retrievedAt:found.retrievedAt,resultsCount:(found.items||[]).length,relevantPages:relevant.map(p=>({title:p.title,url:p.url,date:p.date||null,publishedAt:p.publishedAt||null,ageHours:p.ageHours??null,source:p.source||"Web",excerpt:String(p.excerpt||"").slice(0,850)})),headlines:(found.items||[]).slice(0,6).map(p=>({title:p.title,url:p.url,date:p.date||null,source:p.source||"Web"}))};
-   }catch(error){console.error("[ash-daily-web-research]",String(error?.message||error).slice(0,160));return {matchId:pick.id,retrievedAt:new Date().toISOString(),resultsCount:0,relevantPages:[],headlines:[],error:String(error?.message||error).slice(0,160)};}
-  }));
+    const response=await fetch(item.url,{headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/3.0)"},signal:timeout(9000),redirect:"follow"});
+    if(!response.ok)return null;
+    const type=response.headers.get("content-type")||"";
+    if(!type.includes("text/html")&&!type.includes("text/plain"))return null;
+    const excerpt=clean(await response.text(),2600);
+    if(excerpt.length<160)return null;
+    return {...item,excerpt:excerpt.slice(0,1350)};
+   }catch{return null;}
+  };
+  const reports=[];
+  // Research is deliberately serial: one fixture, then its home side, then its away side.
+  for(const pick of candidates){
+   const home=String(pick.home_team||""),away=String(pick.away_team||""),competition=String(pick.competition||"");
+   const matchQuery='"'+home+'" "'+away+'" "'+competition+'" (tipster OR prediction OR expert picks OR match preview OR pundit analysis) after:'+new Date(Date.now()-10*86400000).toISOString().slice(0,10);
+   const homeQuery='"'+home+'" '+competition+' (team news OR injuries OR suspensions OR lineup OR manager comments) after:'+new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+   const awayQuery='"'+away+'" '+competition+' (team news OR injuries OR suspensions OR lineup OR manager comments) after:'+new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+   const matchItems=[],homeItems=[],awayItems=[],errors=[];
+   for(const [label,query,target] of [["match",matchQuery,matchItems],["home",homeQuery,homeItems],["away",awayQuery,awayItems]]){
+    try{const items=await retrieveRss(query);target.push(...items);console.log("[ash-daily-research-step]",JSON.stringify({match:home+" vs "+away,stage:label,results:items.length}));}
+    catch(error){errors.push(label+": "+String(error?.message||error).slice(0,100));}
+    await pause(850);
+   }
+   const unique=new Map();
+   for(const item of [...matchItems.slice(0,4),...homeItems.slice(0,3),...awayItems.slice(0,3)])if(!unique.has(item.url))unique.set(item.url,item);
+   const candidatesToRead=[...unique.values()].sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,5);
+   const pages=[];
+   for(const item of candidatesToRead){const page=await fetchArticle(item);if(page)pages.push(page);await pause(650);}
+   const homePages=pages.filter(p=>homeItems.some(x=>x.url===p.url));
+   const awayPages=pages.filter(p=>awayItems.some(x=>x.url===p.url));
+   const matchPages=pages.filter(p=>matchItems.some(x=>x.url===p.url));
+   const domains=[...new Set(pages.map(p=>p.domain))];
+   reports.push({matchId:pick.id,home,away,competition,retrievedAt:new Date().toISOString(),searchCounts:{match:matchItems.length,home:homeItems.length,away:awayItems.length},domains,homePages,awayPages,matchPages,pages,errors,quality:{homeCoverage:homePages.length>0,awayCoverage:awayPages.length>0,expertCoverage:matchPages.length>0,independentDomains:domains.length}});
+  }
+  // One batch synthesis request per daily publication, never one AI call per team.
+  const groqKey=await read("groq");
+  if(groqKey&&reports.length){
+   try{
+    const evidence=reports.map(r=>({matchId:r.matchId,fixture:r.home+" vs "+r.away,competition:r.competition,coverage:r.quality,sources:r.pages.map(p=>({title:p.title,domain:p.domain,published:p.date,excerpt:p.excerpt.slice(0,650)}))}));
+    const prompt="You are Ash's evidence auditor. Assess each candidate using ONLY supplied source excerpts. Do not invent tipster opinions, injuries, lineups or facts. Distinguish explicit predictions from news. Compare independent public tipster/pundit views, identify consensus and disagreement, and say when coverage is weak. Return ONLY JSON: {matches:[{matchId,decision:'SUPPORT'|'CONFLICT'|'INSUFFICIENT',confidence:0-100,tipsterConsensus,contraryViews,teamNews,reason}]} . SUPPORT only when multiple independent sources explicitly support the candidate side and there is no material unresolved contradiction. CONFLICT when credible reporting points against it. Otherwise INSUFFICIENT. Never use bookmaker favourite status as expert consensus. Candidate picks: "+JSON.stringify(candidates.map(p=>({id:p.id,fixture:p.home_team+" vs "+p.away_team,proposedSelection:p.selection,competition:p.competition})))+" Evidence: "+JSON.stringify(evidence).slice(0,11500);
+    const response=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+groqKey},body:JSON.stringify({model:process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b",messages:[{role:"system",content:"Be conservative, source-grounded and concise. Output valid JSON only."},{role:"user",content:prompt}],temperature:0.1,max_tokens:900}),signal:timeout(45000)});
+    if(!response.ok)throw Error("Groq research synthesis HTTP "+response.status);
+    const body=await response.json(),content=body.choices?.[0]?.message?.content||"";
+    const jsonText=content.slice(content.indexOf("{"),content.lastIndexOf("}")+1);
+    const parsed=JSON.parse(jsonText);
+    const analyses=Array.isArray(parsed.matches)?parsed.matches:[];
+    const byId=new Map(analyses.map(x=>[String(x.matchId),x]));
+    for(const report of reports){
+     const analysis=byId.get(String(report.matchId));
+     if(analysis)report.analysis={decision:["SUPPORT","CONFLICT","INSUFFICIENT"].includes(analysis.decision)?analysis.decision:"INSUFFICIENT",confidence:Math.max(0,Math.min(100,Number(analysis.confidence)||0)),tipsterConsensus:String(analysis.tipsterConsensus||"Not established").slice(0,500),contraryViews:String(analysis.contraryViews||"Not established").slice(0,400),teamNews:String(analysis.teamNews||"Not verified").slice(0,400),reason:String(analysis.reason||"Insufficient source-grounded analysis").slice(0,500)};
+    }
+    console.log("[ash-daily-research-synthesis]",JSON.stringify({matches:reports.length,analysed:analyses.length,model:process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b"}));
+   }catch(error){console.error("[ash-daily-research-synthesis]",String(error?.message||error).slice(0,180));}
+  }else console.warn("[ash-daily-research-synthesis] skipped: Groq key missing or no candidates");
+  return reports;
  }
  function secretToken(bot){return createHash("sha256").update(bot.botToken+"|ash-telegram-webhook-v1").digest("hex");}
  async function configureWebhook(){
