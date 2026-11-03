@@ -117,5 +117,5 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   await db.query("UPDATE ash_fixture_research_queue SET status='completed',completed_at=now(),updated_at=now(),last_error=NULL WHERE match_id=$1",[f.id]);
   reports.push({matchId:f.id,sources:payload.length,domains:domains.length,coverage,status:"researched",assessmentStatus:assessment?.error?"unavailable":"saved"});
  }
- return {claimed:claimed.rowCount,completed:reports.length,reports};
+ return {claimed:claimed.rowCount,processed:reports.length,completed:reports.filter(report=>report.status==='researched').length,insufficientEvidence:reports.filter(report=>report.status==='insufficient_evidence').length,reports};
 }
