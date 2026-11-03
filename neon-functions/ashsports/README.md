@@ -45,3 +45,16 @@ Each daily publication is stored in `ash_daily_publications` using the Africa/Ka
 For delivery, configure both `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in the Render service environment, or save them through the authenticated `POST /v1/telegram/configure` route. If Telegram is not configured, the job remains in `waiting_for_telegram_config` and retries hourly. The message is plain text and every selection is ready to copy.
 
 The daily selector is an evidence filter, not a calibrated prediction model or a guarantee. Missing form, stale prices, or weak bookmaker agreement result in no pick.
+
+
+## Live research for every fixture
+
+The Odds API collector inserts fixtures into `sports_matches` once per event ID and preserves later odds snapshots separately. Every stored upcoming Odds API fixture is added to `ash_fixture_research_queue`; the hourly worker processes four fixtures per pass and the collection worker processes up to eight. Queue claims use row locking so overlapping workers do not research the same fixture simultaneously.
+
+For each fixture Ash searches current public web/news sources for match previews and expert/tipster views, home-team news, away-team news, and recent form/head-to-head reporting. It fetches readable source pages, records publisher domains and publication dates, and asks Groq for a conservative evidence-only synthesis when configured. The evidence and synthesis are stored in `ash_fixture_research`. Research is refreshed at least every six hours while the fixture remains in the feed; failed or interrupted work can be retried.
+
+Public read-only endpoints:
+- `GET /v1/public/research/summary` — queue totals and the latest researched fixtures.
+- `GET /v1/public/research/fixture?id=<stored-match-id>` — source links, excerpts, timestamps, coverage and evidence synthesis for one fixture.
+
+This is broad live public-web discovery, not a claim to crawl the entire internet. Search coverage, paywalls, publisher restrictions and API availability can limit what Ash can verify. A missing source or unknown injury/lineup must remain unknown, never be filled by guesswork. Live odds remain separate from web research and still depend on a working odds-provider quota/key.
