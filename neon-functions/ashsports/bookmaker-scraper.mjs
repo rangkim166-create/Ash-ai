@@ -291,44 +291,154 @@ export async function addScraperSource(db, { bookmaker, url }) {
   return result.rows[0];
 }
 
+async function launchRenderedBrowser() {
+  const [{ chromium: playwright }, chromium] = await Promise.all([
+    import("playwright-core"),
+    import("@sparticuz/chromium")
+  ]);
+  chromium.default.setGraphicsMode = false;
+  return playwright.launch({
+    args: chromium.default.args,
+    executablePath: await chromium.default.executablePath(),
+    headless: true
+  });
+}
+
+async function renderBookmakerPage(browser, inputUrl) {
+  const initialUrl = validateSourceUrl(inputUrl);
+  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const structuredData = [];
+  const responseTasks = [];
+  await page.route("**/*", async route => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.isNavigationRequest() && !allowedHost(url.hostname)) return route.abort();
+    if (!["https:", "about:"].includes(url.protocol)) return route.abort();
+    if (["image", "font", "media"].includes(request.resourceType())) return route.abort();
+    return route.continue();
+  });
+  page.on("response", response => {
+    const task = (async () => {
+      try {
+        const url = new URL(response.url());
+        if (!allowedHost(url.hostname) || structuredData.length >= 35) return;
+        const type = (await response.headerValue("content-type") || "").toLowerCase();
+        if (!type.includes("json")) return;
+        const body = await response.body();
+        if (!body || body.length > MAX_HTML_BYTES) return;
+        const parsed = safeJson(body.toString("utf8"));
+        if (parsed !== null) structuredData.push(parsed);
+      } catch {}
+    })();
+    responseTasks.push(task);
+  });
+  try {
+    const response = await page.goto(initialUrl.toString(), { waitUntil: "domcontentloaded", timeout: 20000 });
+    await page.waitForTimeout(5000);
+    await Promise.allSettled(responseTasks);
+    const browserState = await page.evaluate(() => {
+      const keys = ["__INITIAL_STATE__", "__INITIAL_DATA__", "__APOLLO_STATE__", "__PRELOADED_STATE__", "__NUXT__", "__NEXT_DATA__", "__REDUX_STATE__"];
+      const state = [];
+      for (const key of keys) {
+        try {
+          const value = window[key] ?? (window.__store && key === "__REDUX_STATE__" ? window.__store.getState?.() : undefined);
+          if (value && typeof value === "object") state.push(value);
+        } catch {}
+      }
+      const odds = [...document.querySelectorAll("[data-odds], [data-price], [data-decimal-odds], [data-odd]")]
+        .slice(0, 500).map(node => {
+          const raw = node.getAttribute("data-odds") || node.getAttribute("data-price") ||
+            node.getAttribute("data-decimal-odds") || node.getAttribute("data-odd");
+          const price = Number(String(raw || "").replace(",", "."));
+          const selection = node.getAttribute("data-selection") || node.getAttribute("data-outcome") ||
+            node.getAttribute("aria-label") || node.innerText || "";
+          const event = node.closest("[data-event], [data-match], [class*='event'], [class*='match']");
+          return Number.isFinite(price) && price > 1 && selection.trim()
+            ? { name: selection.trim().slice(0, 140), odds: price,
+                market: node.getAttribute("data-market") || event?.getAttribute("data-market") || "Match Result",
+                eventName: event?.getAttribute("data-event") || event?.getAttribute("data-match") || event?.innerText?.slice(0, 180) || "" }
+            : null;
+        }).filter(Boolean);
+      return { state, odds, text: document.body?.innerText?.slice(0, 18000) || "" };
+    });
+    structuredData.push(...browserState.state);
+    if (browserState.odds.length) structuredData.push({ outcomes: browserState.odds });
+    const html = await page.content();
+    if (!html || html.length > MAX_HTML_BYTES) throw new Error("Rendered bookmaker page is empty or exceeds size limit");
+    return { html, finalUrl: page.url(), status: response?.status() || 200, contentType: "text/html", structuredData, visibleText: browserState.text };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
 export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   await ensureScraperTables(db);
   const sources = await db.query("SELECT id,bookmaker,source_url FROM ash_scraper_sources WHERE enabled=true ORDER BY COALESCE(last_scraped_at,'epoch'::timestamptz) ASC,id ASC LIMIT $1", [Math.max(1, Math.min(20, Number(limit) || 8))]);
   const results = [];
-  for (const source of sources.rows) {
-    try {
-      const page = await fetchPublicPage(source.source_url);
-      const discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
-      let discoveredSaved = 0;
-      for (const item of discovered) {
-        const added = await db.query(`INSERT INTO ash_scraper_sources(bookmaker,source_url)
-          VALUES($1,$2) ON CONFLICT(source_url) DO NOTHING RETURNING id`, [source.bookmaker, item.url]);
-        discoveredSaved += added.rowCount;
+  let browser = null, browserAttempted = false;
+  const getBrowser = async () => {
+    if (process.env.ASH_BROWSER_SCRAPER_ENABLED !== "true" || browserAttempted) return browser;
+    browserAttempted = true;
+    browser = await launchRenderedBrowser();
+    return browser;
+  };
+  try {
+    for (const source of sources.rows) {
+      try {
+        let page = null, staticError = null, rendered = null;
+        try { page = await fetchPublicPage(source.source_url); }
+        catch (error) { staticError = error; }
+        if (!page) {
+          const activeBrowser = await getBrowser();
+          if (!activeBrowser) throw staticError || new Error("Static bookmaker fetch failed");
+          rendered = await renderBookmakerPage(activeBrowser, source.source_url);
+          page = rendered;
+        }
+        let discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
+        let discoveredSaved = 0;
+        for (const item of discovered) {
+          const added = await db.query(`INSERT INTO ash_scraper_sources(bookmaker,source_url)
+            VALUES($1,$2) ON CONFLICT(source_url) DO NOTHING RETURNING id`, [source.bookmaker, item.url]);
+          discoveredSaved += added.rowCount;
+        }
+        const json = page.contentType.includes("application/json") ? safeJson(page.html) : null;
+        let embedded = json == null ? extractEmbeddedJson(page.html) : [json];
+        if (rendered?.structuredData?.length) embedded.push(...rendered.structuredData);
+        let candidates = uniqueOdds(embedded.flatMap(item => collectOddsCandidates(item)));
+        if (!candidates.length && !rendered) {
+          const activeBrowser = await getBrowser();
+          if (activeBrowser) {
+            rendered = await renderBookmakerPage(activeBrowser, page.finalUrl);
+            page = rendered;
+            discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
+            embedded = [...embedded, ...extractEmbeddedJson(page.html), ...(rendered.structuredData || [])];
+            candidates = uniqueOdds(embedded.flatMap(item => collectOddsCandidates(item)));
+          }
+        }
+        const text = rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000));
+        const status = candidates.length > 0 ? "success" : "empty";
+        const saved = await db.query(`INSERT INTO ash_scraper_runs(
+          source_id,bookmaker,source_url,final_url,status,http_status,content_type,extracted_text,structured_data,odds_candidates
+        ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
+        RETURNING id,fetched_at`, [
+          source.id, source.bookmaker, source.source_url, page.finalUrl, status,
+          page.status, page.contentType, text, JSON.stringify(embedded), JSON.stringify(candidates)
+        ]);
+        await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
+        results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, finalUrl: page.finalUrl });
+      } catch (error) {
+        const message = String(error?.message || error).slice(0, 300);
+        await db.query(`INSERT INTO ash_scraper_runs(source_id,bookmaker,source_url,status,error_message)
+          VALUES($1,$2,$3,'failed',$4)`, [source.id, source.bookmaker, source.source_url, message]);
+        await db.query("UPDATE ash_scraper_sources SET last_status='failed',last_error=$2,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, message]);
+        results.push({ sourceId: source.id, bookmaker: source.bookmaker, status: "failed", error: message });
       }
-      const json = page.contentType.includes("application/json") ? safeJson(page.html) : null;
-      const embedded = json == null ? extractEmbeddedJson(page.html) : [json];
-      const candidates = uniqueOdds(embedded.flatMap(item => collectOddsCandidates(item)));
-      const text = json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000);
-      const status = candidates.length > 0 ? "success" : "empty";
-      const saved = await db.query(`INSERT INTO ash_scraper_runs(
-        source_id,bookmaker,source_url,final_url,status,http_status,content_type,extracted_text,structured_data,odds_candidates
-      ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
-      RETURNING id,fetched_at`, [
-        source.id, source.bookmaker, source.source_url, page.finalUrl, status,
-        page.status, page.contentType, text, JSON.stringify(embedded), JSON.stringify(candidates)
-      ]);
-      await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
-      results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, finalUrl: page.finalUrl });
-    } catch (error) {
-      const message = String(error?.message || error).slice(0, 300);
-      await db.query(`INSERT INTO ash_scraper_runs(source_id,bookmaker,source_url,status,error_message)
-        VALUES($1,$2,$3,'failed',$4)`, [source.id, source.bookmaker, source.source_url, message]);
-      await db.query("UPDATE ash_scraper_sources SET last_status='failed',last_error=$2,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, message]);
-      results.push({ sourceId: source.id, bookmaker: source.bookmaker, status: "failed", error: message });
     }
+  } finally {
+    if (browser) await browser.close().catch(() => {});
   }
   const importedOdds = await importScrapedOdds(db);
-  return { sourcesChecked: results.length, discoveredPages: results.reduce((n,x)=>n+Number(x.discoveredPages||0),0), newPagesQueued: results.reduce((n,x)=>n+Number(x.newPagesQueued||0),0), succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, importedOdds, results };
+  return { sourcesChecked: results.length, discoveredPages: results.reduce((n,x)=>n+Number(x.discoveredPages||0),0), newPagesQueued: results.reduce((n,x)=>n+Number(x.newPagesQueued||0),0), succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, renderedSources: results.filter(x => x.rendered).length, importedOdds, results };
 }
 
 export function fixtureFromCandidate(candidate, now = new Date()) {
