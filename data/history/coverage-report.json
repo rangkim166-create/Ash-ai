@@ -1,8 +1,8 @@
 {
-  "generated_at_utc": "2026-11-03T12:08:46.695741+00:00",
+  "generated_at_utc": "2026-11-04T12:21:08.140748+00:00",
   "completeness": "best_effort_not_exhaustive",
   "summary": {
-    "total_matches": 1800623,
+    "total_matches": 1800931,
     "by_sport": [
       {
         "sport": "basketball",
@@ -10,14 +10,14 @@
       },
       {
         "sport": "football",
-        "matches": 1395581
+        "matches": 1395889
       },
       {
         "sport": "tennis",
         "matches": 361571
       }
     ],
-    "competition_groups": 10965,
+    "competition_groups": 10966,
     "reported_competitions": 500,
     "competition_counts_truncated": true
   },
@@ -151,6 +151,7 @@
         "detected": true,
         "matched_competitions": [
           "italy",
+          "Italian Serie A 2013/14",
           "Italian Serie A 2014/15",
           "Italian Serie A 2015/16",
           "Italian Serie A 2016/17",
@@ -165,7 +166,7 @@
           "Italian Serie A 2024/25",
           "Italian Serie A 2026/27"
         ],
-        "matches_found": 33086
+        "matches_found": 33394
       },
       {
         "target": "French Ligue 1",
@@ -278,7 +279,7 @@
     {
       "sport": "football",
       "competition": "italy",
-      "matches": 28486,
+      "matches": 28414,
       "first_date": "1929-10-06",
       "last_date": "2025-09-22"
     },
@@ -4478,12 +4479,12 @@
     {
       "sport": "football",
       "year": "2013",
-      "matches": 39149
+      "matches": 39496
     },
     {
       "sport": "football",
       "year": "2014",
-      "matches": 40079
+      "matches": 40040
     },
     {
       "sport": "football",
@@ -4882,12 +4883,12 @@
     }
   ],
   "pipeline_metadata": {
-    "built_at_utc": "2026-11-03T12:06:57.763620+00:00",
-    "total_matches": "415672",
-    "counts_by_sport": "{\"football\": 54101, \"tennis\": 361571}",
+    "built_at_utc": "2026-11-04T12:20:08.394003+00:00",
+    "total_matches": "416052",
+    "counts_by_sport": "{\"football\": 54481, \"tennis\": 361571}",
     "warning": "Coverage depends on upstream datasets; not all global matches or historical odds are included.",
-    "global_football_matches_imported": "1296534",
-    "global_football_duplicates_or_penalties_skipped": "6990",
+    "global_football_matches_imported": "1296462",
+    "global_football_duplicates_or_penalties_skipped": "7062",
     "global_football_invalid_rows": "5977",
     "world_archive_imported": "42161",
     "saudi_matches_imported": "2785",

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-03T12:02:33Z",
+  "generated_at_utc": "2026-11-04T12:17:36Z",
   "coverage_note": "Best-effort public historical results, not every match ever played. Missing upstream seasons are expected. NBA source is team game logs; tennis mirror retains the original non-commercial CC BY-NC-SA terms. Results are not historical betting odds.",
   "sources": [
     {
@@ -1367,8 +1367,8 @@
     {
       "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/it.1.json",
       "path": "data/history/raw/football/italy-serie-a/2013-14.json",
-      "status": "unavailable",
-      "error": "The read operation timed out"
+      "bytes": 111886,
+      "status": "ok"
     },
     {
       "url": "https://raw.githubusercontent.com/openfootball/football.json/master/2013-14/it.2.json",
@@ -3826,8 +3826,8 @@
     }
   ],
   "summary": {
-    "downloaded": 328,
-    "unavailable": 309,
-    "downloaded_bytes": 319822421
+    "downloaded": 329,
+    "unavailable": 308,
+    "downloaded_bytes": 319934307
   }
 }
