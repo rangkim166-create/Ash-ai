@@ -21,10 +21,18 @@ function parseRss(xml){
  return out;
 }
 async function search(query){
- const url="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-GB&gl=GB&ceid=GB:en";
- const r=await fetch(url,{signal:timeout(12000),headers:{"user-agent":"AshSportsResearch/4.0"}});
- if(!r.ok)throw Error("News search HTTP "+r.status);
- return parseRss(await r.text());
+ const providers=[
+  {name:"google_news",url:"https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-UG&gl=UG&ceid=UG:en"},
+  {name:"bing_news",url:"https://www.bing.com/news/search?q="+encodeURIComponent(query)+"&format=rss"}
+ ];
+ const results=await Promise.allSettled(providers.map(async provider=>{
+  const r=await fetch(provider.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0; +https://example.com/bot)","accept":"application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
+  if(!r.ok)throw Error(provider.name+" HTTP "+r.status);
+  return parseRss(await r.text()).map(item=>({...item,searchProvider:provider.name}));
+ }));
+ const items=results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
+ if(!items.length&&results.every(result=>result.status==="rejected"))throw Error("All public news search providers failed");
+ return items;
 }
 async function readArticle(item){
  try{
