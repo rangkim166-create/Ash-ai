@@ -32,7 +32,7 @@ Historical results are imported from OpenFootball football.json and OpenFootball
 
 ## Automated Odds of the Day publishing
 
-The Render process now checks once per hour for a Kampala-day publication that has not been sent yet. It refreshes bookmaker odds when the collector cooldown allows, then applies a conservative server-side filter:
+The Render process now checks once per hour for a Kampala-day publication that has not been sent yet. It refreshes configured public bookmaker pages before publication, imports only exact event/market matches from `source='public_scrape'`, then applies a conservative server-side filter:
 
 - upcoming fixtures only, with bookmaker snapshots no older than 6 hours;
 - head-to-head prices from multiple distinct bookmakers;
@@ -49,15 +49,15 @@ The daily selector is an evidence filter, not a calibrated prediction model or a
 
 ## Live research for every fixture
 
-The Odds API collector inserts fixtures into `sports_matches` once per event ID and preserves later odds snapshots separately. Every stored upcoming Odds API fixture is added to `ash_fixture_research_queue`; the hourly worker processes four fixtures per pass and the collection worker processes up to eight. Queue claims use row locking so overlapping workers do not research the same fixture simultaneously.
+Upcoming fixtures are queued from `sports_matches` regardless of source. The scheduled Odds API collector is disabled by default; the optional `ASH_ENABLE_ODDS_API_FIXTURE_DISCOVERY=true` flag enables it only as an explicit fallback. Public bookmaker event pages can create fixture rows when they expose an unambiguous sport, both participants and kickoff time. Queue claims use row locking so overlapping workers do not research the same fixture simultaneously.
 
-For each fixture Ash searches current public web/news sources for match previews and expert/tipster views, home-team news, away-team news, and recent form/head-to-head reporting. It fetches readable source pages, records publisher domains and publication dates, and asks Groq for a conservative evidence-only synthesis when configured. The evidence and synthesis are stored in `ash_fixture_research`. Research is refreshed at least every six hours while the fixture remains in the feed; failed or interrupted work can be retried.
+For each fixture Ash searches current public web/news sources for match previews and expert/tipster views, home/away injuries and fitness, lineups, suspensions, manager/training news, weather/venue and recent form/head-to-head reporting. It fetches readable source pages, records publisher domains and publication dates, and asks Groq for a conservative evidence-only synthesis when configured. The evidence and synthesis are stored in `ash_fixture_research`. Research refreshes every 6 hours normally and every 20 minutes within three hours of kickoff; failed or interrupted work can be retried. Daily picks are held unless fresh research covers both participants, injury and lineup reporting, at least two independent publishers and a non-conflicting AI assessment.
 
 Public read-only endpoints:
 - `GET /v1/public/research/summary` — queue totals and the latest researched fixtures.
 - `GET /v1/public/research/fixture?id=<stored-match-id>` — source links, excerpts, timestamps, coverage and evidence synthesis for one fixture.
 
-This is broad live public-web discovery, not a claim to crawl the entire internet. Search coverage, paywalls, publisher restrictions and API availability can limit what Ash can verify. A missing source or unknown injury/lineup must remain unknown, never be filled by guesswork. Live odds remain separate from web research and still depend on a working odds-provider quota/key.
+This is broad live public-web discovery, not a claim to crawl the entire internet. Search coverage, paywalls, publisher restrictions and page rendering can limit what Ash can verify. A missing source or unknown injury/lineup remains unknown, never filled by guesswork. Groq is used only for evidence synthesis when configured; it does not supply the underlying match facts.
 
 ## Public bookmaker scraper (initial rollout)
 
@@ -66,12 +66,12 @@ The Render backend now has a rate-limited public-page scraper for approved bookm
 - Sources are seeded on first scraper run and can be extended with exact public HTTPS event/market page URLs.
 - The scraper follows at most three redirects and revalidates every redirect host, rejects non-HTTPS URLs, rejects credentials in URLs, and caps each response at 2 MB.
 - It stores fetch metadata, extracted page text, embedded JSON/JSON-LD blocks and conservative odds candidates in `ash_scraper_runs`; source configuration and last-run state are stored in `ash_scraper_sources`.
-- Render runs the scraper shortly after startup and every three hours.
+- Render runs the scraper shortly after startup and every 30 minutes; the daily publisher also triggers a fresh scrape immediately before evaluating picks.
 - Authenticated routes: `GET /v1/scraper/status`, `POST /v1/scraper/run` with optional `{"limit":8}`, and `POST /v1/scraper/sources` with `{"bookmaker":"BetPawa","url":"https://www.betpawa.com/..." }`.
 
 Important: this is the first collection layer, not a guarantee that every bookmaker exposes odds in crawlable HTML. Many betting sites render markets client-side, geofence pages, require sign-in, or prohibit automated collection. The engine does not bypass access controls, CAPTCHAs or bot protections. A page that returns no public structured odds is recorded as such, not converted into invented prices.
 
-Scraped odds candidates are deliberately stored separately from `bookmaker_odds` until event identity and market mapping can be verified. The existing Odds API collector and daily-pick workflow are still present in this branch; they have not yet been removed or switched off. Removing that dependency safely requires validated bookmaker event/market adapters and a successful live scrape test first. Do not describe Ash as API-free until that migration is completed.
+Only candidates with an exact two-team event match, a recognized head-to-head market, a valid participant/draw outcome and a valid decimal price are imported into `bookmaker_odds` with `source='public_scrape'`. Event rows are created only when sport and kickoff metadata are explicit. Ambiguous matches are discarded. The daily prediction query accepts only fresh `public_scrape` prices (15-minute limit); The Odds API is not used for prices or scheduled collection by default. It remains an opt-in fixture-discovery fallback, not a required odds source.
 
 ## Prediction quality controls (Ash hybrid v1)
 
@@ -85,7 +85,7 @@ The daily candidate selector now:
 
 These estimates are a conservative screening heuristic, not a trained or proven profitable model. Every published candidate is recorded in `ash_predictions` with its probability, model version and evidence. Verified result settlement updates the prediction status. The public endpoint `GET /v1/public/predictions/metrics` reports settled sample size, average estimated probability, observed win rate, Brier score and unit-stake ROI by model version. Do not interpret small samples; the endpoint marks 100 settled predictions as the minimum sample before interpretation.
 
-The bookmaker scraper is still a first-stage public-page collector. It stores raw page evidence and candidate odds separately; it does not yet prove event/market identity or feed verified scraped prices into the production odds/prediction path. Do not remove the current odds collector or claim an API-free migration until site-specific adapters have been live-tested, normalized and independently verified end-to-end.
+The scraper is a conservative generic first stage, not a guaranteed adapter for every bookmaker. It will produce no picks when pages hide markets behind client-side rendering, login, geofencing or anti-bot controls. Add exact public event/market URLs through the authenticated source route where a bookmaker's homepage does not expose structured markets. The optional Odds API fixture fallback is disabled unless explicitly enabled.
 
 
 ## Expanded fixture intelligence research
