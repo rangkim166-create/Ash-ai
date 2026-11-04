@@ -48,11 +48,11 @@ function safeJson(text) {
 
 function extractAssignedJson(html, found) {
   const source = String(html || "");
-  const marker = /(?:window\\.)?__(?:INITIAL_STATE|INITIAL_DATA|APOLLO_STATE|PRELOADED_STATE|STATE|NUXT_DATA)__?\\s*=\\s*/gi;
+  const marker = /(?:window\.)?__(?:INITIAL_STATE|INITIAL_DATA|APOLLO_STATE|PRELOADED_STATE|STATE|NUXT_DATA)__?\s*=\s*/gi;
   let match;
   while ((match = marker.exec(source)) && found.length < 40) {
     let start = marker.lastIndex;
-    while (/\\s/.test(source[start] || "")) start++;
+    while (/\s/.test(source[start] || "")) start++;
     const opening = source[start];
     if (opening !== "{" && opening !== "[") continue;
     const closing = opening === "{" ? "}" : "]";
@@ -61,7 +61,7 @@ function extractAssignedJson(html, found) {
       const ch = source[i];
       if (quote) {
         if (escaped) escaped = false;
-        else if (ch === "\\\\") escaped = true;
+        else if (ch === "\\") escaped = true;
         else if (ch === quote) quote = "";
         continue;
       }
@@ -79,9 +79,9 @@ function extractAssignedJson(html, found) {
 export function extractEmbeddedJson(html) {
   const found = [];
   const patterns = [
-    /<script[^>]*type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi,
-    /<script[^>]*id=["'](?:__NEXT_DATA__|__NUXT_DATA__|__APOLLO_STATE__)["'][^>]*>([\\s\\S]*?)<\\/script>/gi,
-    /<script[^>]*type=["']application\\/json["'][^>]*>([\\s\\S]*?)<\\/script>/gi
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+    /<script[^>]*id=["'](?:__NEXT_DATA__|__NUXT_DATA__|__APOLLO_STATE__)["'][^>]*>([\s\S]*?)<\/script>/gi,
+    /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi
   ];
   for (const pattern of patterns) {
     let match;
