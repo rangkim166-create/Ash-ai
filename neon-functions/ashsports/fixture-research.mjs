@@ -1,5 +1,5 @@
 const timeout=(ms)=>AbortSignal.timeout(ms);
-const strip=(s,n=1600)=>String(s||"").replace(/<(script|style|noscript|svg|iframe|nav|footer|header)\\b[^>]*>[\\s\\S]*?<\\/\\1>/gi," ").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/ +/g," ").trim().slice(0,n);
+const strip=(s,n=1600)=>String(s||"").replace(/<(script|style|noscript|svg|iframe|nav|footer|header)\b[^>]*>[\s\S]*?<\/\1>/gi," ").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/ +/g," ").trim().slice(0,n);
 
 const OFFICIAL_SPORTS_DOMAINS = new Set(["fifa.com","uefa.com","the-afc.com","cafonline.com","premierleague.com","laliga.com","bundesliga.com","legaseriea.it","ligue1.com","nba.com","euroleaguebasketball.net","fiba.basketball","atptour.com","wtatennis.com"]);
 const MAJOR_MEDIA_DOMAINS = new Set(["bbc.com","bbc.co.uk","reuters.com","apnews.com","theguardian.com","espn.com","espn.co.uk","skysports.com","theathletic.com","goal.com","cbssports.com","sports.yahoo.com","marca.com","as.com","lequipe.fr","kicker.de"]);
