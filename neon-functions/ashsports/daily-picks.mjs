@@ -216,6 +216,24 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
   return [...bestByFixture.values()].slice(0, maxPicks);
 }
 
+export function isAvailabilityResearchSufficient(report, { fixtureStart, now = new Date() } = {}) {
+  if (!report || !report.researchedAt) return false;
+  const current = new Date(now), researched = new Date(report.researchedAt), starts = new Date(fixtureStart);
+  if (!Number.isFinite(current.getTime()) || !Number.isFinite(researched.getTime()) || !Number.isFinite(starts.getTime())) return false;
+  const nearKickoff = starts.getTime() <= current.getTime() + 3 * 60 * 60 * 1000;
+  const maxAgeMs = nearKickoff ? 20 * 60 * 1000 : 6 * 60 * 60 * 1000;
+  const ageMs = current.getTime() - researched.getTime();
+  if (ageMs < 0 || ageMs > maxAgeMs) return false;
+  const coverage = report.coverage || {};
+  const assessment = report.assessment || {};
+  return Number(report.sourceCount) >= 2 &&
+    Number(report.independentDomains) >= 2 &&
+    coverage.home === true && coverage.away === true &&
+    coverage.injuryReportingFound === true && coverage.lineupReportingFound === true &&
+    assessment.error == null && Number(assessment.confidence) >= 60 &&
+    !(Array.isArray(assessment.contradictions) && assessment.contradictions.length > 0);
+}
+
 export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
   const header = "ASH • ODDS OF THE DAY — " + day;
   if (!picks?.length) {
