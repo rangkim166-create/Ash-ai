@@ -86,3 +86,8 @@ The daily candidate selector now:
 These estimates are a conservative screening heuristic, not a trained or proven profitable model. Every published candidate is recorded in `ash_predictions` with its probability, model version and evidence. Verified result settlement updates the prediction status. The public endpoint `GET /v1/public/predictions/metrics` reports settled sample size, average estimated probability, observed win rate, Brier score and unit-stake ROI by model version. Do not interpret small samples; the endpoint marks 100 settled predictions as the minimum sample before interpretation.
 
 The bookmaker scraper is still a first-stage public-page collector. It stores raw page evidence and candidate odds separately; it does not yet prove event/market identity or feed verified scraped prices into the production odds/prediction path. Do not remove the current odds collector or claim an API-free migration until site-specific adapters have been live-tested, normalized and independently verified end-to-end.
+
+
+## Expanded fixture intelligence research
+
+Ash searches public reporting for match previews, home/away injuries and fitness, doubtful or ruled-out players, confirmed or predicted lineups, suspensions, manager/coach press conferences, training and squad updates, weather/venue conditions, form and head-to-head. Sources are saved with URL, publisher, publication date and category tags. Coverage tags indicate related reporting was found, not that a claim is confirmed. Research refreshes every 15 minutes. Public coverage is not exhaustive; paywalls, publisher restrictions and unindexed pages remain unavailable. Unknown player availability and lineups must stay unknown.
