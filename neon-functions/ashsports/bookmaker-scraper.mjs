@@ -188,7 +188,7 @@ async function fetchPublicPage(inputUrl) {
 export function discoverBookmakerLinks(html, baseUrl, limit = 12) {
   const base = validateSourceUrl(baseUrl);
   const found = new Map();
-  const pattern = /<a\\b[^>]*href\\s*=\\s*(["'])(.*?)\\1[^>]*>([\\s\\S]*?)<\\/a>/gi;
+  const pattern = /<a\b[^>]*href\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi;
   let match;
   while ((match = pattern.exec(String(html || ""))) && found.size < Math.max(1, Math.min(20, limit))) {
     const href = decodeEntities(match[2]).trim();
