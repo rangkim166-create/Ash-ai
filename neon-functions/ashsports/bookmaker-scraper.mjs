@@ -88,7 +88,7 @@ function candidateContext(object, inherited = {}) {
   homeTeam ||= parsed.homeTeam || inherited.homeTeam || null;
   awayTeam ||= parsed.awayTeam || inherited.awayTeam || null;
   return {
-    homeTeam, awayTeam, eventName: eventName || inherited.eventName || null,
+    homeTeam, awayTeam, eventName,
     sport: firstString(["sport","sportname"]) || inherited.sport || null,
     competition: firstString(["competition","league","tournament"]) || inherited.competition || null,
     startsAt: firstString(["startdate","starttime","commencetime","starts_at","datetime"]) || inherited.startsAt || null, market: firstString(["market","marketname","market_name"]) || inherited.market || null
@@ -267,14 +267,37 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   return { sourcesChecked: results.length, succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, importedOdds, results };
 }
 
+export function fixtureFromCandidate(candidate, now = new Date()) {
+  let home = candidate?.homeTeam, away = candidate?.awayTeam;
+  if (!home || !away) ({ homeTeam: home, awayTeam: away } = parseEventTeams(candidate?.eventName || ""));
+  if (!home || !away) return null;
+  const sportText = String(candidate.sport || "").toLowerCase();
+  const sport = /tennis/.test(sportText) ? "tennis" : /basketball/.test(sportText) ? "basketball" : /football|soccer/.test(sportText) ? "football" : null;
+  if (!sport) return null;
+  const starts = new Date(candidate.startsAt || "");
+  const current = new Date(now);
+  if (!Number.isFinite(starts.getTime()) || !Number.isFinite(current.getTime())) return null;
+  if (starts.getTime() < current.getTime() - 12 * 60 * 60 * 1000 || starts.getTime() > current.getTime() + 14 * 24 * 60 * 60 * 1000) return null;
+  const slug = [sport, normalizeTeam(home), normalizeTeam(away), starts.toISOString()]
+    .join("-").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 145);
+  return { id: "public-scrape:" + slug, sport, competition: String(candidate.competition || "Public bookmaker fixtures").slice(0, 180),
+    home, away, starts_at: starts.toISOString() };
+}
+
 export async function importScrapedOdds(db) {
   const runs = await db.query("SELECT bookmaker,odds_candidates,fetched_at FROM ash_scraper_runs WHERE status='success' AND fetched_at>now()-interval '6 hours' ORDER BY fetched_at DESC LIMIT 100");
   const fixturesResult = await db.query("SELECT id,sport,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()-interval '12 hours' AND starts_at<now()+interval '14 days'");
   const fixtures = fixturesResult.rows;
-  let saved = 0, unmatched = 0;
+  let saved = 0, unmatched = 0, fixturesCreated = 0;
   for (const run of runs.rows) {
     const bookmakerKey = String(run.bookmaker || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 80) || "unknown";
     for (const candidate of Array.isArray(run.odds_candidates) ? run.odds_candidates : []) {
+      const scrapedFixture = fixtureFromCandidate(candidate);
+      if (scrapedFixture && !fixtures.some(f => f.id === scrapedFixture.id)) {
+        await db.query("INSERT INTO sports_matches(id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source,source_updated_at,updated_at) VALUES($1,$2,$3,$4,$5,$6::timestamptz,'scheduled','public_scrape',now(),now()) ON CONFLICT(id) DO UPDATE SET competition=EXCLUDED.competition,source_updated_at=now(),updated_at=now()",
+          [scrapedFixture.id,scrapedFixture.sport,scrapedFixture.competition,scrapedFixture.home,scrapedFixture.away,scrapedFixture.starts_at]);
+        fixtures.push(scrapedFixture); fixturesCreated++;
+      }
       const matches = fixtures.filter(fixture => mapCandidateToFixture(candidate, fixture));
       if (matches.length !== 1) { unmatched++; continue; }
       const mapped = mapCandidateToFixture(candidate, matches[0]);
@@ -283,9 +306,8 @@ export async function importScrapedOdds(db) {
       saved += result.rowCount;
     }
   }
-  return { runs: runs.rowCount, fixtures: fixtures.length, oddsSaved: saved, unmatchedCandidates: unmatched, source: "public_scrape" };
+  return { runs: runs.rowCount, fixtures: fixtures.length, fixturesCreated, oddsSaved: saved, unmatchedCandidates: unmatched, source: "public_scrape" };
 }
-
 export async function getScraperStatus(db) {
   await ensureScraperTables(db);
   const sources = await db.query("SELECT id,bookmaker,source_url,enabled,last_status,last_error,last_scraped_at FROM ash_scraper_sources ORDER BY id");
