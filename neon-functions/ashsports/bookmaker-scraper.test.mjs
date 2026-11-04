@@ -57,3 +57,9 @@ test("creates a fixture only from explicit sport and valid kickoff metadata", ()
   assert.match(fixture.id, /^public-scrape:/);
   assert.equal(fixtureFromCandidate({ eventName: "Arsenal vs Chelsea", sport: "Football" }, new Date("2026-11-04T10:00:00.000Z")), null);
 });
+
+test("rejects non-Uganda bookmaker domains even when the global brand is familiar", async () => {
+  const db = { query: async () => ({ rows: [], rowCount: 0 }) };
+  await assert.rejects(addScraperSource(db, { bookmaker: "Bet365", url: "https://www.bet365.com/" }), /not on Ash's approved source list/);
+  await assert.rejects(addScraperSource(db, { bookmaker: "1xBet", url: "https://1xbet.com/" }), /not on Ash's approved source list/);
+});
