@@ -91,7 +91,7 @@ function candidateContext(object, inherited = {}) {
     homeTeam, awayTeam, eventName: eventName || inherited.eventName || null,
     sport: firstString(["sport","sportname"]) || inherited.sport || null,
     competition: firstString(["competition","league","tournament"]) || inherited.competition || null,
-    startsAt: firstString(["startdate","starttime","commencetime","starts_at","datetime"]) || inherited.startsAt || null
+    startsAt: firstString(["startdate","starttime","commencetime","starts_at","datetime"]) || inherited.startsAt || null, market: firstString(["market","marketname","market_name"]) || inherited.market || null
   };
 }
 export function collectOddsCandidates(value, output = [], depth = 0, inherited = {}) {
@@ -110,7 +110,7 @@ export function collectOddsCandidates(value, output = [], depth = 0, inherited =
   if (label != null && String(label).trim() && Number.isFinite(price) && price > 1 && price <= 1000) {
     output.push({
       selection: String(label).trim().slice(0, 160), decimalOdds: price,
-      market: String(normalized.market ?? normalized.marketname ?? normalized.market_name ?? "").slice(0, 120) || null,
+      market: String(normalized.market ?? normalized.marketname ?? normalized.market_name ?? context.market ?? "").slice(0, 120) || null,
       line: Number.isFinite(Number(normalized.line ?? normalized.handicap ?? normalized.point))
         ? Number(normalized.line ?? normalized.handicap ?? normalized.point) : null,
       homeTeam: context.homeTeam, awayTeam: context.awayTeam, eventName: context.eventName,
