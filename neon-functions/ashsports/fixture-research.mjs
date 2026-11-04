@@ -95,7 +95,6 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const unique=[...new Map(found.filter(x=>x.ageHours==null||x.ageHours<=24*7).map(x=>[x.url,x])).values()]
    .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,12);
-  const pages=[];
   const pageResults=await Promise.allSettled(unique.slice(0,8).map(item=>readArticle(item)));
   const pages=pageResults.filter(result=>result.status==='fulfilled'&&result.value).map(result=>result.value);
   const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
