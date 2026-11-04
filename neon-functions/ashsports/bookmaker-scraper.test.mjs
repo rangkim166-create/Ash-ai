@@ -23,7 +23,7 @@ test("rejects insecure URLs and embedded credentials", async () => {
     /Only HTTPS/
   );
   await assert.rejects(
-    addScraperSource(db, { bookmaker: "BetPawa", url: "https://user:pass@betpawa.com/" }),
+    addScraperSource(db, { bookmaker: "BetPawa", url: "https://user:pass@betpawa.ug/" }),
     /Credentials/
   );
 });
