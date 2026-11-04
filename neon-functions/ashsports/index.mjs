@@ -348,16 +348,16 @@ async function runScheduledDailyPublisher(){
  if(prior.rowCount&&prior.rows[0].status==="sending"&&Date.now()-new Date(prior.rows[0].started_at).getTime()<20*60*1000)return{sent:false,skipped:true,reason:"publish_already_running",localDate:localDay};
  await db.query("INSERT INTO ash_daily_publications(local_date,status,attempts,started_at) VALUES($1::date,'sending',1,now()) ON CONFLICT(local_date) DO UPDATE SET status='sending',attempts=ash_daily_publications.attempts+1,started_at=now(),error_summary=NULL",[localDay]);
  try{
-  let collection=null;
+   const collection={source:'public_scrape',providerOddsApiUsed:false,scraper:await runBookmakerScrapers(db,{limit:8})};
   try{collection=await collectOdds(8);}catch(error){console.error("[ash-daily] odds refresh failed",String(error?.message||error).slice(0,180));}
-  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND source='the_odds_api' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 250");
+  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 250");
   const fixtures=fixturesResult.rows;
   if(!fixtures.length){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No upcoming bookmaker fixtures are available yet."]);
    return{sent:false,reason:"no_upcoming_fixtures",collection,localDate:localDay};
   }
   const ids=fixtures.map(row=>row.id);
-  const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND observed_at>now()-interval '15 minutes' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
+  const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND source='public_scrape' AND observed_at>now()-interval '15 minutes' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
   if(!oddsResult.rows.length){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No fresh head-to-head bookmaker prices are available."]);
    return{sent:false,reason:"no_fresh_bookmaker_odds",collection,localDate:localDay};
@@ -445,7 +445,7 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-export default {async configureTelegramWebhook(){return await telegramAssistant.configureWebhook();},async runScheduledScraping(){return await runBookmakerScrapers(db,{limit:8});},async runScheduledCollection(){let collection=null;try{collection=await collectOdds(8);}catch(e){console.error("[ash-research-queue] collection",String(e.message||e).slice(0,160));}const queued=await enqueueFixtureResearch(db).catch(e=>({error:String(e.message||e).slice(0,160)}));const research=await processFixtureResearch(db,{limit:8,groqKey:await read("groq")}).catch(e=>({error:String(e.message||e).slice(0,160)}));return{collection,queued,research};},async runScheduledFixtureResearch(){const queued=await enqueueFixtureResearch(db);const research=await processFixtureResearch(db,{limit:4,groqKey:await read("groq")});return{queued,research};},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/v1/telegram/webhook"&&req.method==="POST"){try{const secret=req.headers.get("x-telegram-bot-api-secret-token")||"";if(!(await telegramAssistant.verifySecret(secret)))return reply({error:"unauthorized"},401);const update=await req.json();void telegramAssistant.handleUpdate(update).catch(e=>console.error("[ash-telegram-webhook]",String(e.message||e)));return reply({ok:true});}catch(e){console.error("[ash-telegram-webhook]",e);return reply({error:"invalid_update"},400);}}if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
+   const collection={source:'public_scrape',providerOddsApiUsed:false,scraper:await runBookmakerScrapers(db,{limit:8})};
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
