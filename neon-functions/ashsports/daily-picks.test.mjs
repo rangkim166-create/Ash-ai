@@ -5,12 +5,13 @@ import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
 const now = new Date("2026-10-31T10:00:00.000Z");
 const fixture = {
   id: "soccer_epl:event-1", sport: "football", competition: "Premier League",
-  home: "Arsenal", away: "Leicester", starts_at: "2026-10-31T18:00:00.000Z",
+  home: "Arsenal", away: "Leicester", starts_at: "2026-10-31T18:00:00.000Z"
 };
 function form(team, wins, draws = 0, losses = 10 - wins - draws) {
   return Array.from({ length: wins + draws + losses }, (_, index) => ({
-    sport: "football", team, starts_at: new Date(now.getTime() - (index + 1) * 86400000).toISOString(),
-    outcome: index < wins ? "W" : index < wins + draws ? "D" : "L",
+    sport: "football", team,
+    starts_at: new Date(now.getTime() - (index + 1) * 86400000).toISOString(),
+    outcome: index < wins ? "W" : index < wins + draws ? "D" : "L"
   }));
 }
 function odds(matchId = fixture.id, books = 5, observed = now.toISOString(), homePrice = 1.65) {
@@ -20,20 +21,22 @@ function odds(matchId = fixture.id, books = 5, observed = now.toISOString(), hom
     rows.push(
       { match_id: matchId, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: "Arsenal", decimal_odds: homePrice, observed_at: observed },
       { match_id: matchId, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: "Leicester", decimal_odds: 4.8, observed_at: observed },
-      { match_id: matchId, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: "Draw", decimal_odds: 3.9, observed_at: observed },
+      { match_id: matchId, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: "Draw", decimal_odds: 3.9, observed_at: observed }
     );
   }
   return rows;
 }
 
-test("selects a supported side only when recent form and bookmaker evidence pass", () => {
+test("selects a supported side only when form, complete market and value checks pass", () => {
   const picks = selectDailyPicks([fixture], odds(), [...form("Arsenal", 8), ...form("Leicester", 3)], { now });
   assert.equal(picks.length, 1);
   assert.equal(picks[0].selection, "Arsenal");
   assert.equal(picks[0].bookmakers, 5);
+  assert.ok(picks[0].value_edge_pct >= 1.5);
+  assert.ok(picks[0].estimated_probability_pct > picks[0].implied_probability_pct);
 });
 
-test("rejects a fixture with too few bookmakers", () => {
+test("rejects a fixture with too few independent bookmakers", () => {
   const picks = selectDailyPicks([fixture], odds(fixture.id, 2), [...form("Arsenal", 9), ...form("Leicester", 2)], { now });
   assert.equal(picks.length, 0);
 });
@@ -49,31 +52,46 @@ test("rejects missing historical samples instead of guessing", () => {
   assert.equal(picks.length, 0);
 });
 
+test("rejects a price with no positive estimated value even when recent form is strong", () => {
+  const picks = selectDailyPicks([fixture], odds(fixture.id, 5, now.toISOString(), 1.25),
+    [...form("Arsenal", 9), ...form("Leicester", 2)], { now });
+  assert.equal(picks.length, 0);
+});
+
+test("requires a complete three-way football market including the draw", () => {
+  const incomplete = odds().filter(row => row.outcome_name !== "Draw");
+  const picks = selectDailyPicks([fixture], incomplete,
+    [...form("Arsenal", 9), ...form("Leicester", 2)], { now });
+  assert.equal(picks.length, 0);
+});
+
 test("does not publish a forced pick when no selection passes", () => {
   const message = formatDailyPicks("31 Oct 2026", []);
   assert.match(message, /No selection passed/);
-  assert.match(message, /No forced bets/);
+  assert.match(message, /NO BET/);
 });
 
-test("formats each selected match as a copy-ready ticket item", () => {
+test("formats selected match with model estimate, value and best bookmaker", () => {
   const picks = selectDailyPicks([fixture], odds(), [...form("Arsenal", 8), ...form("Leicester", 3)], { now });
   const message = formatDailyPicks("31 Oct 2026", picks);
   assert.match(message, /Leicester vs Arsenal/);
   assert.match(message, /Pick: Arsenal @ 1.65/);
   assert.match(message, /Best bookmaker: book-1/);
+  assert.match(message, /Ash estimate:/);
+  assert.match(message, /Value edge:/);
 });
 
 const tennisFixture = {
   id: "tennis_atp:event-elo", sport: "tennis", competition: "ATP",
-  home: "Jannik Sinner", away: "Alexander Zverev", starts_at: "2026-10-31T18:00:00.000Z",
+  home: "Jannik Sinner", away: "Alexander Zverev", starts_at: "2026-10-31T18:00:00.000Z"
 };
-function sportOdds(match, books = 5, homePrice = 1.65, awayPrice = 2.25) {
+function sportOdds(match, books = 5, homePrice = 1.8, awayPrice = 2.25) {
   const rows = [];
   for (let i = 1; i <= books; i++) {
     const bookmaker = `sport-book-${i}`;
     rows.push(
       { match_id: match.id, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: match.home, decimal_odds: homePrice, observed_at: now.toISOString() },
-      { match_id: match.id, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: match.away, decimal_odds: awayPrice, observed_at: now.toISOString() },
+      { match_id: match.id, bookmaker_key: bookmaker, market_key: "h2h", outcome_name: match.away, decimal_odds: awayPrice, observed_at: now.toISOString() }
     );
   }
   return rows;
@@ -83,13 +101,14 @@ test("supports tennis using imported Elo when recent result samples are unavaila
   const picks = selectDailyPicks([tennisFixture], sportOdds(tennisFixture), [], {
     now,
     ratings: { tennis: { "jannik sinner": 1950, "alexander zverev": 1850 } },
-    ratingMatchCounts: { tennis: 361571 },
+    ratingMatchCounts: { tennis: 361571 }
   });
   assert.equal(picks.length, 1);
   assert.equal(picks[0].selection, "Jannik Sinner");
   assert.equal(picks[0].edge_type, "elo_rating");
   assert.equal(picks[0].rating_edge_points, 100);
   assert.equal(picks[0].historical_match_count, 361571);
+  assert.ok(picks[0].value_edge_pct >= 1.5);
   assert.match(formatDailyPicks("31 Oct 2026", picks), /Historical Elo/);
 });
 
@@ -97,6 +116,27 @@ test("Elo-only selections still require at least four supporting bookmakers for 
   const picks = selectDailyPicks([tennisFixture], sportOdds(tennisFixture, 3), [], {
     now,
     ratings: { tennis: { "jannik sinner": 1950, "alexander zverev": 1850 } },
+    ratingMatchCounts: { tennis: 361571 }
+  });
+  assert.equal(picks.length, 0);
+});
+
+test("Elo-only football can qualify without recent form when the full three-way market and value pass", () => {
+  const picks = selectDailyPicks([fixture], odds(fixture.id, 5, now.toISOString(), 1.8), [], {
+    now,
+    ratings: { football: { arsenal: 1900, leicester: 1800 } },
+    ratingMatchCounts: { football: 1395581 }
+  });
+  assert.equal(picks.length, 1);
+  assert.equal(picks[0].edge_type, "elo_rating");
+  assert.equal(picks[0].historical_match_count, 1395581);
+});
+
+test("rejects a rating signal when the imported archive is too small", () => {
+  const picks = selectDailyPicks([tennisFixture], sportOdds(tennisFixture), [], {
+    now,
+    ratings: { tennis: { "jannik sinner": 1950, "alexander zverev": 1850 } },
+    ratingMatchCounts: { tennis: 20 }
   });
   assert.equal(picks.length, 0);
 });
