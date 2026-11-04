@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, mapCandidateToFixture, fixtureFromCandidate } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -62,4 +62,22 @@ test("rejects non-Uganda bookmaker domains even when the global brand is familia
   const db = { query: async () => ({ rows: [], rowCount: 0 }) };
   await assert.rejects(addScraperSource(db, { bookmaker: "Bet365", url: "https://www.bet365.com/" }), /not on Ash's approved source list/);
   await assert.rejects(addScraperSource(db, { bookmaker: "1xBet", url: "https://1xbet.com/" }), /not on Ash's approved source list/);
+});
+
+test("discovers only relevant public event links on the same approved bookmaker host", () => {
+  const html = `
+    <a href="/sports/football">Football</a>
+    <a href="/event/arsenal-v-chelsea">Arsenal v Chelsea</a>
+    <a href="https://example.com/event/other">External event</a>
+    <a href="https://www.betpawa.ug/live/match/123?utm_source=home">Live match</a>
+    <a href="javascript:alert(1)">bad</a>
+    <a href="/terms">Terms</a>`;
+  const links = discoverBookmakerLinks(html, "https://www.betpawa.ug/");
+  assert.equal(links.length, 3);
+  assert.ok(links.some(x => x.url === "https://www.betpawa.ug/event/arsenal-v-chelsea"));
+  assert.ok(links.some(x => x.url === "https://www.betpawa.ug/live/match/123"));
+  assert.ok(links.some(x => x.url === "https://www.betpawa.ug/sports/football"));
+});
+test("does not discover links that leave the approved bookmaker host", () => {
+  assert.deepEqual(discoverBookmakerLinks('<a href="https://evil.example/event/1">event</a>', "https://www.betpawa.ug/"), []);
 });
