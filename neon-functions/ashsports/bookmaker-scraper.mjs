@@ -11,7 +11,7 @@ const REQUEST_TIMEOUT_MS = 15_000;
 const USER_AGENT = "AshSportsResearchBot/1.0 (+public sports data research)";
 
 function allowedHost(hostname) {
-  const host = String(hostname || "").toLowerCase().replace(/\\.$/, "");
+  const host = String(hostname || "").toLowerCase().replace(/\.$/, "");
   return ALLOWED_BOOKMAKER_HOSTS.some(root => host === root || host.endsWith("." + root));
 }
 
@@ -35,10 +35,10 @@ function decodeEntities(value) {
 
 function cleanText(html) {
   return decodeEntities(String(html || "")
-    .replace(/<!--[\\s\\S]*?-->/g, " ")
-    .replace(/<(script|style|noscript|svg|canvas|iframe|header|footer|nav)\\b[^>]*>[\\s\\S]*?<\\/\\1>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<(script|style|noscript|svg|canvas|iframe|header|footer|nav)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
     .replace(/<[^>]+>/g, " ")
-    .replace(/\\s+/g, " ")
+    .replace(/\s+/g, " ")
     .trim()).slice(0, 18_000);
 }
 
@@ -49,9 +49,9 @@ function safeJson(text) {
 function extractEmbeddedJson(html) {
   const found = [];
   const patterns = [
-    /<script[^>]*type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi,
-    /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\\s\\S]*?)<\\/script>/gi,
-    /<script[^>]*type=["']application\\/json["'][^>]*>([\\s\\S]*?)<\\/script>/gi
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+    /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/gi,
+    /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi
   ];
   for (const pattern of patterns) {
     let match;
