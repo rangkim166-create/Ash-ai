@@ -27,7 +27,7 @@ jobs:
         run: |
           npm install --no-audit --no-fund
           node --check index.mjs
-          npx esbuild index.mjs --bundle --platform=node --target=node24 --format=esm --minify --legal-comments=none --outfile=dist/index.mjs
+          npx esbuild index.mjs --bundle --platform=node --target=node24 --format=esm --minify --legal-comments=none --external:playwright-core --external:@sparticuz/chromium --outfile=dist/index.mjs
           node --check dist/index.mjs
           cd dist
           zip -9 -j function.zip index.mjs
