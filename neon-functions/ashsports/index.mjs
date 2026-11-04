@@ -2,7 +2,7 @@ import postgres from "postgres";
 import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
-import { enqueueFixtureResearch, processFixtureResearch } from "./fixture-research.mjs";
+import { enqueueFixtureResearch, processFixtureResearch, ensureFixtureResearchTables } from "./fixture-research.mjs";
 import { addScraperSource, getScraperStatus, runBookmakerScrapers } from "./bookmaker-scraper.mjs";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
 const sql=postgres(process.env.DATABASE_URL,{max:5,idle_timeout:20,connect_timeout:10});
@@ -198,7 +198,8 @@ async function savePublishedTips(localDay,picks){
     researchQuality: pick.web_research?.quality || null,
     researchSources: (pick.web_research?.pages || []).slice(0, 5).map(page => ({
      title: page.title || null, url: page.url || null, domain: page.domain || null, date: page.date || null
-    }))
+    })),
+    availabilityResearch: pick.availability_research || null
    };
    await db.query(
     "INSERT INTO ash_predictions(match_id,model_version,market_key,selection,offered_odds,estimated_probability,confidence_score,evidence,reasoning,status) " +
@@ -390,6 +391,10 @@ async function runScheduledDailyPublisher(){
   const ratingMetaResult=await db.query("SELECT match_counts,generated_at FROM historical_ratings_meta WHERE source='ash_elo_baseline'");
   const ratingMatchCounts=ratingMetaResult.rowCount?(ratingMetaResult.rows[0].match_counts||{}):{};
   const picks=selectDailyPicks(fixtures,oddsResult.rows,formResult.rows,{now:new Date(),maxPicks:3,ratings,ratingMatchCounts});
+  await ensureFixtureResearchTables(db);
+  const availabilityRows=picks.length?await db.query("SELECT match_id,researched_at,source_count,independent_domains,sources,assessment,coverage FROM ash_fixture_research WHERE match_id=ANY($1::text[]) AND researched_at>now()-interval '24 hours'",[picks.map(p=>String(p.id))]):{rows:[]};
+  const availabilityByMatch=new Map(availabilityRows.rows.map(row=>[String(row.match_id),row]));
+  for(const pick of picks){const report=availabilityByMatch.get(String(pick.id));pick.availability_research=report?{researchedAt:report.researched_at,sourceCount:Number(report.source_count||0),independentDomains:Number(report.independent_domains||0),sources:report.sources||[],assessment:report.assessment||{},coverage:report.coverage||{}}:{status:"not_yet_researched",sourceCount:0,assessment:{unknowns:["No recent injury/lineup/news research is available for this fixture."]}};}
   // The Odds API finds candidate fixtures; independent web reporting adds match context.
   const webResearch=await telegramAssistant.researchDailyPicks(picks);
   const researchByMatch=new Map(webResearch.map(item=>[String(item.matchId),item]));
