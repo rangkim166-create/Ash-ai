@@ -444,7 +444,6 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-   const collection={source:'public_scrape',providerOddsApiUsed:false,scraper:await runBookmakerScrapers(db,{limit:8})};
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
