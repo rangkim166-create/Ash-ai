@@ -46,12 +46,42 @@ function safeJson(text) {
   try { return JSON.parse(text); } catch { return null; }
 }
 
-function extractEmbeddedJson(html) {
+function extractAssignedJson(html, found) {
+  const source = String(html || "");
+  const marker = /(?:window\\.)?__(?:INITIAL_STATE|INITIAL_DATA|APOLLO_STATE|PRELOADED_STATE|STATE|NUXT_DATA)__?\\s*=\\s*/gi;
+  let match;
+  while ((match = marker.exec(source)) && found.length < 40) {
+    let start = marker.lastIndex;
+    while (/\\s/.test(source[start] || "")) start++;
+    const opening = source[start];
+    if (opening !== "{" && opening !== "[") continue;
+    const closing = opening === "{" ? "}" : "]";
+    let depth = 0, quote = "", escaped = false, end = -1;
+    for (let i = start; i < Math.min(source.length, start + 1_500_000); i++) {
+      const ch = source[i];
+      if (quote) {
+        if (escaped) escaped = false;
+        else if (ch === "\\\\") escaped = true;
+        else if (ch === quote) quote = "";
+        continue;
+      }
+      if (ch === '"' || ch === "'") { quote = ch; continue; }
+      if (ch === opening) depth++;
+      else if (ch === closing && --depth === 0) { end = i + 1; break; }
+    }
+    if (end > start) {
+      const parsed = safeJson(source.slice(start, end));
+      if (parsed !== null) found.push(parsed);
+    }
+    marker.lastIndex = Math.max(marker.lastIndex, start + 1);
+  }
+}
+export function extractEmbeddedJson(html) {
   const found = [];
   const patterns = [
-    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
-    /<script[^>]*id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/gi,
-    /<script[^>]*type=["']application\/json["'][^>]*>([\s\S]*?)<\/script>/gi
+    /<script[^>]*type=["']application\\/ld\\+json["'][^>]*>([\\s\\S]*?)<\\/script>/gi,
+    /<script[^>]*id=["'](?:__NEXT_DATA__|__NUXT_DATA__|__APOLLO_STATE__)["'][^>]*>([\\s\\S]*?)<\\/script>/gi,
+    /<script[^>]*type=["']application\\/json["'][^>]*>([\\s\\S]*?)<\\/script>/gi
   ];
   for (const pattern of patterns) {
     let match;
@@ -60,9 +90,9 @@ function extractEmbeddedJson(html) {
       if (parsed !== null) found.push(parsed);
     }
   }
-  return found;
+  extractAssignedJson(html, found);
+  return found.slice(0, 40);
 }
-
 function normalizeTeam(value) {
   return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
@@ -279,7 +309,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
       const embedded = json == null ? extractEmbeddedJson(page.html) : [json];
       const candidates = uniqueOdds(embedded.flatMap(item => collectOddsCandidates(item)));
       const text = json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000);
-      const status = text.length || embedded.length ? "success" : "empty";
+      const status = candidates.length > 0 ? "success" : "empty";
       const saved = await db.query(`INSERT INTO ash_scraper_runs(
         source_id,bookmaker,source_url,final_url,status,http_status,content_type,extracted_text,structured_data,odds_candidates
       ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
