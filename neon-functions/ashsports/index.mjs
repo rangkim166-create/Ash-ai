@@ -1,5 +1,5 @@
 import postgres from "postgres";
-import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
+import { formatDailyPicks, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
 import { enqueueFixtureResearch, processFixtureResearch, ensureFixtureResearchTables } from "./fixture-research.mjs";
@@ -396,18 +396,22 @@ async function runScheduledDailyPublisher(){
   const availabilityByMatch=new Map(availabilityRows.rows.map(row=>[String(row.match_id),row]));
   for(const pick of picks){const report=availabilityByMatch.get(String(pick.id));pick.availability_research=report?{researchedAt:report.researched_at,sourceCount:Number(report.source_count||0),independentDomains:Number(report.independent_domains||0),sources:report.sources||[],assessment:report.assessment||{},coverage:report.coverage||{}}:{status:"not_yet_researched",sourceCount:0,assessment:{unknowns:["No recent injury/lineup/news research is available for this fixture."]}};}
   // The Odds API finds candidate fixtures; independent web reporting adds match context.
-  const webResearch=await telegramAssistant.researchDailyPicks(picks);
+  const availabilityQualified=picks.filter(pick=>isAvailabilityResearchSufficient(pick.availability_research,{fixtureStart:pick.commence_time,now:new Date()}));
+  const availabilityQualifiedIds=new Set(availabilityQualified.map(pick=>String(pick.id)));
+  const webResearch=availabilityQualified.length?await telegramAssistant.researchDailyPicks(availabilityQualified):[];
   const researchByMatch=new Map(webResearch.map(item=>[String(item.matchId),item]));
   const researchedPicks=[];
   for(const pick of picks){
-   const research=researchByMatch.get(String(pick.id));
+   const availabilityApproved=availabilityQualifiedIds.has(String(pick.id));
+   pick.availability_research_gate=availabilityApproved?"approved":"held_no_bet";
+   const research=availabilityApproved?researchByMatch.get(String(pick.id)):null;
    pick.web_research=research||{status:"research_unavailable",pages:[],quality:{homeCoverage:false,awayCoverage:false,expertCoverage:false,independentDomains:0}};
    const quality=pick.web_research.quality||{};
    const analysis=pick.web_research.analysis||{};
-   const approved=quality.homeCoverage===true&&quality.awayCoverage===true&&quality.expertCoverage===true&&Number(quality.independentDomains)>=3&&Number(quality.independentExpertDomains)>=2&&analysis.decision==="SUPPORT"&&Number(analysis.confidence)>=70;
+   const approved=availabilityApproved&&quality.homeCoverage===true&&quality.awayCoverage===true&&quality.expertCoverage===true&&Number(quality.independentDomains)>=3&&Number(quality.independentExpertDomains)>=2&&analysis.decision==="SUPPORT"&&Number(analysis.confidence)>=70;
    pick.research_gate=approved?"approved":"held_no_bet";
    if(approved)researchedPicks.push(pick);
-   else console.log("[ash-daily-pick-held]",JSON.stringify({match:pick.home_team+" vs "+pick.away_team,reason:"strict_evidence_gate",quality,decision:analysis.decision||"missing",confidence:analysis.confidence||0}));
+   else console.log("[ash-daily-pick-held]",JSON.stringify({match:pick.home_team+" vs "+pick.away_team,reason:availabilityApproved?"strict_web_evidence_gate":"availability_injury_lineup_evidence_missing_or_stale",availabilityGate:pick.availability_research_gate,quality,decision:analysis.decision||"missing",confidence:analysis.confidence||0}));
   }
   picks.splice(0,picks.length,...researchedPicks);
   const dayLabel=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",day:"2-digit",month:"short",year:"numeric"}).format(new Date());
