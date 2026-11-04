@@ -1,9 +1,9 @@
 const ALLOWED_BOOKMAKER_HOSTS = [
-  "betpawa.com",
+  "betpawa.ug",
   "betika.com",
-  "sportybet.com",
-  "bet365.com",
-  "1xbet.com"
+  "1xbet.ug",
+  "22bet.ug",
+  "ecobetug.com"
 ];
 
 const MAX_HTML_BYTES = 2_000_000;
@@ -218,11 +218,11 @@ export async function ensureScraperTables(db) {
   await db.query("CREATE INDEX IF NOT EXISTS ash_scraper_runs_fetched_idx ON ash_scraper_runs(fetched_at DESC)");
   await db.query("CREATE INDEX IF NOT EXISTS ash_scraper_sources_enabled_idx ON ash_scraper_sources(enabled, id)");
   await db.query(`INSERT INTO ash_scraper_sources(bookmaker,source_url) VALUES
-    ('BetPawa','https://www.betpawa.com/'),
-    ('Betika','https://www.betika.com/'),
-    ('SportyBet','https://www.sportybet.com/'),
-    ('Bet365','https://www.bet365.com/'),
-    ('1xBet','https://1xbet.com/')
+    ('BetPawa','https://www.betpawa.ug/'),
+    ('Betika','https://www.betika.com/en-ug/'),
+    ('1xBet','https://www.1xbet.ug/'),
+    ('22Bet','https://22bet.ug/'),
+    ('BetPaka','https://www.ecobetug.com/')
     ON CONFLICT(source_url) DO NOTHING`);
 }
 
