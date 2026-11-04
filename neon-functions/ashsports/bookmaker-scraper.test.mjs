@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -80,4 +80,18 @@ test("discovers only relevant public event links on the same approved bookmaker 
 });
 test("does not discover links that leave the approved bookmaker host", () => {
   assert.deepEqual(discoverBookmakerLinks('<a href="https://evil.example/event/1">event</a>', "https://www.betpawa.ug/"), []);
+});
+
+test("extracts odds from common JavaScript application bootstrap state", () => {
+  const html = `<html><script>window.__INITIAL_STATE__ = {"event":{"name":"Arsenal vs Chelsea","market":"Match Result","outcomes":[{"name":"Arsenal","odds":2.1},{"name":"Chelsea","odds":3.2}]}};</script></html>`;
+  const blocks = extractEmbeddedJson(html);
+  assert.equal(blocks.length, 1);
+  const candidates = collectOddsCandidates(blocks[0]);
+  assert.equal(candidates.length, 2);
+  assert.equal(candidates[0].homeTeam, "Arsenal");
+  assert.equal(candidates[0].decimalOdds, 2.1);
+});
+test("extracts Next/Nuxt JSON script payloads", () => {
+  const html = `<script id="__NUXT_DATA__" type="application/json">{"event":{"name":"Arsenal vs Chelsea","market":"Match Result","outcomes":[{"name":"Arsenal","odds":2.1}]}}</script>`;
+  assert.equal(collectOddsCandidates(extractEmbeddedJson(html)[0]).length, 1);
 });
