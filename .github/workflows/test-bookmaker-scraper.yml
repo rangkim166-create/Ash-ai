@@ -9,6 +9,8 @@ on:
       - "neon-functions/ashsports/bookmaker-scraper.test.mjs"
       - "neon-functions/ashsports/daily-picks.mjs"
       - "neon-functions/ashsports/daily-picks.test.mjs"
+      - "neon-functions/ashsports/fixture-research.mjs"
+      - "neon-functions/ashsports/fixture-research.test.mjs"
       - ".github/workflows/test-bookmaker-scraper.yml"
   pull_request:
     paths:
@@ -25,4 +27,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node --test neon-functions/ashsports/bookmaker-scraper.test.mjs neon-functions/ashsports/daily-picks.test.mjs
+      - run: node --test neon-functions/ashsports/bookmaker-scraper.test.mjs neon-functions/ashsports/daily-picks.test.mjs neon-functions/ashsports/fixture-research.test.mjs
