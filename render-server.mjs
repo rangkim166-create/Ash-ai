@@ -29,7 +29,7 @@ server.listen(port, "0.0.0.0", () => {
       setTimeout(() => void runScout(), 60 * 1000).unref();
       return;
     }
-    if (!process.env.THE_ODDS_API_KEY) return console.log("[ash-scout] skipped: Odds API key is not configured");
+    if (process.env.ASH_ENABLE_ODDS_API_FIXTURE_DISCOVERY !== "true") return console.log("[ash-scout] disabled: public bookmaker scraping is the default data path");
     scoutRunning = true;
     try {
       const result = await handler.runScheduledCollection();
@@ -118,7 +118,7 @@ server.listen(port, "0.0.0.0", () => {
     }
   };
   setTimeout(() => void runBookmakerScrapers(), 45000);
-  setInterval(() => void runBookmakerScrapers(), 3 * 60 * 60 * 1000).unref();
+  setInterval(() => void runBookmakerScrapers(), 30 * 60 * 1000).unref();
   let fixtureResearchBusy = false;
   const refreshFixtureResearch = async () => { if (fixtureResearchBusy) return; fixtureResearchBusy = true; try { const result = await handler.runScheduledFixtureResearch(); console.log("[ash-research] injury-lineup-news refresh", JSON.stringify(result)); } catch (error) { console.error("[ash-research] refresh failed", String(error.message || error).slice(0, 200)); } finally { fixtureResearchBusy = false; } };
   setTimeout(() => void refreshFixtureResearch(), 70000);
