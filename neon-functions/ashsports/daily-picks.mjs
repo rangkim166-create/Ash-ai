@@ -244,6 +244,20 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
       lines.push("Recent form: home " + pick.home_form + " • away " + pick.away_form + " • form edge " + pick.form_edge_pct + "%");
     }
     lines.push("Kick-off (Kampala): " + kickoff);
+    const availability = pick.availability_research;
+    if (availability) {
+      const assessment = availability.assessment || {};
+      const renderNews = value => (Array.isArray(value) ? value : (value ? [value] : [])).slice(0, 2).map(item => typeof item === "string" ? item : String(item.claim || item.player || item.status || JSON.stringify(item))).join("; ");
+      lines.push("Availability/news research: " + (availability.researchedAt || "not available") + " • " + Number(availability.sourceCount || 0) + " sources");
+      for (const [label, key] of [["Injuries/fitness","injuryUpdates"],["Lineups","lineupUpdates"],["Suspensions","suspensions"],["Manager/training","managerAndTrainingNews"],["Weather/venue","weatherAndVenue"]]) {
+        const detail = renderNews(assessment[key]);
+        if (detail) lines.push(label + ": " + detail.slice(0, 260));
+      }
+      const unknowns = renderNews(assessment.unknowns);
+      if (unknowns) lines.push("Still unknown: " + unknowns.slice(0, 220));
+      for (const source of (availability.sources || []).slice(0, 2)) lines.push("News source: " + String(source.title || "").slice(0, 100) + " — " + String(source.url || "").slice(0, 180));
+      lines.push("Note: availability news is evidence context; the probability model does not yet quantify individual-player impact.");
+    }
     const web = pick.web_research;
     if (web?.analysis) {
       lines.push("WORLD TIPSTER / EXPERT REVIEW: " + web.analysis.decision + " • confidence " + web.analysis.confidence + "/100");
