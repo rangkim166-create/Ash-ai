@@ -2,6 +2,11 @@
   "name": "ash-sports-backend",
   "private": true,
   "type": "module",
-  "scripts": { "start": "node render-server.mjs" },
-  "dependencies": { "postgres": "^3.4.7" }
+  "scripts": {
+    "start": "node render-server.mjs",
+    "test": "node --test neon-functions/ashsports/*.test.mjs"
+  },
+  "dependencies": {
+    "postgres": "^3.4.7"
+  }
 }

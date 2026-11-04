@@ -6,3 +6,20 @@ test("tags multiple news coverage categories",()=>{const c=classifyEvidenceCateg
 test("generic headlines remain general news",()=>assert.deepEqual(classifyEvidenceCategory("A look ahead to the weekend"),["general_news"]));
 
 test("searches latest updates on a short freshness window as well as weekly context",()=>{const q=buildFixtureQueries({home:"Vipers SC",away:"KCCA",competition:"Uganda Premier League"},new Date("2026-11-04T12:00:00Z"));const s=q.join(" ");assert.ok(s.includes("after:2026-11-02"));assert.ok(s.includes("after:2026-10-28"));assert.ok(s.includes('"Vipers SC"'));assert.ok(s.includes('"KCCA"'));});
+
+import { parseRss } from "./fixture-research.mjs";
+
+test("retains RSS descriptions and source metadata for blocked article fallbacks", () => {
+  const xml = `<?xml version="1.0"?><rss><channel><item>
+    <title>Arsenal team news: injury update</title>
+    <link>https://news.example/sports/arsenal</link>
+    <description><![CDATA[Arsenal manager provided a squad fitness update ahead of the match, with further details expected before kickoff.]]></description>
+    <pubDate>Wed, 04 Nov 2026 10:00:00 GMT</pubDate>
+    <source url="https://news.example">News Example</source>
+  </item></channel></rss>`;
+  const [item] = parseRss(xml);
+  assert.equal(item.title, "Arsenal team news: injury update");
+  assert.match(item.description, /squad fitness update/);
+  assert.equal(item.domain, "news.example");
+  assert.ok(item.categories.includes("injury_fitness"));
+});

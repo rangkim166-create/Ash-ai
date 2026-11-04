@@ -26,15 +26,15 @@ export function buildFixtureQueries(fixture,now=new Date()){
  ].map(x=>x.replace(/\\s+/g," ").trim());
 }
 
-function parseRss(xml){
+export function parseRss(xml){
  const out=[];
  for(const block of xml.split("<item>").slice(1).map(x=>x.split("</item>")[0])){
   const value=tag=>{const m=block.match(new RegExp("<"+tag+"[^>]*>([\\s\\S]*?)</"+tag+">","i"));return m?m[1].trim():"";};
-  const title=strip(value("title"),240),url=value("link"),raw=value("pubDate"),ts=raw?Date.parse(raw):NaN;
+  const title=strip(value("title"),240),url=value("link"),raw=value("pubDate"),ts=raw?Date.parse(raw):NaN,descriptionRaw=value("description")||value("content:encoded"),description=strip(descriptionRaw.replaceAll("<![CDATA[","").replaceAll("]]>",""),1200);
   if(!title||!(url.startsWith("https://")||url.startsWith("http://")))continue;
   let domain="unknown";
   try{const m=block.match(/<source[^>]*url="([^"]+)"/i);domain=new URL(m?.[1]||url).hostname.replace(/^www[.]/,"");}catch{}
-  out.push({title,url,date:raw||null,publishedAt:Number.isFinite(ts)?new Date(ts).toISOString():null,ageHours:Number.isFinite(ts)?Math.max(0,Math.round((Date.now()-ts)/3600000)):null,domain,sourceTier:publisherTier(domain),categories:classifyEvidenceCategory(title)});
+  out.push({title,url,description,date:raw||null,publishedAt:Number.isFinite(ts)?new Date(ts).toISOString():null,ageHours:Number.isFinite(ts)?Math.max(0,Math.round((Date.now()-ts)/3600000)):null,domain,sourceTier:publisherTier(domain),categories:classifyEvidenceCategory(title)});
   if(out.length>=10)break;
  }
  return out;
@@ -54,15 +54,20 @@ async function search(query){
  return items;
 }
 async function readArticle(item){
+ let article=null;
  try{
   const r=await fetch(item.url,{redirect:"follow",headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/4.0)"},signal:timeout(10000)});
-  if(!r.ok)return null;
-  const type=r.headers.get("content-type")||"";
-  if(!(type.includes("text/html")||type.includes("text/plain")))return null;
-  const raw=await r.text();
-  const excerpt=strip(raw.slice(0,1_500_000),2600);
-  return excerpt.length>180?{...item,excerpt:excerpt.slice(0,2200),categories:classifyEvidenceCategory(item.title+" "+excerpt),fetchedAt:new Date().toISOString()}:null;
- }catch{return null;}
+  if(r.ok){
+   const type=r.headers.get("content-type")||"";
+   if(type.includes("text/html")||type.includes("text/plain")){
+    const raw=await r.text(),excerpt=strip(raw.slice(0,1_500_000),2600);
+    if(excerpt.length>180)article={...item,excerpt:excerpt.slice(0,2200),contentLevel:"full_article",categories:classifyEvidenceCategory(item.title+" "+excerpt),fetchedAt:new Date().toISOString()};
+   }
+  }
+ }catch{}
+ if(article)return article;
+ const snippet=String(item.description||"").trim();
+ return snippet.length>=80?{...item,excerpt:snippet.slice(0,900),contentLevel:"rss_snippet",categories:classifyEvidenceCategory(item.title+" "+snippet),fetchedAt:new Date().toISOString()}:null;
 }
 async function summarizeEvidence(fixture,pages,apiKey){
  if(!apiKey||!pages.length)return null;
@@ -127,9 +132,11 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
   const awayPages=pages.filter(p=>p.title.toLowerCase().includes(away.toLowerCase())||p.excerpt.toLowerCase().includes(away.toLowerCase()));
   const domains=[...new Set(pages.map(p=>p.domain))];
-  const categoryCounts=Object.fromEntries(["injury_fitness","lineups","suspensions","manager_training","weather_venue","preview_analysis","form_statistics","official_update"].map(c=>[c,pages.filter(p=>(p.categories||[]).includes(c)).length]));
+  const fullPages=pages.filter(p=>p.contentLevel!=="rss_snippet");
+  const fullArticleCount=fullPages.length;
+  const categoryCounts=Object.fromEntries(["injury_fitness","lineups","suspensions","manager_training","weather_venue","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,groqKey);
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,sourceSearchResults:unique.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,lineupReportingFound:categoryCounts.lineups>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:Number(assessment?.confidence)||0,searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,lineupReportingFound:categoryCounts.lineups>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:Number(assessment?.confidence)||0,searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
@@ -137,9 +144,9 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
    independent_domains=EXCLUDED.independent_domains,sources=EXCLUDED.sources,assessment=EXCLUDED.assessment,
    coverage=EXCLUDED.coverage,updated_at=now()`,
    [f.id,payload.length,domains.length,JSON.stringify(payload),JSON.stringify(assessment||{}),JSON.stringify(coverage)]);
-  const enoughEvidence=payload.length>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0&&!assessment?.error&&categoryCounts.injury_fitness>0&&categoryCounts.lineups>0&&Number(assessment?.confidence)>=60&&!(Array.isArray(assessment?.contradictions)&&assessment.contradictions.length>0);
+  const enoughEvidence=fullArticleCount>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0&&!assessment?.error&&categoryCounts.injury_fitness>0&&categoryCounts.lineups>0&&Number(assessment?.confidence)>=60&&!(Array.isArray(assessment?.contradictions)&&assessment.contradictions.length>0);
   if(!enoughEvidence){
-   const reason="Insufficient verified coverage: require two independent domains, both teams, injury and lineup reporting, and a usable non-conflicting AI assessment";
+   const reason="Insufficient verified coverage: require two full article pages, two independent domains, both teams, injury and lineup reporting from full articles, and a usable non-conflicting AI assessment";
    await db.query("UPDATE ash_fixture_research_queue SET status='failed',due_at=now()+interval '6 hours',updated_at=now(),last_error=$2 WHERE match_id=$1",[f.id,reason]);
    reports.push({matchId:f.id,sources:payload.length,domains:domains.length,coverage,status:"insufficient_evidence",assessmentStatus:assessment?.error?"unavailable":"saved"});
    continue;
