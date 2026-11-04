@@ -184,6 +184,30 @@ async function fetchPublicPage(inputUrl) {
   throw new Error("Unable to fetch source");
 }
 
+
+export function discoverBookmakerLinks(html, baseUrl, limit = 12) {
+  const base = validateSourceUrl(baseUrl);
+  const found = new Map();
+  const pattern = /<a\\b[^>]*href\\s*=\\s*(["'])(.*?)\\1[^>]*>([\\s\\S]*?)<\\/a>/gi;
+  let match;
+  while ((match = pattern.exec(String(html || ""))) && found.size < Math.max(1, Math.min(20, limit))) {
+    const href = decodeEntities(match[2]).trim();
+    const label = cleanText(match[3]).toLowerCase();
+    if (!href || /^(?:javascript:|mailto:|tel:|#)/i.test(href)) continue;
+    let url;
+    try { url = validateSourceUrl(new URL(href, base).toString()); } catch { continue; }
+    if (url.hostname !== base.hostname) continue;
+    if (url.pathname === "/" && !url.search) continue;
+    const signal = (url.pathname + " " + url.search + " " + label).toLowerCase();
+    if (!/(event|match|fixture|sport|football|soccer|tennis|basketball|odds|live|competition|league|premier)/.test(signal)) continue;
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) if (/^(utm_|fbclid|gclid)/i.test(key)) url.searchParams.delete(key);
+    const normalized = url.toString();
+    if (!found.has(normalized)) found.set(normalized, { url: normalized, label: label.slice(0, 100) });
+  }
+  return [...found.values()];
+}
+
 export function getAllowedBookmakerHosts() {
   return [...ALLOWED_BOOKMAKER_HOSTS];
 }
@@ -244,6 +268,13 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   for (const source of sources.rows) {
     try {
       const page = await fetchPublicPage(source.source_url);
+      const discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
+      let discoveredSaved = 0;
+      for (const item of discovered) {
+        const added = await db.query(`INSERT INTO ash_scraper_sources(bookmaker,source_url)
+          VALUES($1,$2) ON CONFLICT(source_url) DO NOTHING RETURNING id`, [source.bookmaker, item.url]);
+        discoveredSaved += added.rowCount;
+      }
       const json = page.contentType.includes("application/json") ? safeJson(page.html) : null;
       const embedded = json == null ? extractEmbeddedJson(page.html) : [json];
       const candidates = uniqueOdds(embedded.flatMap(item => collectOddsCandidates(item)));
@@ -257,7 +288,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         page.status, page.contentType, text, JSON.stringify(embedded), JSON.stringify(candidates)
       ]);
       await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
-      results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, finalUrl: page.finalUrl });
+      results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, finalUrl: page.finalUrl });
     } catch (error) {
       const message = String(error?.message || error).slice(0, 300);
       await db.query(`INSERT INTO ash_scraper_runs(source_id,bookmaker,source_url,status,error_message)
@@ -267,7 +298,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
     }
   }
   const importedOdds = await importScrapedOdds(db);
-  return { sourcesChecked: results.length, succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, importedOdds, results };
+  return { sourcesChecked: results.length, discoveredPages: results.reduce((n,x)=>n+Number(x.discoveredPages||0),0), newPagesQueued: results.reduce((n,x)=>n+Number(x.newPagesQueued||0),0), succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, importedOdds, results };
 }
 
 export function fixtureFromCandidate(candidate, now = new Date()) {
