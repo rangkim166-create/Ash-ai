@@ -83,7 +83,9 @@ function candidateContext(object, inherited = {}) {
     const label = value => typeof value === "string" ? value : value?.name || value?.label || null;
     homeTeam ||= label(participants[0]); awayTeam ||= label(participants[1]);
   }
-  const eventName = firstString(["eventname","event_name","eventtitle","matchname","match_name","fixture","match","event","title"]);
+  const explicitEvent = firstString(["eventname","event_name","eventtitle","matchname","match_name","fixture","match","event","title"]);
+  const namedEvent = firstString(["name"]);
+  const eventName = explicitEvent || (parseEventTeams(namedEvent || "").homeTeam ? namedEvent : null) || inherited.eventName || null;
   const parsed = parseEventTeams(eventName || "");
   homeTeam ||= parsed.homeTeam || inherited.homeTeam || null;
   awayTeam ||= parsed.awayTeam || inherited.awayTeam || null;
