@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, mapCandidateToFixture } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, mapCandidateToFixture, fixtureFromCandidate } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -43,4 +43,17 @@ test("maps only exact event, h2h market and valid outcome to an existing fixture
   assert.deepEqual(mapped, { matchId: "fixture-1", marketKey: "h2h", outcomeName: "Arsenal", decimalOdds: 2.1, line: null });
   assert.equal(mapCandidateToFixture({ eventName: "Arsenal vs Chelsea", market: "Total Goals", selection: "Over 2.5", decimalOdds: 1.8 }, fixture), null);
   assert.equal(mapCandidateToFixture({ eventName: "Arsenal vs Tottenham", market: "Match Result", selection: "Arsenal", decimalOdds: 2.1 }, fixture), null);
+});
+
+test("creates a fixture only from explicit sport and valid kickoff metadata", () => {
+  const fixture = fixtureFromCandidate({
+    eventName: "Arsenal vs Chelsea", sport: "Football", competition: "Premier League",
+    startsAt: "2026-11-04T20:00:00.000Z"
+  }, new Date("2026-11-04T10:00:00.000Z"));
+  assert.equal(fixture.sport, "football");
+  assert.equal(fixture.home, "Arsenal");
+  assert.equal(fixture.away, "Chelsea");
+  assert.equal(fixture.competition, "Premier League");
+  assert.match(fixture.id, /^public-scrape:/);
+  assert.equal(fixtureFromCandidate({ eventName: "Arsenal vs Chelsea", sport: "Football" }, new Date("2026-11-04T10:00:00.000Z")), null);
 });
