@@ -4,7 +4,7 @@ import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, mapC
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
-    "betpawa.com", "betika.com", "sportybet.com", "bet365.com", "1xbet.com"
+    "betpawa.ug", "betika.com", "1xbet.ug", "22bet.ug", "ecobetug.com"
   ]);
 });
 
