@@ -30,7 +30,7 @@ export function parseRss(xml){
  const out=[];
  for(const block of xml.split("<item>").slice(1).map(x=>x.split("</item>")[0])){
   const value=tag=>{const m=block.match(new RegExp("<"+tag+"[^>]*>([\\s\\S]*?)</"+tag+">","i"));return m?m[1].trim():"";};
-  const title=strip(value("title"),240),url=value("link"),raw=value("pubDate"),ts=raw?Date.parse(raw):NaN,description=strip((value("description")||value("content:encoded")).replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/gi,"$1"),1200);
+  const title=strip(value("title"),240),url=value("link"),raw=value("pubDate"),ts=raw?Date.parse(raw):NaN,descriptionRaw=value("description")||value("content:encoded"),description=strip(descriptionRaw.replaceAll("<![CDATA[","").replaceAll("]]>",""),1200);
   if(!title||!(url.startsWith("https://")||url.startsWith("http://")))continue;
   let domain="unknown";
   try{const m=block.match(/<source[^>]*url="([^"]+)"/i);domain=new URL(m?.[1]||url).hostname.replace(/^www[.]/,"");}catch{}
