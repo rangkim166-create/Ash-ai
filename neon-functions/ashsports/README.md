@@ -34,7 +34,7 @@ Historical results are imported from OpenFootball football.json and OpenFootball
 
 The Render process now checks once per hour for a Kampala-day publication that has not been sent yet. It refreshes configured public bookmaker pages before publication, imports only exact event/market matches from `source='public_scrape'`, then applies a conservative server-side filter:
 
-- upcoming fixtures only, with bookmaker snapshots no older than 6 hours;
+- upcoming fixtures only, with scraped bookmaker snapshots no older than 15 minutes;
 - head-to-head prices from multiple distinct bookmakers;
 - at least five verified recent results for both participants;
 - a positive recent-form edge, with stricter bookmaker/form requirements for higher prices;
@@ -62,7 +62,7 @@ This is broad live public-web discovery, not a claim to crawl the entire interne
 ## Public bookmaker scraper (initial rollout)
 
 The Render backend now has a rate-limited public-page scraper for approved bookmaker domains:
-- BetPawa, Betika, SportyBet, Bet365 and 1xBet.
+- BetPawa Uganda (`betpawa.ug`), Betika Uganda (`betika.com/en-ug`), 1xBet Uganda (`1xbet.ug`), 22Bet (`22bet.ug`) and BetPaka/Ecobet (`ecobetug.com`). The allowlist is aligned to the NLGRB 2026 licensed-company list and should be rechecked when that register changes.
 - Sources are seeded on first scraper run and can be extended with exact public HTTPS event/market page URLs.
 - The scraper follows at most three redirects and revalidates every redirect host, rejects non-HTTPS URLs, rejects credentials in URLs, and caps each response at 2 MB.
 - It stores fetch metadata, extracted page text, embedded JSON/JSON-LD blocks and conservative odds candidates in `ash_scraper_runs`; source configuration and last-run state are stored in `ash_scraper_sources`.
