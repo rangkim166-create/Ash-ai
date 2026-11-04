@@ -183,6 +183,31 @@ async function savePublishedTips(localDay,picks){
    pick.home_team||"",pick.away_team||"",pick.commence_time,pick.selection,
    Number(pick.price),Number(pick.bookmakers||0),pick.reason||""
   ]);
+  const probability = Number(pick.estimated_probability_pct);
+  if (Number.isFinite(probability) && probability > 0 && probability < 100) {
+   const evidence = {
+    edgeType: pick.edge_type || null,
+    marketProbabilityPct: pick.market_probability_pct ?? null,
+    impliedProbabilityPct: pick.implied_probability_pct ?? null,
+    valueEdgePct: pick.value_edge_pct ?? null,
+    expectedValuePct: pick.expected_value_pct ?? null,
+    evidenceIndex: pick.evidence_index ?? null,
+    bookmakerNames: pick.bookmaker_names || null,
+    bestBookmaker: pick.best_bookmaker || null,
+    historicalMatchCount: pick.historical_match_count ?? null,
+    researchQuality: pick.web_research?.quality || null,
+    researchSources: (pick.web_research?.pages || []).slice(0, 5).map(page => ({
+     title: page.title || null, url: page.url || null, domain: page.domain || null, date: page.date || null
+    }))
+   };
+   await db.query(
+    "INSERT INTO ash_predictions(match_id,model_version,market_key,selection,offered_odds,estimated_probability,confidence_score,evidence,reasoning,status) " +
+    "SELECT $1,$2,'h2h',$3,$4,$5,$6,$7::jsonb,$8,'pending' " +
+    "WHERE NOT EXISTS (SELECT 1 FROM ash_predictions WHERE match_id=$1 AND model_version=$2 AND market_key='h2h' AND selection=$3)",
+    [matchId, "ash-hybrid-v1", pick.selection, Number(pick.price), probability / 100,
+     Number(pick.evidence_index || 0), JSON.stringify(evidence), String(pick.reason || "")]
+   );
+  }
  }
 }
 async function backfillPublishedTips(){
@@ -226,6 +251,7 @@ async function runTipResultsTracker(){
  if(!apiKey)return{checked:0,settled:0,reason:"odds_api_not_configured"};
  // Keep old unresolved tips visible as unverified; never turn missing data into a loss or void.
  await db.query("UPDATE ash_tip_results SET status='unverified',updated_at=now() WHERE status='pending' AND commence_time<now()-interval '4 days'");
+ await db.query("UPDATE ash_predictions p SET status='stale',settled_at=now() WHERE p.status='pending' AND EXISTS (SELECT 1 FROM ash_tip_results t WHERE t.match_id=p.match_id AND t.selection=p.selection AND t.status='unverified')");
  const pending=await db.query("SELECT * FROM ash_tip_results WHERE status='pending' AND commence_time<=now()+interval '15 minutes' AND commence_time>=now()-interval '4 days' ORDER BY commence_time ASC LIMIT 250");
  if(!pending.rowCount){const notifications=await deliverPendingResultNotifications();const summary=await maybeSendDailyResultsSummary();return{checked:0,settled:0,backfill,notifications,summary,reason:"no_due_tips"};}
  const groups=new Map();
@@ -255,6 +281,8 @@ async function runTipResultsTracker(){
        WHERE tip_id=$1 AND status='pending' RETURNING tip_id,home_team,away_team,selection,decimal_odds,home_score,away_score,profit_units`,
       [tip.tip_id,outcome,score.homeScore,score.awayScore,profit]);
      if(!saved.rowCount)continue;
+     await db.query("UPDATE ash_predictions SET status=$3,settled_at=now() WHERE match_id=$1 AND selection=$2 AND market_key='h2h' AND status='pending'",
+      [tip.match_id,tip.selection,outcome]);
      settled++;
      const row=saved.rows[0];
      // Delivery is handled by the retryable notification outbox after all scores are saved.
@@ -450,6 +478,19 @@ if(p==="/v1/public/results/summary"&&req.method==="GET"){
  return reply({totals:{...r,settled,hit_rate_pct:settled?Number((Number(r.won)/settled*100).toFixed(1)):null,yield_pct:settled?Number((Number(r.profit)/settled*100).toFixed(1)):null},daily:recent.rows});
 }
 
+if(p==="/v1/public/predictions/metrics"&&req.method==="GET"){
+ const models=await db.query(`SELECT model_version,
+  COUNT(*) FILTER(WHERE status IN ('won','lost'))::int AS settled,
+  COUNT(*) FILTER(WHERE status='won')::int AS won,
+  COUNT(*) FILTER(WHERE status='lost')::int AS lost,
+  ROUND(AVG(estimated_probability)::numeric,4) AS average_estimated_probability,
+  ROUND(AVG(CASE WHEN status='won' THEN 1.0 ELSE 0.0 END)::numeric,4) AS observed_win_rate,
+  ROUND(AVG(POWER(estimated_probability-CASE WHEN status='won' THEN 1.0 ELSE 0.0 END,2))::numeric,5) AS brier_score,
+  ROUND(AVG(CASE WHEN status='won' THEN offered_odds-1 ELSE -1 END)::numeric,4) AS roi_per_unit
+  FROM ash_predictions WHERE status IN ('won','lost') AND estimated_probability IS NOT NULL
+  GROUP BY model_version ORDER BY model_version`);
+ return reply({models:models.rows,minimum_sample_for_interpretation:100,note:"Small samples are noisy. Compare calibration and return over a large settled sample; no prediction is guaranteed."});
+}
 if(p==="/v1/public/research/summary"&&req.method==="GET"){const totals=await db.query("SELECT COUNT(*)::int AS fixtures,COUNT(*) FILTER(WHERE q.status='pending')::int AS pending,COUNT(*) FILTER(WHERE q.status='researching')::int AS researching,COUNT(*) FILTER(WHERE q.status='completed')::int AS completed,COUNT(*) FILTER(WHERE q.status='failed')::int AS failed FROM ash_fixture_research_queue q");const recent=await db.query("SELECT m.id,m.sport,m.competition,m.home_or_player_one AS home,m.away_or_player_two AS away,m.starts_at,r.researched_at,r.source_count,r.independent_domains,r.coverage,r.assessment FROM ash_fixture_research r JOIN sports_matches m ON m.id=r.match_id ORDER BY r.researched_at DESC LIMIT 30");return reply({totals:totals.rows[0],recent:recent.rows});}
 if(p==="/v1/public/research/fixture"&&req.method==="GET"){const url=new URL(req.url),id=(url.searchParams.get("id")||"").trim();if(!id||id.length>180)return reply({error:"fixture_id_required"},400);const r=await db.query("SELECT m.id,m.sport,m.competition,m.home_or_player_one AS home,m.away_or_player_two AS away,m.starts_at,x.researched_at,x.source_count,x.independent_domains,x.sources,x.assessment,x.coverage FROM sports_matches m LEFT JOIN ash_fixture_research x ON x.match_id=m.id WHERE m.id=$1",[id]);return reply({fixture:r.rows[0]||null});}
 if(p==="/v1/public/odds/daily"&&req.method==="GET"){
