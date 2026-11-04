@@ -32,8 +32,9 @@ async function readArticle(item){
   if(!r.ok)return null;
   const type=r.headers.get("content-type")||"";
   if(!(type.includes("text/html")||type.includes("text/plain")))return null;
-  const excerpt=strip(await r.text(),3500);
-  return excerpt.length>180?{...item,excerpt:excerpt.slice(0,1800),categories:classifyEvidenceCategory(item.title+" "+excerpt),fetchedAt:new Date().toISOString()}:null;
+  const raw=await r.text();
+  const excerpt=strip(raw.slice(0,1_500_000),2600);
+  return excerpt.length>180?{...item,excerpt:excerpt.slice(0,2200),categories:classifyEvidenceCategory(item.title+" "+excerpt),fetchedAt:new Date().toISOString()}:null;
  }catch{return null;}
 }
 async function summarizeEvidence(fixture,pages,apiKey){
@@ -67,7 +68,7 @@ export async function enqueueFixtureResearch(db){
  await ensureFixtureResearchTables(db);
  const r=await db.query(`INSERT INTO ash_fixture_research_queue(match_id,status,due_at)
   SELECT m.id,'pending',now() FROM sports_matches m
-  WHERE m.starts_at>now()-interval '12 hours'
+  WHERE m.starts_at>now()-interval '12 hours' AND m.starts_at<now()+interval '14 days' AND m.status NOT IN ('completed','cancelled','postponed')
   ON CONFLICT(match_id) DO UPDATE SET status='pending',due_at=now(),updated_at=now(),last_error=NULL
   WHERE (ash_fixture_research_queue.status='failed' AND ash_fixture_research_queue.due_at<=now())
     OR (ash_fixture_research_queue.status='completed' AND NOT EXISTS(
@@ -78,8 +79,8 @@ export async function enqueueFixtureResearch(db){
 export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
  await ensureFixtureResearchTables(db);
  const claimed=await db.query(`WITH due AS(
-  SELECT q.match_id FROM ash_fixture_research_queue q
-  WHERE q.due_at<=now() AND (q.status='pending' OR (q.status='researching' AND q.updated_at<now()-interval '15 minutes'))
+  SELECT q.match_id FROM ash_fixture_research_queue q JOIN sports_matches m ON m.id=q.match_id
+  WHERE q.due_at<=now() AND m.starts_at>now()-interval '12 hours' AND m.starts_at<now()+interval '14 days' AND m.status NOT IN ('completed','cancelled','postponed') AND (q.status='pending' OR (q.status='researching' AND q.updated_at<now()-interval '15 minutes'))
   ORDER BY CASE WHEN m.starts_at<=now()+interval '3 hours' THEN 0 ELSE 1 END,q.due_at ASC LIMIT $1 FOR UPDATE OF q SKIP LOCKED
  ) UPDATE ash_fixture_research_queue q SET status='researching',attempts=q.attempts+1,updated_at=now()
  FROM due WHERE q.match_id=due.match_id RETURNING q.match_id`,[Math.max(1,Math.min(20,limit))]);
@@ -90,11 +91,13 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const f=fixtureResult.rows[0],home=f.home,away=f.away,competition=f.competition;
   const queries=buildFixtureQueries(f);
   const found=[],errors=[];
-  for(const q of queries){try{found.push(...await search(q));}catch(e){errors.push(String(e.message||e).slice(0,120));}}
+  const searchResults=await Promise.allSettled(queries.map(q=>search(q)));
+  for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const unique=[...new Map(found.filter(x=>x.ageHours==null||x.ageHours<=24*7).map(x=>[x.url,x])).values()]
    .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,12);
   const pages=[];
-  for(const item of unique.slice(0,8)){const page=await readArticle(item);if(page)pages.push(page);}
+  const pageResults=await Promise.allSettled(unique.slice(0,8).map(item=>readArticle(item)));
+  const pages=pageResults.filter(result=>result.status==='fulfilled'&&result.value).map(result=>result.value);
   const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
   const awayPages=pages.filter(p=>p.title.toLowerCase().includes(away.toLowerCase())||p.excerpt.toLowerCase().includes(away.toLowerCase()));
   const domains=[...new Set(pages.map(p=>p.domain))];
