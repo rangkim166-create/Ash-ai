@@ -3,6 +3,7 @@ import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
 import { enqueueFixtureResearch, processFixtureResearch } from "./fixture-research.mjs";
+import { addScraperSource, getScraperStatus, runBookmakerScrapers } from "./bookmaker-scraper.mjs";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
 const sql=postgres(process.env.DATABASE_URL,{max:5,idle_timeout:20,connect_timeout:10});
 const db={query:async(text,values=[])=>{const rows=await sql.unsafe(text,values);return {rows,rowCount:rows.length};}};
@@ -407,7 +408,7 @@ async function runScheduledDailyPublisher(){
  }
 }
 
-export default {async configureTelegramWebhook(){return await telegramAssistant.configureWebhook();},async runScheduledCollection(){let collection=null;try{collection=await collectOdds(8);}catch(e){console.error("[ash-research-queue] collection",String(e.message||e).slice(0,160));}const queued=await enqueueFixtureResearch(db).catch(e=>({error:String(e.message||e).slice(0,160)}));const research=await processFixtureResearch(db,{limit:8,groqKey:await read("groq")}).catch(e=>({error:String(e.message||e).slice(0,160)}));return{collection,queued,research};},async runScheduledFixtureResearch(){const queued=await enqueueFixtureResearch(db);const research=await processFixtureResearch(db,{limit:4,groqKey:await read("groq")});return{queued,research};},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/v1/telegram/webhook"&&req.method==="POST"){try{const secret=req.headers.get("x-telegram-bot-api-secret-token")||"";if(!(await telegramAssistant.verifySecret(secret)))return reply({error:"unauthorized"},401);const update=await req.json();void telegramAssistant.handleUpdate(update).catch(e=>console.error("[ash-telegram-webhook]",String(e.message||e)));return reply({ok:true});}catch(e){console.error("[ash-telegram-webhook]",e);return reply({error:"invalid_update"},400);}}if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
+export default {async configureTelegramWebhook(){return await telegramAssistant.configureWebhook();},async runScheduledScraping(){return await runBookmakerScrapers(db,{limit:8});},async runScheduledCollection(){let collection=null;try{collection=await collectOdds(8);}catch(e){console.error("[ash-research-queue] collection",String(e.message||e).slice(0,160));}const queued=await enqueueFixtureResearch(db).catch(e=>({error:String(e.message||e).slice(0,160)}));const research=await processFixtureResearch(db,{limit:8,groqKey:await read("groq")}).catch(e=>({error:String(e.message||e).slice(0,160)}));return{collection,queued,research};},async runScheduledFixtureResearch(){const queued=await enqueueFixtureResearch(db);const research=await processFixtureResearch(db,{limit:4,groqKey:await read("groq")});return{queued,research};},async runHistoricalRatingsImport(){return await importHistoricalRatings();},async runScheduledDailyPublisher(){return await runScheduledDailyPublisher();},async runTipResultsTracker(){return await runTipResultsTracker();},async fetch(req){if(req.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const p=new URL(req.url).pathname;if(p==="/v1/telegram/webhook"&&req.method==="POST"){try{const secret=req.headers.get("x-telegram-bot-api-secret-token")||"";if(!(await telegramAssistant.verifySecret(secret)))return reply({error:"unauthorized"},401);const update=await req.json();void telegramAssistant.handleUpdate(update).catch(e=>console.error("[ash-telegram-webhook]",String(e.message||e)));return reply({ok:true});}catch(e){console.error("[ash-telegram-webhook]",e);return reply({error:"invalid_update"},400);}}if(p==="/health"&&req.method==="GET"){try{await db.query("SELECT 1");return reply({ok:true,service:"ash-sports-api",database:"connected"});}catch{return reply({ok:false,error:"database_unavailable"},503);}}
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
@@ -477,6 +478,19 @@ return reply({team_a:a,team_b:b,meetings:rows.rows});
 }catch(e){console.error("[ash-sports-public]",e);return reply({error:"public_feed_unavailable"},500);}
 }
 const auth=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!appToken||auth.length!==appToken.length||!timingSafeEqual(Buffer.from(auth),Buffer.from(appToken)))return reply({error:"unauthorized"},401);
+if(p==="/v1/scraper/status"&&req.method==="GET")return reply(await getScraperStatus(db));
+if(p==="/v1/scraper/sources"&&req.method==="POST"){
+ const body=await req.json().catch(()=>({}));
+ try{return reply({source:await addScraperSource(db,{bookmaker:body.bookmaker,url:body.url})},201);}
+ catch(error){return reply({error:String(error.message||error).slice(0,220)},400);}
+}
+if(p==="/v1/scraper/run"&&req.method==="POST"){
+ const body=await req.json().catch(()=>({}));
+ const limit=Number(body.limit||8);
+ if(!Number.isInteger(limit)||limit<1||limit>20)return reply({error:"limit_must_be_1_to_20"},400);
+ return reply(await runBookmakerScrapers(db,{limit}));
+}
+
 try{
 if(p==="/v1/odds/collect"&&req.method==="POST"){const b=await req.json().catch(()=>({}));const n=Number(b.maxSports||6);if(!Number.isInteger(n)||n<1||n>12)return reply({error:"maxSports must be 1 to 12"},400);return reply(await collectOdds(n));}
 if(p==="/v1/odds/summary"&&req.method==="GET"){const r=await db.query("SELECT (SELECT COUNT(*) FROM sports_matches) AS matches,(SELECT COUNT(*) FROM bookmaker_odds) AS odds_snapshots,(SELECT COUNT(DISTINCT bookmaker_key) FROM bookmaker_odds) AS bookmakers,(SELECT MIN(observed_at) FROM bookmaker_odds) AS first_snapshot,(SELECT MAX(observed_at) FROM bookmaker_odds) AS latest_snapshot");const runs=await db.query("SELECT id,started_at,finished_at,status,fixtures_seen,odds_snapshots_saved,error_summary FROM daily_scout_runs ORDER BY started_at DESC LIMIT 10");return reply({totals:r.rows[0],recentRuns:r.rows});}
