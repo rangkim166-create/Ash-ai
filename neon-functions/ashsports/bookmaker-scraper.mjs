@@ -161,6 +161,13 @@ export async function ensureScraperTables(db) {
   )`);
   await db.query("CREATE INDEX IF NOT EXISTS ash_scraper_runs_fetched_idx ON ash_scraper_runs(fetched_at DESC)");
   await db.query("CREATE INDEX IF NOT EXISTS ash_scraper_sources_enabled_idx ON ash_scraper_sources(enabled, id)");
+  await db.query(`INSERT INTO ash_scraper_sources(bookmaker,source_url) VALUES
+    ('BetPawa','https://www.betpawa.com/'),
+    ('Betika','https://www.betika.com/'),
+    ('SportyBet','https://www.sportybet.com/'),
+    ('Bet365','https://www.bet365.com/'),
+    ('1xBet','https://1xbet.com/')
+    ON CONFLICT(source_url) DO NOTHING`);
 }
 
 export async function addScraperSource(db, { bookmaker, url }) {
