@@ -1,0 +1,24 @@
+name: Test bookmaker scraper
+
+on:
+  push:
+    branches:
+      - ash-bookmaker-scraper
+    paths:
+      - "neon-functions/ashsports/bookmaker-scraper.mjs"
+      - "neon-functions/ashsports/bookmaker-scraper.test.mjs"
+      - ".github/workflows/test-bookmaker-scraper.yml"
+  pull_request:
+    paths:
+      - "neon-functions/ashsports/bookmaker-scraper.mjs"
+      - "neon-functions/ashsports/bookmaker-scraper.test.mjs"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test neon-functions/ashsports/bookmaker-scraper.test.mjs
