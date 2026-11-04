@@ -247,11 +247,11 @@ async function deliverPendingResultNotifications(){
 async function runTipResultsTracker(){
  await ensureTipResultsTables();
  const backfill=await backfillPublishedTips();
- const apiKey=await read("the_odds_api");
- if(!apiKey)return{checked:0,settled:0,reason:"odds_api_not_configured"};
  // Keep old unresolved tips visible as unverified; never turn missing data into a loss or void.
  await db.query("UPDATE ash_tip_results SET status='unverified',updated_at=now() WHERE status='pending' AND commence_time<now()-interval '4 days'");
  await db.query("UPDATE ash_predictions p SET status='stale',settled_at=now() WHERE p.status='pending' AND EXISTS (SELECT 1 FROM ash_tip_results t WHERE t.match_id=p.match_id AND t.selection=p.selection AND t.status='unverified')");
+ const apiKey=await read("the_odds_api");
+ if(!apiKey)return{checked:0,settled:0,backfill,reason:"odds_api_not_configured"};
  const pending=await db.query("SELECT * FROM ash_tip_results WHERE status='pending' AND commence_time<=now()+interval '15 minutes' AND commence_time>=now()-interval '4 days' ORDER BY commence_time ASC LIMIT 250");
  if(!pending.rowCount){const notifications=await deliverPendingResultNotifications();const summary=await maybeSendDailyResultsSummary();return{checked:0,settled:0,backfill,notifications,summary,reason:"no_due_tips"};}
  const groups=new Map();
