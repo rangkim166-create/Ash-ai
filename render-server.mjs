@@ -104,6 +104,21 @@ server.listen(port, "0.0.0.0", () => {
       dailyPublishRunning = false;
     }
   };
+  let bookmakerScraperRunning = false;
+  const runBookmakerScrapers = async () => {
+    if (bookmakerScraperRunning) return;
+    bookmakerScraperRunning = true;
+    try {
+      const result = await handler.runScheduledScraping();
+      console.log("[ash-bookmaker-scraper] scheduled run", JSON.stringify(result));
+    } catch (error) {
+      console.error("[ash-bookmaker-scraper] scheduled run failed", String(error.message || error).slice(0, 220));
+    } finally {
+      bookmakerScraperRunning = false;
+    }
+  };
+  setTimeout(() => void runBookmakerScrapers(), 45000);
+  setInterval(() => void runBookmakerScrapers(), 3 * 60 * 60 * 1000).unref();
   // Configure a single Telegram webhook; avoids getUpdates conflicts across Render deploys.
   let telegramWebhookReady = false;
   const configureTelegramWebhook = async () => {
