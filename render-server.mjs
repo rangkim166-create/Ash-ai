@@ -119,6 +119,10 @@ server.listen(port, "0.0.0.0", () => {
   };
   setTimeout(() => void runBookmakerScrapers(), 45000);
   setInterval(() => void runBookmakerScrapers(), 3 * 60 * 60 * 1000).unref();
+  let fixtureResearchBusy = false;
+  const refreshFixtureResearch = async () => { if (fixtureResearchBusy) return; fixtureResearchBusy = true; try { const result = await handler.runScheduledFixtureResearch(); console.log("[ash-research] injury-lineup-news refresh", JSON.stringify(result)); } catch (error) { console.error("[ash-research] refresh failed", String(error.message || error).slice(0, 200)); } finally { fixtureResearchBusy = false; } };
+  setTimeout(() => void refreshFixtureResearch(), 70000);
+  setInterval(() => void refreshFixtureResearch(), 15 * 60 * 1000).unref();
   // Configure a single Telegram webhook; avoids getUpdates conflicts across Render deploys.
   let telegramWebhookReady = false;
   const configureTelegramWebhook = async () => {
