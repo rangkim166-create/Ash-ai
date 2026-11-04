@@ -132,7 +132,8 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
   const awayPages=pages.filter(p=>p.title.toLowerCase().includes(away.toLowerCase())||p.excerpt.toLowerCase().includes(away.toLowerCase()));
   const domains=[...new Set(pages.map(p=>p.domain))];
-  const fullPages=pages.filter(p=>p.contentLevel!=="rss_snippet");\n  const fullArticleCount=fullPages.length;
+  const fullPages=pages.filter(p=>p.contentLevel!=="rss_snippet");
+  const fullArticleCount=fullPages.length;
   const categoryCounts=Object.fromEntries(["injury_fitness","lineups","suspensions","manager_training","weather_venue","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,groqKey);
   const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,lineupReportingFound:categoryCounts.lineups>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:Number(assessment?.confidence)||0,searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
