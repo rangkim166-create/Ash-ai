@@ -63,33 +63,86 @@ function extractEmbeddedJson(html) {
   return found;
 }
 
-function collectOddsCandidates(value, output = [], depth = 0) {
+function normalizeTeam(value) {
+  return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+function parseEventTeams(value) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  const match = text.match(/^(.+?)\s+(?:vs?\.?|v\.|@|[-–—])\s+(.+?)(?:\s+[|•].*)?$/i);
+  return match ? { homeTeam: match[1].trim(), awayTeam: match[2].trim() } : {};
+}
+function candidateContext(object, inherited = {}) {
+  const entries = Object.entries(object || {});
+  const normalized = Object.fromEntries(entries.map(([key, value]) => [key.toLowerCase().replace(/[^a-z0-9]/g, ""), value]));
+  const firstString = keys => keys.map(key => normalized[key]).find(value => typeof value === "string" && value.trim()) || null;
+  let homeTeam = firstString(["hometeam","home_team","home","participant1","team1"]);
+  let awayTeam = firstString(["awayteam","away_team","away","participant2","team2"]);
+  const participants = normalized.participants || normalized.teams;
+  if ((!homeTeam || !awayTeam) && Array.isArray(participants) && participants.length >= 2) {
+    const label = value => typeof value === "string" ? value : value?.name || value?.label || null;
+    homeTeam ||= label(participants[0]); awayTeam ||= label(participants[1]);
+  }
+  const eventName = firstString(["eventname","event_name","eventtitle","matchname","match_name","fixture","match","event","title"]);
+  const parsed = parseEventTeams(eventName || "");
+  homeTeam ||= parsed.homeTeam || inherited.homeTeam || null;
+  awayTeam ||= parsed.awayTeam || inherited.awayTeam || null;
+  return {
+    homeTeam, awayTeam, eventName: eventName || inherited.eventName || null,
+    sport: firstString(["sport","sportname"]) || inherited.sport || null,
+    competition: firstString(["competition","league","tournament"]) || inherited.competition || null,
+    startsAt: firstString(["startdate","starttime","commencetime","starts_at","datetime"]) || inherited.startsAt || null
+  };
+}
+export function collectOddsCandidates(value, output = [], depth = 0, inherited = {}) {
   if (depth > 9 || output.length >= 250 || value == null) return output;
   if (Array.isArray(value)) {
-    for (const item of value.slice(0, 500)) collectOddsCandidates(item, output, depth + 1);
+    for (const item of value.slice(0, 500)) collectOddsCandidates(item, output, depth + 1, inherited);
     return output;
   }
   if (typeof value !== "object") return output;
   const entries = Object.entries(value);
   const normalized = Object.fromEntries(entries.map(([key, val]) => [key.toLowerCase(), val]));
+  const context = candidateContext(value, inherited);
   const priceValue = normalized.odds ?? normalized.price ?? normalized.decimalodds ?? normalized.value;
   const price = typeof priceValue === "number" ? priceValue : Number(String(priceValue ?? "").replace(",", "."));
   const label = normalized.name ?? normalized.label ?? normalized.selection ?? normalized.outcome ?? normalized.runner ?? normalized.team;
   if (label != null && String(label).trim() && Number.isFinite(price) && price > 1 && price <= 1000) {
     output.push({
-      selection: String(label).trim().slice(0, 160),
-      decimalOdds: price,
+      selection: String(label).trim().slice(0, 160), decimalOdds: price,
       market: String(normalized.market ?? normalized.marketname ?? normalized.market_name ?? "").slice(0, 120) || null,
       line: Number.isFinite(Number(normalized.line ?? normalized.handicap ?? normalized.point))
-        ? Number(normalized.line ?? normalized.handicap ?? normalized.point) : null
+        ? Number(normalized.line ?? normalized.handicap ?? normalized.point) : null,
+      homeTeam: context.homeTeam, awayTeam: context.awayTeam, eventName: context.eventName,
+      sport: context.sport, competition: context.competition, startsAt: context.startsAt
     });
   }
   for (const [, child] of entries) {
-    if (child && typeof child === "object") collectOddsCandidates(child, output, depth + 1);
+    if (child && typeof child === "object") collectOddsCandidates(child, output, depth + 1, context);
   }
   return output;
 }
-
+export function mapCandidateToFixture(candidate, fixture) {
+  const market = String(candidate?.market || "").toLowerCase();
+  if (!/(^h2h$|1x2|match result|match winner|moneyline|winner)/.test(market)) return null;
+  let home = candidate.homeTeam, away = candidate.awayTeam;
+  if (!home || !away) ({ homeTeam: home, awayTeam: away } = parseEventTeams(candidate.eventName || ""));
+  const fixtureHome = normalizeTeam(fixture.home), fixtureAway = normalizeTeam(fixture.away);
+  const candidateHome = normalizeTeam(home), candidateAway = normalizeTeam(away);
+  if (!candidateHome || !candidateAway) return null;
+  const sameOrder = candidateHome === fixtureHome && candidateAway === fixtureAway;
+  const reverseOrder = candidateHome === fixtureAway && candidateAway === fixtureHome;
+  if (!sameOrder && !reverseOrder) return null;
+  const selection = normalizeTeam(candidate.selection);
+  let outcomeName = null;
+  if (selection === fixtureHome) outcomeName = fixture.home;
+  else if (selection === fixtureAway) outcomeName = fixture.away;
+  else if (["draw","the draw","tie","x"].includes(selection) && String(fixture.sport).toLowerCase() === "football") outcomeName = "Draw";
+  if (!outcomeName) return null;
+  const price = Number(candidate.decimalOdds);
+  if (!Number.isFinite(price) || price <= 1 || price > 1000) return null;
+  return { matchId: fixture.id, marketKey: "h2h", outcomeName, decimalOdds: price, line: candidate.line ?? null };
+}
 function uniqueOdds(items) {
   const seen = new Set();
   return items.filter(item => {
@@ -210,7 +263,27 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
       results.push({ sourceId: source.id, bookmaker: source.bookmaker, status: "failed", error: message });
     }
   }
-  return { sourcesChecked: results.length, succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, results };
+  const importedOdds = await importScrapedOdds(db);
+  return { sourcesChecked: results.length, succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, importedOdds, results };
+}
+
+export async function importScrapedOdds(db) {
+  const runs = await db.query("SELECT bookmaker,odds_candidates,fetched_at FROM ash_scraper_runs WHERE status='success' AND fetched_at>now()-interval '6 hours' ORDER BY fetched_at DESC LIMIT 100");
+  const fixturesResult = await db.query("SELECT id,sport,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()-interval '12 hours' AND starts_at<now()+interval '14 days'");
+  const fixtures = fixturesResult.rows;
+  let saved = 0, unmatched = 0;
+  for (const run of runs.rows) {
+    const bookmakerKey = String(run.bookmaker || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 80) || "unknown";
+    for (const candidate of Array.isArray(run.odds_candidates) ? run.odds_candidates : []) {
+      const matches = fixtures.filter(fixture => mapCandidateToFixture(candidate, fixture));
+      if (matches.length !== 1) { unmatched++; continue; }
+      const mapped = mapCandidateToFixture(candidate, matches[0]);
+      const result = await db.query("INSERT INTO bookmaker_odds(match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at,source) VALUES($1,$2,$3,$4,$5,$6,$7::timestamptz,'public_scrape') ON CONFLICT DO NOTHING RETURNING id",
+        [mapped.matchId,bookmakerKey,mapped.marketKey,mapped.outcomeName,mapped.decimalOdds,mapped.line,run.fetched_at]);
+      saved += result.rowCount;
+    }
+  }
+  return { runs: runs.rowCount, fixtures: fixtures.length, oddsSaved: saved, unmatchedCandidates: unmatched, source: "public_scrape" };
 }
 
 export async function getScraperStatus(db) {
