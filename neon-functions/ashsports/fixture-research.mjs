@@ -1,6 +1,12 @@
 const timeout=(ms)=>AbortSignal.timeout(ms);
 const strip=(s,n=1600)=>String(s||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/ +/g," ").trim().slice(0,n);
 
+const OFFICIAL_SPORTS_DOMAINS = new Set(["fifa.com","uefa.com","the-afc.com","cafonline.com","premierleague.com","laliga.com","bundesliga.com","legaseriea.it","ligue1.com","nba.com","euroleaguebasketball.net","fiba.basketball","atptour.com","wtatennis.com"]);
+const MAJOR_MEDIA_DOMAINS = new Set(["bbc.com","bbc.co.uk","reuters.com","apnews.com","theguardian.com","espn.com","espn.co.uk","skysports.com","theathletic.com","goal.com","cbssports.com","sports.yahoo.com","marca.com","as.com","lequipe.fr","kicker.de"]);
+function publisherTier(domain){const host=String(domain||"").toLowerCase().replace(/^www\\./,"");if(OFFICIAL_SPORTS_DOMAINS.has(host))return "official_league_or_federation";if(MAJOR_MEDIA_DOMAINS.has(host))return "established_media";return "other_public_publisher";}
+export function classifyEvidenceCategory(text){const s=String(text||"").toLowerCase(),out=[];if(/injur|injured|fitness|doubtful|ruled out|medical update|hamstring|ankle|knee|concussion/.test(s))out.push("injury_fitness");if(/line.?up|starting xi|starting eleven|team sheet|confirmed xi|predicted xi|probable lineup|formation/.test(s))out.push("lineups");if(/suspend|suspension|red card ban|yellow card ban|disciplinary|banned/.test(s))out.push("suspensions");if(/press conference|manager said|coach said|head coach|training|squad announcement|pre.?match interview/.test(s))out.push("manager_training");if(/weather|rain|wind|temperature|forecast|pitch condition/.test(s))out.push("weather_venue");if(/preview|prediction|odds|tipster|expert pick|match analysis/.test(s))out.push("preview_analysis");if(/form|head.?to.?head|last five|recent results|statistics|stats/.test(s))out.push("form_statistics");if(/official statement|club statement|league statement|federation/.test(s))out.push("official_update");return out.length?out:["general_news"]; }
+export function buildFixtureQueries(fixture,now=new Date()){const h=String(fixture.home||"").trim(),a=String(fixture.away||"").trim(),c=String(fixture.competition||"").trim(),after=new Date(now.getTime()-7*86400000).toISOString().slice(0,10),pair='"'+h+'" "'+a+'"',league=c?'"'+c+'"':"";return [pair+" "+league+" match preview analysis expert prediction after:"+after,'"'+h+'" team news injuries fitness doubtful ruled out lineup starting XI after:'+after,'"'+a+'" team news injuries fitness doubtful ruled out lineup starting XI after:'+after,pair+" confirmed lineup predicted lineup starting XI team sheet after:"+after,pair+" suspensions bans manager press conference training squad update after:"+after,pair+" stadium weather forecast pitch conditions matchday after:"+after,pair+" recent form results head to head statistics after:"+after].map(x=>x.replace(/\\s+/g," ").trim());}
+
 function parseRss(xml){
  const out=[];
  for(const block of xml.split("<item>").slice(1).map(x=>x.split("</item>")[0])){
@@ -9,13 +15,13 @@ function parseRss(xml){
   if(!title||!(url.startsWith("https://")||url.startsWith("http://")))continue;
   let domain="unknown";
   try{const m=block.match(/<source[^>]*url="([^"]+)"/i);domain=new URL(m?.[1]||url).hostname.replace(/^www[.]/,"");}catch{}
-  out.push({title,url,date:raw||null,publishedAt:Number.isFinite(ts)?new Date(ts).toISOString():null,ageHours:Number.isFinite(ts)?Math.max(0,Math.round((Date.now()-ts)/3600000)):null,domain});
+  out.push({title,url,date:raw||null,publishedAt:Number.isFinite(ts)?new Date(ts).toISOString():null,ageHours:Number.isFinite(ts)?Math.max(0,Math.round((Date.now()-ts)/3600000)):null,domain,sourceTier:publisherTier(domain),categories:classifyEvidenceCategory(title)});
   if(out.length>=10)break;
  }
  return out;
 }
 async function search(query){
- const url="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-US&gl=US&ceid=US:en";
+ const url="https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-GB&gl=GB&ceid=GB:en";
  const r=await fetch(url,{signal:timeout(12000),headers:{"user-agent":"AshSportsResearch/4.0"}});
  if(!r.ok)throw Error("News search HTTP "+r.status);
  return parseRss(await r.text());
@@ -61,7 +67,7 @@ export async function enqueueFixtureResearch(db){
  await ensureFixtureResearchTables(db);
  const r=await db.query(`INSERT INTO ash_fixture_research_queue(match_id,status,due_at)
   SELECT m.id,'pending',now() FROM sports_matches m
-  WHERE m.source='the_odds_api' AND m.starts_at>now()-interval '12 hours'
+  WHERE m.starts_at>now()-interval '12 hours'
   ON CONFLICT(match_id) DO UPDATE SET status='pending',due_at=now(),updated_at=now(),last_error=NULL
   WHERE (ash_fixture_research_queue.status='failed' AND ash_fixture_research_queue.due_at<=now())
     OR (ash_fixture_research_queue.status='completed' AND NOT EXISTS(
@@ -82,13 +88,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const fixtureResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at,status FROM sports_matches WHERE id=$1",[row.match_id]);
   if(!fixtureResult.rowCount){await db.query("DELETE FROM ash_fixture_research_queue WHERE match_id=$1",[row.match_id]);continue;}
   const f=fixtureResult.rows[0],home=f.home,away=f.away,competition=f.competition;
-  const date=new Date(Date.now()-7*86400000).toISOString().slice(0,10);
-  const queries=[
-   '"'+home+'" "'+away+'" "'+competition+'" match preview OR expert prediction OR tipster after:'+date,
-   '"'+home+'" '+competition+' team news injuries suspensions manager comments after:'+date,
-   '"'+away+'" '+competition+' team news injuries suspensions manager comments after:'+date,
-   '"'+home+'" "'+away+'" recent results form head to head statistics'
-  ];
+  const queries=buildFixtureQueries(f);
   const found=[],errors=[];
   for(const q of queries){try{found.push(...await search(q));}catch(e){errors.push(String(e.message||e).slice(0,120));}}
   const unique=[...new Map(found.filter(x=>x.ageHours==null||x.ageHours<=24*7).map(x=>[x.url,x])).values()]
@@ -98,9 +98,10 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
   const awayPages=pages.filter(p=>p.title.toLowerCase().includes(away.toLowerCase())||p.excerpt.toLowerCase().includes(away.toLowerCase()));
   const domains=[...new Set(pages.map(p=>p.domain))];
+  const categoryCounts=Object.fromEntries(["injury_fitness","lineups","suspensions","manager_training","weather_venue","preview_analysis","form_statistics","official_update"].map(c=>[c,pages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,groqKey);
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,sourceSearchResults:unique.length,errors};
-  const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,excerpt})=>({title,url,date,publishedAt,ageHours,domain,excerpt}));
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,sourceSearchResults:unique.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,lineupReportingFound:categoryCounts.lineups>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
    ON CONFLICT(match_id) DO UPDATE SET researched_at=now(),source_count=EXCLUDED.source_count,
