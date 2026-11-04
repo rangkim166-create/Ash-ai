@@ -1,5 +1,5 @@
 const timeout=(ms)=>AbortSignal.timeout(ms);
-const strip=(s,n=1600)=>String(s||"").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/ +/g," ").trim().slice(0,n);
+const strip=(s,n=1600)=>String(s||"").replace(/<(script|style|noscript|svg|iframe|nav|footer|header)\\b[^>]*>[\\s\\S]*?<\\/\\1>/gi," ").replace(/<[^>]*>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&quot;/g,'"').replace(/ +/g," ").trim().slice(0,n);
 
 const OFFICIAL_SPORTS_DOMAINS = new Set(["fifa.com","uefa.com","the-afc.com","cafonline.com","premierleague.com","laliga.com","bundesliga.com","legaseriea.it","ligue1.com","nba.com","euroleaguebasketball.net","fiba.basketball","atptour.com","wtatennis.com"]);
 const MAJOR_MEDIA_DOMAINS = new Set(["bbc.com","bbc.co.uk","reuters.com","apnews.com","theguardian.com","espn.com","espn.co.uk","skysports.com","theathletic.com","goal.com","cbssports.com","sports.yahoo.com","marca.com","as.com","lequipe.fr","kicker.de"]);
@@ -80,7 +80,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
  const claimed=await db.query(`WITH due AS(
   SELECT q.match_id FROM ash_fixture_research_queue q
   WHERE q.due_at<=now() AND (q.status='pending' OR (q.status='researching' AND q.updated_at<now()-interval '15 minutes'))
-  ORDER BY q.due_at ASC LIMIT $1 FOR UPDATE SKIP LOCKED
+  ORDER BY CASE WHEN m.starts_at<=now()+interval '3 hours' THEN 0 ELSE 1 END,q.due_at ASC LIMIT $1 FOR UPDATE OF q SKIP LOCKED
  ) UPDATE ash_fixture_research_queue q SET status='researching',attempts=q.attempts+1,updated_at=now()
  FROM due WHERE q.match_id=due.match_id RETURNING q.match_id`,[Math.max(1,Math.min(20,limit))]);
  const reports=[];
