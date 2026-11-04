@@ -72,3 +72,17 @@ The Render backend now has a rate-limited public-page scraper for approved bookm
 Important: this is the first collection layer, not a guarantee that every bookmaker exposes odds in crawlable HTML. Many betting sites render markets client-side, geofence pages, require sign-in, or prohibit automated collection. The engine does not bypass access controls, CAPTCHAs or bot protections. A page that returns no public structured odds is recorded as such, not converted into invented prices.
 
 Scraped odds candidates are deliberately stored separately from `bookmaker_odds` until event identity and market mapping can be verified. The existing Odds API collector and daily-pick workflow are still present in this branch; they have not yet been removed or switched off. Removing that dependency safely requires validated bookmaker event/market adapters and a successful live scrape test first. Do not describe Ash as API-free until that migration is completed.
+
+## Prediction quality controls (Ash hybrid v1)
+
+The daily candidate selector now:
+- requires bookmaker prices collected within the last 15 minutes;
+- requires a complete 1X2 market for football (home, draw, away), or a complete two-outcome market for tennis/basketball;
+- requires at least four independent bookmaker prices (five for longer prices);
+- rejects material disagreement between bookmakers;
+- requires at least five recent results for both teams/players, or an imported Elo archive covering at least 1,000 matches for that sport;
+- shrinks form/Elo adjustments toward the no-vig bookmaker consensus and only keeps candidates with at least a 1.5 percentage-point estimated edge over the best price's implied probability.
+
+These estimates are a conservative screening heuristic, not a trained or proven profitable model. Every published candidate is recorded in `ash_predictions` with its probability, model version and evidence. Verified result settlement updates the prediction status. The public endpoint `GET /v1/public/predictions/metrics` reports settled sample size, average estimated probability, observed win rate, Brier score and unit-stake ROI by model version. Do not interpret small samples; the endpoint marks 100 settled predictions as the minimum sample before interpretation.
+
+The bookmaker scraper is still a first-stage public-page collector. It stores raw page evidence and candidate odds separately; it does not yet prove event/market identity or feed verified scraped prices into the production odds/prediction path. Do not remove the current odds collector or claim an API-free migration until site-specific adapters have been live-tested, normalized and independently verified end-to-end.
