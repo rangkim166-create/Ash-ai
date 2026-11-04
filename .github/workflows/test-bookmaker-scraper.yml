@@ -18,6 +18,8 @@ on:
       - "neon-functions/ashsports/bookmaker-scraper.test.mjs"
       - "neon-functions/ashsports/daily-picks.mjs"
       - "neon-functions/ashsports/daily-picks.test.mjs"
+      - "neon-functions/ashsports/fixture-research.mjs"
+      - "neon-functions/ashsports/fixture-research.test.mjs"
 
 jobs:
   test:
