@@ -5,7 +5,26 @@ const OFFICIAL_SPORTS_DOMAINS = new Set(["fifa.com","uefa.com","the-afc.com","ca
 const MAJOR_MEDIA_DOMAINS = new Set(["bbc.com","bbc.co.uk","reuters.com","apnews.com","theguardian.com","espn.com","espn.co.uk","skysports.com","theathletic.com","goal.com","cbssports.com","sports.yahoo.com","marca.com","as.com","lequipe.fr","kicker.de"]);
 function publisherTier(domain){const host=String(domain||"").toLowerCase().replace(/^www\./,"");const matches=set=>[...set].some(root=>host===root||host.endsWith("."+root));if(matches(OFFICIAL_SPORTS_DOMAINS))return "official_league_or_federation";if(matches(MAJOR_MEDIA_DOMAINS))return "established_media";return "other_public_publisher";}
 export function classifyEvidenceCategory(text){const s=String(text||"").toLowerCase(),out=[];if(/injur|injured|fitness|doubtful|ruled out|medical update|hamstring|ankle|knee|concussion/.test(s))out.push("injury_fitness");if(/line.?up|starting xi|starting eleven|team sheet|confirmed xi|predicted xi|probable lineup|formation/.test(s))out.push("lineups");if(/suspend|suspension|red card ban|yellow card ban|disciplinary|banned/.test(s))out.push("suspensions");if(/press conference|manager said|coach said|head coach|training|squad announcement|pre.?match interview/.test(s))out.push("manager_training");if(/weather|rain|wind|temperature|forecast|pitch condition/.test(s))out.push("weather_venue");if(/preview|prediction|odds|tipster|expert pick|match analysis/.test(s))out.push("preview_analysis");if(/form|head.?to.?head|last five|recent results|statistics|stats/.test(s))out.push("form_statistics");if(/official statement|club statement|league statement|federation/.test(s))out.push("official_update");return out.length?out:["general_news"]; }
-export function buildFixtureQueries(fixture,now=new Date()){const h=String(fixture.home||"").trim(),a=String(fixture.away||"").trim(),c=String(fixture.competition||"").trim(),after=new Date(now.getTime()-7*86400000).toISOString().slice(0,10),pair='"'+h+'" "'+a+'"',league=c?'"'+c+'"':"";return [pair+" "+league+" match preview analysis expert prediction after:"+after,'"'+h+'" team news injuries fitness doubtful ruled out lineup starting XI after:'+after,'"'+a+'" team news injuries fitness doubtful ruled out lineup starting XI after:'+after,pair+" confirmed lineup predicted lineup starting XI team sheet after:"+after,pair+" suspensions bans manager press conference training squad update after:"+after,pair+" stadium weather forecast pitch conditions matchday after:"+after,pair+" recent form results head to head statistics after:"+after,pair+" latest news updates official statement squad announcement club league after:"+after].map(x=>x.replace(/\s+/g," ").trim());}
+export function buildFixtureQueries(fixture,now=new Date()){
+ const h=String(fixture.home||"").trim(),a=String(fixture.away||"").trim(),c=String(fixture.competition||"").trim();
+ const recent=new Date(now.getTime()-2*86400000).toISOString().slice(0,10);
+ const week=new Date(now.getTime()-7*86400000).toISOString().slice(0,10);
+ const pair='"'+h+'" "'+a+'"',league=c?'"'+c+'"':"";
+ return [
+  pair+" "+league+" match preview analysis expert prediction after:"+week,
+  '"'+h+'" latest team news injury fitness doubtful ruled out after:'+recent,
+  '"'+a+'" latest team news injury fitness doubtful ruled out after:'+recent,
+  '"'+h+'" injury medical fitness availability update after:'+week,
+  '"'+a+'" injury medical fitness availability update after:'+week,
+  pair+" confirmed lineup predicted lineup starting XI team sheet formation after:"+week,
+  pair+" suspensions bans manager coach press conference training squad update after:"+week,
+  pair+" stadium weather forecast rain wind pitch conditions matchday after:"+week,
+  pair+" recent form results head to head statistics last five after:"+week,
+  pair+" official club league federation statement squad announcement after:"+week,
+  pair+" breaking news latest updates matchday team news after:"+recent,
+  pair+" Africa African football regional sports news updates after:"+week
+ ].map(x=>x.replace(/\\s+/g," ").trim());
+}
 
 function parseRss(xml){
  const out=[];
@@ -102,8 +121,8 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const searchResults=await Promise.allSettled(queries.map(q=>search(q)));
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const unique=[...new Map(found.filter(x=>x.ageHours==null||x.ageHours<=24*7).map(x=>[x.url,x])).values()]
-   .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999) || (a.sourceTier==="official_league_or_federation"?-1:0)).slice(0,16);
-  const pageResults=await Promise.allSettled(unique.slice(0,10).map(item=>readArticle(item)));
+   .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999) || (a.sourceTier==="official_league_or_federation"?-1:0)).slice(0,24);
+  const pageResults=await Promise.allSettled(unique.slice(0,12).map(item=>readArticle(item)));
   const pages=pageResults.filter(result=>result.status==='fulfilled'&&result.value).map(result=>result.value);
   const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
   const awayPages=pages.filter(p=>p.title.toLowerCase().includes(away.toLowerCase())||p.excerpt.toLowerCase().includes(away.toLowerCase()));
