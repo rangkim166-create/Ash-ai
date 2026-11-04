@@ -124,7 +124,7 @@ export function collectOddsCandidates(value, output = [], depth = 0, inherited =
 }
 export function mapCandidateToFixture(candidate, fixture) {
   const market = String(candidate?.market || "").toLowerCase();
-  if (!/(^h2h$|1x2|match result|match winner|moneyline|winner)/.test(market)) return null;
+  if (!/^(h2h|1x2|match result|full[ -]?time result|match winner|moneyline|winner|to win match)$/.test(market.trim())) return null;
   let home = candidate.homeTeam, away = candidate.awayTeam;
   if (!home || !away) ({ homeTeam: home, awayTeam: away } = parseEventTeams(candidate.eventName || ""));
   const fixtureHome = normalizeTeam(fixture.home), fixtureAway = normalizeTeam(fixture.away);
