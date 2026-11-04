@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatDailyPicks, selectDailyPicks } from "./daily-picks.mjs";
+import { formatDailyPicks, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
 
 const now = new Date("2026-10-31T10:00:00.000Z");
 const fixture = {
@@ -139,4 +139,22 @@ test("rejects a rating signal when the imported archive is too small", () => {
     ratingMatchCounts: { tennis: 20 }
   });
   assert.equal(picks.length, 0);
+});
+
+test("availability research gate requires fresh multi-source injury and lineup coverage", () => {
+  const report = {
+    researchedAt: "2026-10-31T09:50:00.000Z", sourceCount: 3, independentDomains: 3,
+    coverage: { home: true, away: true, injuryReportingFound: true, lineupReportingFound: true },
+    assessment: { confidence: 78, contradictions: [] }
+  };
+  assert.equal(isAvailabilityResearchSufficient(report, { fixtureStart: "2026-10-31T18:00:00.000Z", now }), true);
+  assert.equal(isAvailabilityResearchSufficient({ ...report, sourceCount: 1 }, { fixtureStart: fixture.starts_at, now }), false);
+  assert.equal(isAvailabilityResearchSufficient({ ...report, coverage: { ...report.coverage, injuryReportingFound: false } }, { fixtureStart: fixture.starts_at, now }), false);
+  assert.equal(isAvailabilityResearchSufficient({ ...report, assessment: { ...report.assessment, confidence: 45 } }, { fixtureStart: fixture.starts_at, now }), false);
+});
+test("near-kickoff availability research must be refreshed within 20 minutes", () => {
+  const report = { researchedAt: "2026-10-31T09:30:00.000Z", sourceCount: 3, independentDomains: 3,
+    coverage: { home: true, away: true, injuryReportingFound: true, lineupReportingFound: true },
+    assessment: { confidence: 80, contradictions: [] } };
+  assert.equal(isAvailabilityResearchSufficient(report, { fixtureStart: "2026-10-31T10:30:00.000Z", now }), false);
 });
