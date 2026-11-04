@@ -58,3 +58,17 @@ Public read-only endpoints:
 - `GET /v1/public/research/fixture?id=<stored-match-id>` — source links, excerpts, timestamps, coverage and evidence synthesis for one fixture.
 
 This is broad live public-web discovery, not a claim to crawl the entire internet. Search coverage, paywalls, publisher restrictions and API availability can limit what Ash can verify. A missing source or unknown injury/lineup must remain unknown, never be filled by guesswork. Live odds remain separate from web research and still depend on a working odds-provider quota/key.
+
+## Public bookmaker scraper (initial rollout)
+
+The Render backend now has a rate-limited public-page scraper for approved bookmaker domains:
+- BetPawa, Betika, SportyBet, Bet365 and 1xBet.
+- Sources are seeded on first scraper run and can be extended with exact public HTTPS event/market page URLs.
+- The scraper follows at most three redirects and revalidates every redirect host, rejects non-HTTPS URLs, rejects credentials in URLs, and caps each response at 2 MB.
+- It stores fetch metadata, extracted page text, embedded JSON/JSON-LD blocks and conservative odds candidates in `ash_scraper_runs`; source configuration and last-run state are stored in `ash_scraper_sources`.
+- Render runs the scraper shortly after startup and every three hours.
+- Authenticated routes: `GET /v1/scraper/status`, `POST /v1/scraper/run` with optional `{"limit":8}`, and `POST /v1/scraper/sources` with `{"bookmaker":"BetPawa","url":"https://www.betpawa.com/..." }`.
+
+Important: this is the first collection layer, not a guarantee that every bookmaker exposes odds in crawlable HTML. Many betting sites render markets client-side, geofence pages, require sign-in, or prohibit automated collection. The engine does not bypass access controls, CAPTCHAs or bot protections. A page that returns no public structured odds is recorded as such, not converted into invented prices.
+
+Scraped odds candidates are deliberately stored separately from `bookmaker_odds` until event identity and market mapping can be verified. The existing Odds API collector and daily-pick workflow are still present in this branch; they have not yet been removed or switched off. Removing that dependency safely requires validated bookmaker event/market adapters and a successful live scrape test first. Do not describe Ash as API-free until that migration is completed.
