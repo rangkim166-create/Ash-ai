@@ -102,8 +102,8 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const searchResults=await Promise.allSettled(queries.map(q=>search(q)));
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const unique=[...new Map(found.filter(x=>x.ageHours==null||x.ageHours<=24*7).map(x=>[x.url,x])).values()]
-   .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999)).slice(0,12);
-  const pageResults=await Promise.allSettled(unique.slice(0,8).map(item=>readArticle(item)));
+   .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999) || (a.sourceTier==="official_league_or_federation"?-1:0)).slice(0,16);
+  const pageResults=await Promise.allSettled(unique.slice(0,10).map(item=>readArticle(item)));
   const pages=pageResults.filter(result=>result.status==='fulfilled'&&result.value).map(result=>result.value);
   const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
   const awayPages=pages.filter(p=>p.title.toLowerCase().includes(away.toLowerCase())||p.excerpt.toLowerCase().includes(away.toLowerCase()));
@@ -111,7 +111,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const categoryCounts=Object.fromEntries(["injury_fitness","lineups","suspensions","manager_training","weather_venue","preview_analysis","form_statistics","official_update"].map(c=>[c,pages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,groqKey);
   const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,sourceSearchResults:unique.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,lineupReportingFound:categoryCounts.lineups>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:Number(assessment?.confidence)||0,errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
-  const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt}));
+  const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
    ON CONFLICT(match_id) DO UPDATE SET researched_at=now(),source_count=EXCLUDED.source_count,
