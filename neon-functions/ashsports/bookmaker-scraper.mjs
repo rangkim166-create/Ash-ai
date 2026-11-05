@@ -306,14 +306,15 @@ async function launchRenderedBrowser() {
 
 async function renderBookmakerPage(browser, inputUrl) {
   const initialUrl = validateSourceUrl(inputUrl);
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const page = await context.newPage();
   const structuredData = [];
   const responseTasks = [];
   await page.route("**/*", async route => {
     const request = route.request();
     const url = new URL(request.url());
-    if (request.isNavigationRequest() && !allowedHost(url.hostname)) return route.abort();
-    if (!["https:", "about:"].includes(url.protocol)) return route.abort();
+    if (url.protocol === "about:" && url.href === "about:blank") return route.continue();
+    if (url.protocol !== "https:" || !allowedHost(url.hostname)) return route.abort();
     if (["image", "font", "media"].includes(request.resourceType())) return route.abort();
     return route.continue();
   });
@@ -367,7 +368,7 @@ async function renderBookmakerPage(browser, inputUrl) {
     if (!html || html.length > MAX_HTML_BYTES) throw new Error("Rendered bookmaker page is empty or exceeds size limit");
     return { html, finalUrl: page.url(), status: response?.status() || 200, contentType: "text/html", structuredData, visibleText: browserState.text };
   } finally {
-    await page.close().catch(() => {});
+    await context.close().catch(() => {});
   }
 }
 
@@ -377,10 +378,24 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   const results = [];
   let browser = null, browserAttempted = false;
   const getBrowser = async () => {
-    if (process.env.ASH_BROWSER_SCRAPER_ENABLED !== "true" || browserAttempted) return browser;
+    if (process.env.ASH_BROWSER_SCRAPER_ENABLED !== "true") return null;
+    if (browser?.isConnected()) return browser;
+    browser = null;
+    if (browserAttempted) return null;
     browserAttempted = true;
-    browser = await launchRenderedBrowser();
-    return browser;
+    try {
+      const launched = await launchRenderedBrowser();
+      launched.on("disconnected", () => {
+        if (browser === launched) browser = null;
+        browserAttempted = false;
+        console.error("[ash-bookmaker-scraper] Chromium disconnected; next source will relaunch it");
+      });
+      browser = launched;
+      return browser;
+    } catch (error) {
+      browserAttempted = true;
+      throw error;
+    }
   };
   try {
     for (const source of sources.rows) {
@@ -427,7 +442,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
         results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, finalUrl: page.finalUrl });
       } catch (error) {
-        const message = String(error?.message || error).slice(0, 300);
+        const message = String(error?.message || error).slice(0, 1200);
         await db.query(`INSERT INTO ash_scraper_runs(source_id,bookmaker,source_url,status,error_message)
           VALUES($1,$2,$3,'failed',$4)`, [source.id, source.bookmaker, source.source_url, message]);
         await db.query("UPDATE ash_scraper_sources SET last_status='failed',last_error=$2,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, message]);
