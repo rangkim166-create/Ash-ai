@@ -7,7 +7,7 @@ test("generic headlines remain general news",()=>assert.deepEqual(classifyEviden
 
 test("searches latest updates on a short freshness window as well as weekly context",()=>{const q=buildFixtureQueries({home:"Vipers SC",away:"KCCA",competition:"Uganda Premier League"},new Date("2026-11-04T12:00:00Z"));const s=q.join(" ");assert.ok(s.includes("after:2026-11-02"));assert.ok(s.includes("after:2026-10-28"));assert.ok(s.includes('"Vipers SC"'));assert.ok(s.includes('"KCCA"'));});
 
-import { parseRss } from "./fixture-research.mjs";
+import { parseRss, isFixtureRelevantResult } from "./fixture-research.mjs";
 
 test("retains RSS descriptions and source metadata for blocked article fallbacks", () => {
   const xml = `<?xml version="1.0"?><rss><channel><item>
@@ -22,4 +22,19 @@ test("retains RSS descriptions and source metadata for blocked article fallbacks
   assert.match(item.description, /squad fitness update/);
   assert.equal(item.domain, "news.example");
   assert.ok(item.categories.includes("injury_fitness"));
+});
+
+test("decodes HTML entities in RSS snippets and keeps publisher domain", () => {
+ const xml = "<rss><channel><item><title>Arsenal injury update</title><link>https://news.google.com/rss/articles/example</link><description>&lt;p&gt;Arsenal manager confirmed a fresh injury update and fitness test before the weekend match.&lt;/p&gt;</description><pubDate>Thu, 05 Nov 2026 10:00:00 GMT</pubDate><source url=\"https://www.bbc.com/sport\">BBC Sport</source></item></channel></rss>";
+ const [item] = parseRss(xml);
+ assert.match(item.description, /Arsenal manager confirmed a fresh injury update/);
+ assert.equal(item.domain, "bbc.com");
+ assert.equal(item.sourceName, "BBC Sport");
+ assert.ok(item.categories.includes("injury_fitness"));
+});
+test("rejects unrelated news returned for a fixture search", () => {
+ const fixture = { home: "Al-Kholood", away: "Al-Khaleej" };
+ assert.equal(isFixtureRelevantResult({title:"Al-Fateh vs Al Riyadh prediction",description:"Saudi league match preview"},fixture),false);
+ assert.equal(isFixtureRelevantResult({title:"Al-Kholood team news",description:"Squad update"},fixture),true);
+ assert.equal(isFixtureRelevantResult({title:"Al-Khaleej injury update",description:"Fitness news"},fixture),true);
 });
