@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -94,4 +94,27 @@ test("extracts odds from common JavaScript application bootstrap state", () => {
 test("extracts Next/Nuxt JSON script payloads", () => {
   const html = `<script id="__NUXT_DATA__" type="application/json">{"event":{"name":"Arsenal vs Chelsea","market":"Match Result","outcomes":[{"name":"Arsenal","odds":2.1}]}}</script>`;
   assert.equal(collectOddsCandidates(extractEmbeddedJson(html)[0]).length, 1);
+});
+
+test("serializes scraper JSONB payloads with the database JSON helper", () => {
+  const payload = [{ selection: "Arsenal", decimalOdds: 2.1 }];
+  const db = { json: value => ({ jsonParameter: value }) };
+  assert.deepEqual(jsonDatabaseValue(db, payload), { jsonParameter: payload });
+});
+test("keeps legacy JSON-string odds payloads readable during import", async () => {
+  const calls = [];
+  const db = { query: async (sql) => {
+    calls.push(sql);
+    if (sql.startsWith("SELECT bookmaker,odds_candidates")) {
+      return { rows: [{ bookmaker: "BetPawa", odds_candidates: '[{"eventName":"Arsenal vs Chelsea","market":"Match Result","selection":"Arsenal","decimalOdds":2.1}]', fetched_at: "2026-11-04T20:00:00Z" }], rowCount: 1 };
+    }
+    if (sql.startsWith("SELECT id,sport")) return { rows: [{ id: "fixture-1", sport: "football", home: "Arsenal", away: "Chelsea", starts_at: "2026-11-04T20:00:00Z" }], rowCount: 1 };
+    if (sql.startsWith("INSERT INTO bookmaker_odds")) return { rows: [{ id: 1 }], rowCount: 1 };
+    return { rows: [], rowCount: 0 };
+  }};
+  const { importScrapedOdds } = await import("./bookmaker-scraper.mjs");
+  const result = await importScrapedOdds(db);
+  assert.equal(result.runs, 1);
+  assert.equal(result.oddsSaved, 1);
+  assert.equal(result.unmatchedCandidates, 0);
 });
