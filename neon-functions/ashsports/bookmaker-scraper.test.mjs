@@ -213,3 +213,54 @@ test("does not create flat-text fixtures from unknown team pairs", () => {
   const pageText = "05/11, 17:45 Mystery Club Other Mystery 1.90 3.50 4.00 Upcoming Live +82 Markets";
   assert.equal(extractVisibleOddsCandidates(pageText, new Date("2026-11-05T00:00:00Z"), [], ["Known FC"]).length, 0);
 });
+
+test("reads BetPawa public event-list response envelopes", () => {
+  const events = [{ id: 101 }, { id: 102 }];
+  assert.deepEqual(extractBetPawaListEvents({ responses: [{ responses: events }] }), { status: "ok", events });
+  assert.deepEqual(extractBetPawaListEvents({ responses: [{}] }), { status: "empty", events: [] });
+  assert.deepEqual(extractBetPawaListEvents({ unexpected: true }), { status: "malformed", events: [] });
+});
+test("extracts BetPawa 1X2 prices from its public event JSON", () => {
+  const game = {
+    id: 101,
+    startTime: "2026-11-05T14:45:00.000Z",
+    competition: { name: "Premier League" },
+    participants: [
+      { name: "Arsenal", type: "home" },
+      { name: "Chelsea", type: "away" }
+    ],
+    markets: [
+      {
+        marketType: { id: 3743, displayName: "1X2" },
+        row: [{ prices: [
+          { name: "1", odds: "2.10" },
+          { name: "X", odds: "3.40" },
+          { name: "2", odds: "3.80" }
+        ] }]
+      },
+      {
+        marketType: { id: 9999, displayName: "Over/Under" },
+        row: [{ prices: [{ name: "Over 2.5", odds: "1.95" }] }]
+      }
+    ]
+  };
+  const candidates = extractBetPawaEventCandidates(game);
+  assert.equal(candidates.length, 3);
+  assert.equal(candidates[0].homeTeam, "Arsenal");
+  assert.equal(candidates[0].awayTeam, "Chelsea");
+  assert.equal(candidates[0].selection, "Arsenal");
+  assert.equal(candidates[0].decimalOdds, 2.1);
+  assert.equal(candidates[1].selection, "Draw");
+  assert.equal(candidates[1].decimalOdds, 3.4);
+  assert.equal(candidates[2].selection, "Chelsea");
+  assert.equal(candidates[2].market, "Match Result");
+  assert.equal(candidates[2].sport, "football");
+});
+test("rejects incomplete BetPawa event JSON rather than guessing teams", () => {
+  assert.deepEqual(extractBetPawaEventCandidates({ participants: [{ name: "Arsenal" }] }), []);
+  assert.deepEqual(extractBetPawaEventCandidates({
+    startTime: "2026-11-05T14:45:00Z",
+    participants: [{ name: "Arsenal" }, { name: "Chelsea" }],
+    markets: []
+  }), []);
+});
