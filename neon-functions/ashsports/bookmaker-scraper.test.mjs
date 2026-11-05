@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -117,4 +117,61 @@ test("keeps legacy JSON-string odds payloads readable during import", async () =
   assert.equal(result.runs, 1);
   assert.equal(result.oddsSaved, 1);
   assert.equal(result.unmatchedCandidates, 0);
+});
+
+test("extracts real three-way football prices from rendered bookmaker cards", () => {
+  const pageText = `Upcoming
+International Clubs • UEFA Europa League
+05/11, 17:45
+Crystal Palace
+Hoffenheim
+1.89
+4.00
+3.80
++82 Markets
+International Clubs • UEFA Europa League
+05/11, 20:00
+Leverkusen
+Marseille
+1.34
+6.00
+8.00
++82 Markets`;
+  const candidates = extractVisibleOddsCandidates(pageText, new Date("2026-11-05T00:00:00Z"));
+  assert.equal(candidates.length, 6);
+  assert.equal(candidates[0].homeTeam, "Crystal Palace");
+  assert.equal(candidates[0].awayTeam, "Hoffenheim");
+  assert.equal(candidates[0].selection, "Crystal Palace");
+  assert.equal(candidates[0].decimalOdds, 1.89);
+  assert.equal(candidates[1].selection, "Draw");
+  assert.equal(candidates[1].decimalOdds, 4);
+  assert.equal(candidates[2].selection, "Hoffenheim");
+  assert.equal(candidates[2].decimalOdds, 3.8);
+  assert.equal(candidates[0].startsAt, "2026-11-05T14:45:00.000Z");
+});
+test("visible bookmaker odds map to the matching scheduled fixture", () => {
+  const [candidate] = extractVisibleOddsCandidates(`05/11, 17:45
+Crystal Palace
+Hoffenheim
+1.89
+4.00
+3.80
++82 Markets`, new Date("2026-11-05T00:00:00Z"));
+  const mapped = mapCandidateToFixture(candidate, {
+    id: "fixture-1", sport: "football", home: "Crystal Palace", away: "Hoffenheim",
+    starts_at: "2026-11-05T14:45:00.000Z"
+  });
+  assert.equal(mapped.outcomeName, "Crystal Palace");
+  assert.equal(mapped.decimalOdds, 1.89);
+});
+test("extracts two-way match-winner prices without inventing a draw", () => {
+  const candidates = extractVisibleOddsCandidates(`05/11, 18:00
+Player A
+Player B
+1.75
+2.10
++12 Markets`, new Date("2026-11-05T00:00:00Z"));
+  assert.equal(candidates.length, 2);
+  assert.equal(candidates[0].market, "Match Winner");
+  assert.equal(candidates.some(candidate => candidate.selection === "Draw"), false);
 });
