@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractVisibleOddsCandidates } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -195,4 +195,26 @@ test("coalesces overlapping bookmaker scraper invocations", async () => {
   assert.equal(calls, 2);
   release("next-result");
   assert.equal(await next, "next-result");
+});
+
+test("maps flat Betika visible text to known fixtures and extracts 1X2 prices", () => {
+  const pageText = "Soccer Betting | Football Betting Odds | Betika - Uganda Soccer Tennis Boxing Basketball " +
+    "International Clubs • UEFA Europa League 05/11, 17:45 Crystal Palace Hoffenheim 1.89 4.00 3.80 Upcoming Live +82 Markets " +
+    "International Clubs • UEFA Europa League 05/11, 17:45 Milan Ferencvarosi 1.35 5.60 8.40 Upcoming Live +82 Markets";
+  const fixtures = [
+    { id: "f1", sport: "football", home: "Crystal Palace", away: "Hoffenheim", starts_at: "2026-11-05T14:45:00.000Z" },
+    { id: "f2", sport: "football", home: "Milan", away: "Ferencvarosi", starts_at: "2026-11-05T14:45:00.000Z" }
+  ];
+  const candidates = extractVisibleOddsCandidates(pageText, new Date("2026-11-05T00:00:00Z"), fixtures);
+  assert.equal(candidates.length, 6);
+  assert.equal(candidates[0].eventName, "Crystal Palace vs Hoffenheim");
+  assert.equal(candidates[0].decimalOdds, 1.89);
+  assert.equal(candidates[1].selection, "Draw");
+  assert.equal(candidates[2].decimalOdds, 3.8);
+  assert.equal(candidates[3].eventName, "Milan vs Ferencvarosi");
+  assert.equal(candidates[3].decimalOdds, 1.35);
+});
+test("does not guess teams from flat odds text without a matching scheduled fixture", () => {
+  const pageText = "05/11, 17:45 Unknown FC Other FC 1.90 3.50 4.00 Upcoming Live +82 Markets";
+  assert.equal(extractVisibleOddsCandidates(pageText, new Date("2026-11-05T00:00:00Z"), []).length, 0);
 });
