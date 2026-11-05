@@ -6,7 +6,7 @@ import { enqueueFixtureResearch, processFixtureResearch, ensureFixtureResearchTa
 import { addScraperSource, getScraperStatus, runBookmakerScrapers } from "./bookmaker-scraper.mjs";
 import { createCipheriv, createDecipheriv, randomBytes, timingSafeEqual } from "node:crypto";
 const sql=postgres(process.env.DATABASE_URL,{max:5,idle_timeout:20,connect_timeout:10});
-const db={query:async(text,values=[])=>{const rows=await sql.unsafe(text,values);return {rows,rowCount:rows.length};}};
+const db={query:async(text,values=[])=>{const rows=await sql.unsafe(text,values);return {rows,rowCount:rows.length};},json:value=>sql.json(value)};
 const masterKey=Buffer.from(process.env.ASH_CREDENTIALS_KEY||"","base64");
 const appToken=process.env.ASH_APP_TOKEN||"";
 const cors={"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"authorization,content-type","content-type":"application/json"};
