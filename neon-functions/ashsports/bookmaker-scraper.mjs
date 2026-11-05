@@ -189,8 +189,51 @@ function parseUgandaKickoff(value, now = new Date()) {
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
 }
 
-export function extractVisibleOddsCandidates(text, now = new Date()) {
-  const lines = String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+export function extractVisibleOddsCandidates(text, now = new Date(), fixtures = []) {
+  const rawText = String(text || "");
+  const lines = rawText.split(/\\r?\\n/).map(line => line.trim()).filter(Boolean);
+  if (lines.length < 3 && Array.isArray(fixtures) && fixtures.length) {
+    const markers = [...rawText.matchAll(/(\\d{1,2}\\/\\d{1,2},\\s*\\d{1,2}:\\d{2})/g)];
+    const flatCandidates = [];
+    for (let index = 0; index < markers.length; index++) {
+      const marker = markers[index];
+      const startsAt = parseUgandaKickoff(marker[1], now);
+      if (!startsAt) continue;
+      const segment = rawText.slice(marker.index + marker[0].length, markers[index + 1]?.index ?? rawText.length);
+      const normalizedSegment = normalizeTeam(segment);
+      const prices = [...segment.matchAll(/(?<![A-Za-z0-9])([1-9]\\d{0,2}[.,]\\d{1,3})(?![A-Za-z0-9])/g)]
+        .map(match => Number(match[1].replace(",", "."))).filter(price => price > 1 && price <= 1000).slice(0, 3);
+      if (prices.length < 2) continue;
+      const startMs = Date.parse(startsAt);
+      let best = null;
+      for (const fixture of fixtures) {
+        const kickoff = Date.parse(fixture.starts_at || fixture.startsAt || "");
+        if (!Number.isFinite(kickoff) || Math.abs(kickoff - startMs) > 6 * 60 * 60 * 1000) continue;
+        const home = normalizeTeam(fixture.home || fixture.home_or_player_one);
+        const away = normalizeTeam(fixture.away || fixture.away_or_player_two);
+        if (!home || !away) continue;
+        const homeIndex = normalizedSegment.indexOf(home);
+        const awayIndex = normalizedSegment.indexOf(away);
+        if (homeIndex < 0 || awayIndex < 0 || homeIndex >= awayIndex) continue;
+        const score = home.length + away.length;
+        if (!best || score > best.score) best = { fixture, score };
+      }
+      if (!best) continue;
+      const fixture = best.fixture;
+      const homeTeam = fixture.home || fixture.home_or_player_one;
+      const awayTeam = fixture.away || fixture.away_or_player_two;
+      const eventName = homeTeam + " vs " + awayTeam;
+      const market = prices.length === 3 ? "Match Result" : "Match Winner";
+      const outcomes = prices.length === 3
+        ? [[homeTeam, prices[0]], ["Draw", prices[1]], [awayTeam, prices[2]]]
+        : [[homeTeam, prices[0]], [awayTeam, prices[1]]];
+      for (const [selection, decimalOdds] of outcomes) flatCandidates.push({
+        selection, decimalOdds, market, homeTeam, awayTeam, eventName,
+        sport: fixture.sport || null, startsAt
+      });
+    }
+    return uniqueOdds(flatCandidates);
+  }
   const candidates = [];
   const datePattern = /^\d{1,2}\/\d{1,2},\s*\d{1,2}:\d{2}$/;
   const pricePattern = /^\d{1,3}(?:[.,]\d{1,3})$/;
@@ -440,6 +483,10 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   await ensureScraperTables(db);
   const sources = await db.query("SELECT id,bookmaker,source_url FROM ash_scraper_sources WHERE enabled=true ORDER BY COALESCE(last_scraped_at,'epoch'::timestamptz) ASC,id ASC LIMIT $1", [Math.max(1, Math.min(20, Number(limit) || 8))]);
   const results = [];
+  const fixtureRows = await db.query(`SELECT id,sport,home_or_player_one AS home,away_or_player_two AS away,starts_at
+    FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '5 minutes'
+    AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 500`);
+  const fixtureMatches = fixtureRows.rows;
   let browser = null, browserSession = null, browserAttempted = false;
   const getBrowserSession = async () => {
     if (process.env.ASH_BROWSER_SCRAPER_ENABLED !== "true") return null;
@@ -497,7 +544,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         const json = page.contentType.includes("application/json") ? safeJson(page.html) : null;
         let embedded = json == null ? extractEmbeddedJson(page.html) : [json];
         if (rendered?.structuredData?.length) embedded.push(...rendered.structuredData);
-        let candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText) : [])]);
+        let candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText, new Date(), fixtureMatches) : [])]);
         if (!candidates.length && !rendered) {
           rendered = await renderWithBrowser(page.finalUrl);
           if (rendered) {
