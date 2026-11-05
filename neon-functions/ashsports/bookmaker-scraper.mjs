@@ -176,10 +176,64 @@ export function mapCandidateToFixture(candidate, fixture) {
   if (!Number.isFinite(price) || price <= 1 || price > 1000) return null;
   return { matchId: fixture.id, marketKey: "h2h", outcomeName, decimalOdds: price, line: candidate.line ?? null };
 }
+function parseUgandaKickoff(value, now = new Date()) {
+  const match = String(value || "").match(/^(\d{1,2})\/(\d{1,2}),\s*(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const day = Number(match[1]), month = Number(match[2]), hour = Number(match[3]), minute = Number(match[4]);
+  if (day < 1 || day > 31 || month < 1 || month > 12 || hour > 23 || minute > 59) return null;
+  let year = now.getUTCFullYear();
+  let parsed = new Date(Date.UTC(year, month - 1, day, hour - 3, minute));
+  const deltaDays = (parsed.getTime() - now.getTime()) / 86_400_000;
+  if (deltaDays < -180) parsed = new Date(Date.UTC(year + 1, month - 1, day, hour - 3, minute));
+  else if (deltaDays > 180) parsed = new Date(Date.UTC(year - 1, month - 1, day, hour - 3, minute));
+  return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
+}
+
+export function extractVisibleOddsCandidates(text, now = new Date()) {
+  const lines = String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  const candidates = [];
+  const datePattern = /^\d{1,2}\/\d{1,2},\s*\d{1,2}:\d{2}$/;
+  const pricePattern = /^\d{1,3}(?:[.,]\d{1,3})$/;
+  const marketMarker = /^(?:\+\s*)?\d+\s+markets?$/i;
+  for (let i = 0; i < lines.length && candidates.length < 300; i++) {
+    if (!datePattern.test(lines[i])) continue;
+    const startsAt = parseUgandaKickoff(lines[i], now);
+    if (!startsAt) continue;
+    let cursor = i + 1;
+    const teams = [];
+    while (cursor < lines.length && teams.length < 2) {
+      const line = lines[cursor];
+      if (datePattern.test(line) || pricePattern.test(line) || marketMarker.test(line)) break;
+      if (!/^(?:load more|upcoming|highlights|today|tomorrow|live)$/i.test(line)) teams.push(line);
+      cursor++;
+    }
+    if (teams.length !== 2 || teams.some(team => team.length < 2 || team.length > 100)) continue;
+    const prices = [];
+    while (cursor < lines.length && prices.length < 3 && pricePattern.test(lines[cursor])) {
+      const price = Number(lines[cursor].replace(",", "."));
+      if (price > 1 && price <= 1000) prices.push(price);
+      cursor++;
+    }
+    if (prices.length < 2) continue;
+    const [homeTeam, awayTeam] = teams;
+    const eventName = homeTeam + " vs " + awayTeam;
+    const market = prices.length === 3 ? "Match Result" : "Match Winner";
+    const outcomes = prices.length === 3
+      ? [[homeTeam, prices[0]], ["Draw", prices[1]], [awayTeam, prices[2]]]
+      : [[homeTeam, prices[0]], [awayTeam, prices[1]]];
+    for (const [selection, decimalOdds] of outcomes) candidates.push({
+      selection, decimalOdds, market, homeTeam, awayTeam, eventName,
+      sport: prices.length === 3 ? "football" : null, startsAt
+    });
+    i = cursor - 1;
+  }
+  return candidates;
+}
+
 function uniqueOdds(items) {
   const seen = new Set();
   return items.filter(item => {
-    const key = [item.selection.toLowerCase(), item.decimalOdds, item.market || "", item.line ?? ""].join("|");
+    const key = [item.eventName || [item.homeTeam, item.awayTeam].join(" vs "), item.selection.toLowerCase(), item.decimalOdds, item.market || "", item.line ?? ""].join("|");
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -419,7 +473,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         const json = page.contentType.includes("application/json") ? safeJson(page.html) : null;
         let embedded = json == null ? extractEmbeddedJson(page.html) : [json];
         if (rendered?.structuredData?.length) embedded.push(...rendered.structuredData);
-        let candidates = uniqueOdds(embedded.flatMap(item => collectOddsCandidates(item)));
+        let candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText) : [])]);
         if (!candidates.length && !rendered) {
           const activeBrowser = await getBrowser();
           if (activeBrowser) {
@@ -427,7 +481,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
             page = rendered;
             discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
             embedded = [...embedded, ...extractEmbeddedJson(page.html), ...(rendered.structuredData || [])];
-            candidates = uniqueOdds(embedded.flatMap(item => collectOddsCandidates(item)));
+            candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText) : [])]);
           }
         }
         const text = rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000));
