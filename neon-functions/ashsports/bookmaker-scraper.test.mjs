@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -174,4 +174,25 @@ Player B
   assert.equal(candidates.length, 2);
   assert.equal(candidates[0].market, "Match Winner");
   assert.equal(candidates.some(candidate => candidate.selection === "Draw"), false);
+});
+
+test("coalesces overlapping bookmaker scraper invocations", async () => {
+  let calls = 0;
+  let release;
+  const runOnce = createSingleFlight(() => {
+    calls++;
+    return new Promise(resolve => { release = resolve; });
+  });
+  const first = runOnce({ limit: 8 });
+  const second = runOnce({ limit: 8 });
+  assert.equal(first, second);
+  await Promise.resolve();
+  assert.equal(calls, 1);
+  release("shared-result");
+  assert.equal(await first, "shared-result");
+  const next = runOnce({ limit: 8 });
+  await Promise.resolve();
+  assert.equal(calls, 2);
+  release("next-result");
+  assert.equal(await next, "next-result");
 });
