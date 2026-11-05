@@ -484,7 +484,8 @@ export async function importScrapedOdds(db) {
   let saved = 0, unmatched = 0, fixturesCreated = 0;
   for (const run of runs.rows) {
     const bookmakerKey = String(run.bookmaker || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 80) || "unknown";
-    const candidates = Array.isArray(run.odds_candidates) ? run.odds_candidates : safeJson(run.odds_candidates) || [];\n    for (const candidate of Array.isArray(candidates) ? candidates : []) {
+    const candidates = Array.isArray(run.odds_candidates) ? run.odds_candidates : safeJson(run.odds_candidates) || [];
+    for (const candidate of Array.isArray(candidates) ? candidates : []) {
       const scrapedFixture = fixtureFromCandidate(candidate);
       const existingEvent = scrapedFixture ? fixtures.filter(f => normalizeTeam(f.home) === normalizeTeam(scrapedFixture.home) && normalizeTeam(f.away) === normalizeTeam(scrapedFixture.away) && Math.abs(new Date(f.starts_at).getTime()-new Date(scrapedFixture.starts_at).getTime()) <= 6*60*60*1000) : [];
       if (scrapedFixture && !existingEvent.length && !fixtures.some(f => f.id === scrapedFixture.id)) {
