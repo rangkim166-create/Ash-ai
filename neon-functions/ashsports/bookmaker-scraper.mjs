@@ -520,13 +520,13 @@ export function extractBetikaListItems(body) {
 }
 
 function parseBetikaStartTime(value) {
-  if (typeof value === "number" || /^\\d{10,13}$/.test(String(value || ""))) {
+  if (typeof value === "number" || /^\d{10,13}$/.test(String(value || ""))) {
     const numeric = Number(value);
     const date = new Date(numeric < 1e12 ? numeric * 1000 : numeric);
     return Number.isFinite(date.getTime()) ? date.toISOString() : null;
   }
   const raw = String(value || "").trim();
-  const local = raw.match(/^(\\d{4}-\\d{2}-\\d{2})[ T](\\d{2}:\\d{2})(?::(\\d{2}))?$/);
+  const local = raw.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::(\d{2}))?$/);
   const date = new Date(local ? `${local[1]}T${local[2]}:${local[3] || "00"}+03:00` : raw);
   return Number.isFinite(date.getTime()) ? date.toISOString() : null;
 }
