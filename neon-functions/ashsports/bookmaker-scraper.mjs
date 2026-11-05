@@ -358,21 +358,27 @@ async function launchRenderedBrowser() {
   });
 }
 
-async function renderBookmakerPage(browser, inputUrl) {
-  const initialUrl = validateSourceUrl(inputUrl);
-  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+async function createBrowserSession(browser) {
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, serviceWorkers: "block" });
   const page = await context.newPage();
-  const structuredData = [];
-  const responseTasks = [];
   await page.route("**/*", async route => {
     const request = route.request();
-    const url = new URL(request.url());
+    let url;
+    try { url = new URL(request.url()); } catch { return route.abort(); }
     if (url.protocol === "about:" && url.href === "about:blank") return route.continue();
     if (url.protocol !== "https:" || !allowedHost(url.hostname)) return route.abort();
     if (["image", "font", "media"].includes(request.resourceType())) return route.abort();
     return route.continue();
   });
-  page.on("response", response => {
+  return { browser, context, page };
+}
+
+async function renderBookmakerPage(session, inputUrl) {
+  const initialUrl = validateSourceUrl(inputUrl);
+  const { page } = session;
+  const structuredData = [];
+  const responseTasks = [];
+  const onResponse = response => {
     const task = (async () => {
       try {
         const url = new URL(response.url());
@@ -386,7 +392,8 @@ async function renderBookmakerPage(browser, inputUrl) {
       } catch {}
     })();
     responseTasks.push(task);
-  });
+  };
+  page.on("response", onResponse);
   try {
     const response = await page.goto(initialUrl.toString(), { waitUntil: "domcontentloaded", timeout: 20000 });
     await page.waitForTimeout(5000);
@@ -422,7 +429,7 @@ async function renderBookmakerPage(browser, inputUrl) {
     if (!html || html.length > MAX_HTML_BYTES) throw new Error("Rendered bookmaker page is empty or exceeds size limit");
     return { html, finalUrl: page.url(), status: response?.status() || 200, contentType: "text/html", structuredData, visibleText: browserState.text };
   } finally {
-    await context.close().catch(() => {});
+    page.off("response", onResponse);
   }
 }
 
@@ -430,24 +437,39 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   await ensureScraperTables(db);
   const sources = await db.query("SELECT id,bookmaker,source_url FROM ash_scraper_sources WHERE enabled=true ORDER BY COALESCE(last_scraped_at,'epoch'::timestamptz) ASC,id ASC LIMIT $1", [Math.max(1, Math.min(20, Number(limit) || 8))]);
   const results = [];
-  let browser = null, browserAttempted = false;
-  const getBrowser = async () => {
+  let browser = null, browserSession = null, browserAttempted = false;
+  const getBrowserSession = async () => {
     if (process.env.ASH_BROWSER_SCRAPER_ENABLED !== "true") return null;
-    if (browser?.isConnected()) return browser;
-    browser = null;
+    if (browser?.isConnected() && browserSession) return browserSession;
+    if (browser) { browser = null; browserSession = null; browserAttempted = false; }
     if (browserAttempted) return null;
     browserAttempted = true;
     try {
       const launched = await launchRenderedBrowser();
       launched.on("disconnected", () => {
-        if (browser === launched) browser = null;
+        if (browser === launched) { browser = null; browserSession = null; }
         browserAttempted = false;
-        console.error("[ash-bookmaker-scraper] Chromium disconnected; next source will relaunch it");
+        console.error("[ash-bookmaker-scraper] Chromium session disconnected; it will be recreated");
       });
       browser = launched;
-      return browser;
+      browserSession = await createBrowserSession(browser);
+      return browserSession;
     } catch (error) {
-      browserAttempted = true;
+      if (browser?.isConnected()) await browser.close().catch(() => {});
+      browser = null; browserSession = null;
+      throw error;
+    }
+  };
+  const renderWithBrowser = async inputUrl => {
+    let session = await getBrowserSession();
+    if (!session) return null;
+    try { return await renderBookmakerPage(session, inputUrl); }
+    catch (error) {
+      if (!browser?.isConnected()) {
+        browser = null; browserSession = null; browserAttempted = false;
+        session = await getBrowserSession();
+        if (session) return await renderBookmakerPage(session, inputUrl);
+      }
       throw error;
     }
   };
@@ -458,9 +480,8 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         try { page = await fetchPublicPage(source.source_url); }
         catch (error) { staticError = error; }
         if (!page) {
-          const activeBrowser = await getBrowser();
-          if (!activeBrowser) throw staticError || new Error("Static bookmaker fetch failed");
-          rendered = await renderBookmakerPage(activeBrowser, source.source_url);
+          rendered = await renderWithBrowser(source.source_url);
+          if (!rendered) throw staticError || new Error("Static bookmaker fetch failed");
           page = rendered;
         }
         let discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
@@ -475,9 +496,8 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         if (rendered?.structuredData?.length) embedded.push(...rendered.structuredData);
         let candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText) : [])]);
         if (!candidates.length && !rendered) {
-          const activeBrowser = await getBrowser();
-          if (activeBrowser) {
-            rendered = await renderBookmakerPage(activeBrowser, page.finalUrl);
+          rendered = await renderWithBrowser(page.finalUrl);
+          if (rendered) {
             page = rendered;
             discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
             embedded = [...embedded, ...extractEmbeddedJson(page.html), ...(rendered.structuredData || [])];
@@ -504,6 +524,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
       }
     }
   } finally {
+    if (browserSession?.context) await browserSession.context.close().catch(() => {});
     if (browser) await browser.close().catch(() => {});
   }
   const importedOdds = await importScrapedOdds(db);
@@ -525,6 +546,15 @@ export function fixtureFromCandidate(candidate, now = new Date()) {
     .join("-").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 145);
   return { id: "public-scrape:" + slug, sport, competition: String(candidate.competition || "Public bookmaker fixtures").slice(0, 180),
     home, away, starts_at: starts.toISOString() };
+}
+
+export function createSingleFlight(task) {
+  let active = null;
+  return (...args) => {
+    if (active) return active;
+    active = Promise.resolve().then(() => task(...args)).finally(() => { active = null; });
+    return active;
+  };
 }
 
 export function jsonDatabaseValue(db, value) {
