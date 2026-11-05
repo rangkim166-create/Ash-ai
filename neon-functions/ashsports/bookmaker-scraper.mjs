@@ -358,6 +358,161 @@ async function fetchPublicPage(inputUrl) {
   throw new Error("Unable to fetch source");
 }
 
+const BETPAWA_MARKET_TYPES = ["3743","28000810","28000850","4693","1096755","3795"];
+
+export function extractBetPawaListEvents(body) {
+  const envelope = body?.responses;
+  if (!Array.isArray(envelope) || envelope.length === 0) return { status: "malformed", events: [] };
+  const first = envelope[0];
+  if (!first || typeof first !== "object" || Array.isArray(first)) return { status: "malformed", events: [] };
+  if (Array.isArray(first.responses)) return { status: "ok", events: first.responses };
+  if (Object.keys(first).length === 0) return { status: "empty", events: [] };
+  return { status: "malformed", events: [] };
+}
+
+export function extractBetPawaEventCandidates(game) {
+  const participants = Array.isArray(game?.participants) ? game.participants : [];
+  if (participants.length !== 2) return [];
+  const home = participants.find(p => String(p?.type || "").toLowerCase() === "home") || participants[0];
+  const away = participants.find(p => String(p?.type || "").toLowerCase() === "away") || participants[1];
+  const homeTeam = String(home?.name || "").trim();
+  const awayTeam = String(away?.name || "").trim();
+  const startsAtDate = new Date(game?.startTime || game?.start_time || "");
+  if (!homeTeam || !awayTeam || !Number.isFinite(startsAtDate.getTime())) return [];
+  const startsAt = startsAtDate.toISOString();
+  const competition = String(game?.competition?.name || game?.category?.name || game?.tournament?.name || "BetPawa");
+  const eventName = homeTeam + " vs " + awayTeam;
+  const candidates = [];
+  for (const market of Array.isArray(game?.markets) ? game.markets : []) {
+    const typeId = String(market?.marketType?.id ?? market?.marketTypeId ?? "");
+    const marketName = String(market?.marketType?.displayName || market?.marketType?.name || market?.name || "");
+    if (typeId !== "3743" && !/(?:1x2|match result|full.?time result)/i.test(marketName)) continue;
+    for (const row of Array.isArray(market?.row) ? market.row : []) {
+      for (const price of Array.isArray(row?.prices) ? row.prices : []) {
+        const decimalOdds = Number(price?.odds ?? price?.odd_value);
+        if (!Number.isFinite(decimalOdds) || decimalOdds <= 1 || decimalOdds > 1000) continue;
+        const rawSelection = String(price?.name || price?.display || "").trim();
+        let selection = rawSelection;
+        if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
+        else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
+        else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
+        if (![homeTeam, awayTeam, "Draw"].includes(selection)) continue;
+        candidates.push({
+          selection, decimalOdds, market: "Match Result", homeTeam, awayTeam,
+          eventName, sport: "football", competition, startsAt
+        });
+      }
+    }
+  }
+  return uniqueOdds(candidates);
+}
+
+async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
+  const source = validateSourceUrl(sourceUrl);
+  const origin = source.origin;
+  const listUrl = new URL("/api/sportsbook/v4/events/lists/by-queries", origin);
+  const query = {
+    queries: [{
+      query: {
+        eventType: "UPCOMING",
+        categories: ["2"],
+        zones: {},
+        hasOdds: true,
+        startTime: {
+          gte: now.toISOString(),
+          lt: new Date(now.getTime() + 36 * 60 * 60 * 1000).toISOString()
+        }
+      },
+      view: { marketTypes: BETPAWA_MARKET_TYPES },
+      skip: 0,
+      take: 50
+    }]
+  };
+  listUrl.searchParams.set("q", JSON.stringify(query));
+  const baseHeaders = {
+    accept: "application/json, text/plain, */*",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36",
+    devicetype: "web",
+    dnt: "1",
+    origin,
+    referer: origin + "/events?marketId=1X2&categoryId=2&day=tomorrow",
+    "x-pawa-language": "en"
+  };
+  const requestJson = async (url, brand, depth = 0) => {
+    if (depth > 2) throw new Error("BetPawa API redirected too many times");
+    const headers = { ...baseHeaders };
+    if (brand) headers["x-pawa-brand"] = brand;
+    const response = await fetch(url, {
+      redirect: "manual",
+      headers,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    });
+    if ([301,302,303,307,308].includes(response.status)) {
+      const location = response.headers.get("location");
+      if (!location) throw new Error("BetPawa API redirect missing location");
+      const target = validateSourceUrl(new URL(location, url).toString());
+      return requestJson(target.toString(), brand, depth + 1);
+    }
+    if (!response.ok) throw new Error("BetPawa public endpoint returned HTTP " + response.status);
+    const finalUrl = validateSourceUrl(response.url || url).toString();
+    const body = await response.text();
+    if (body.length > MAX_HTML_BYTES) throw new Error("BetPawa JSON response exceeds the 2 MB limit");
+    const data = safeJson(body);
+    if (!data || typeof data !== "object") throw new Error("BetPawa public endpoint returned invalid JSON");
+    return { data, status: response.status, finalUrl };
+  };
+
+  let listResult = null, selectedBrand = null, lastError = null;
+  for (const brand of ["betpawa-uganda", "betpawa-ug", null]) {
+    try {
+      const response = await requestJson(listUrl.toString(), brand);
+      const outcome = extractBetPawaListEvents(response.data);
+      if (outcome.status === "malformed") throw new Error("BetPawa event-list response shape was not recognized");
+      listResult = { ...response, events: outcome.events };
+      selectedBrand = brand;
+      if (outcome.events.length) break;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (!listResult) throw lastError || new Error("BetPawa public event list unavailable");
+  const events = listResult.events
+    .filter(event => event && (event.id != null || event.eventId != null))
+    .sort((a,b) => Date.parse(a.startTime || a.start_time || "") - Date.parse(b.startTime || b.start_time || ""))
+    .slice(0, 24);
+  const structuredData = [listResult.data];
+  const candidates = [];
+  const failures = [];
+  for (let offset = 0; offset < events.length; offset += 4) {
+    const batch = await Promise.all(events.slice(offset, offset + 4).map(async event => {
+      const eventId = String(event.id ?? event.eventId);
+      const eventUrl = new URL("/api/sportsbook/v4/events/" + encodeURIComponent(eventId), origin);
+      try {
+        const detail = await requestJson(eventUrl.toString(), selectedBrand);
+        const game = detail.data?.data && !Array.isArray(detail.data.data) ? detail.data.data : (detail.data?.event || detail.data);
+        return { data: detail.data, candidates: extractBetPawaEventCandidates(game), error: null };
+      } catch (error) {
+        return { data: null, candidates: [], error: String(error?.message || error).slice(0, 240) };
+      }
+    }));
+    for (const result of batch) {
+      if (result.data) structuredData.push(result.data);
+      if (result.error) failures.push(result.error);
+      candidates.push(...result.candidates);
+    }
+  }
+  const unique = uniqueOdds(candidates);
+  return {
+    candidates: unique,
+    structuredData,
+    events: events.length,
+    detailFailures: failures.length,
+    visibleText: "BetPawa public website JSON: " + events.length + " events, " + unique.length + " match-result prices",
+    finalUrl: listResult.finalUrl,
+    status: listResult.status
+  };
+}
+
 
 export function discoverBookmakerLinks(html, baseUrl, limit = 12) {
   const base = validateSourceUrl(baseUrl);
@@ -420,7 +575,7 @@ export async function ensureScraperTables(db) {
     ('Betika','https://www.betika.com/en-ug/'),
     ('1xBet','https://www.1xbet.ug/'),
     ('22Bet','https://22bet.ug/'),
-    ('BetPaka','https://www.ecobetug.com/')
+    ('BetPaka','https://ecobetug.com/')
     ON CONFLICT(source_url) DO NOTHING`);
 }
 
@@ -578,9 +733,17 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   try {
     for (const source of sources.rows) {
       try {
-        let page = null, staticError = null, rendered = null;
-        try { page = await fetchPublicPage(source.source_url); }
-        catch (error) { staticError = error; }
+        let apiResult = null, page = null, staticError = null, rendered = null;
+        if (String(source.bookmaker).toLowerCase() === "betpawa") {
+          try { apiResult = await fetchBetPawaPublicOdds(source.source_url); }
+          catch (error) { console.warn("[ash-bookmaker-scraper] BetPawa public JSON fallback:", String(error?.message || error).slice(0, 300)); }
+        }
+        if (apiResult?.candidates?.length) {
+          page = { html: "", finalUrl: apiResult.finalUrl, status: apiResult.status, contentType: "application/json" };
+        } else {
+          try { page = await fetchPublicPage(source.source_url); }
+          catch (error) { staticError = error; }
+        }
         if (!page) {
           rendered = await renderWithBrowser(source.source_url);
           if (!rendered) throw staticError || new Error("Static bookmaker fetch failed");
@@ -593,20 +756,20 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
             VALUES($1,$2) ON CONFLICT(source_url) DO NOTHING RETURNING id`, [source.bookmaker, item.url]);
           discoveredSaved += added.rowCount;
         }
-        const json = page.contentType.includes("application/json") ? safeJson(page.html) : null;
-        let embedded = json == null ? extractEmbeddedJson(page.html) : [json];
+        const json = page.contentType.includes("application/json") && page.html ? safeJson(page.html) : null;
+        let embedded = [...(apiResult?.structuredData || []), ...(json == null ? extractEmbeddedJson(page.html) : [json])];
         if (rendered?.structuredData?.length) embedded.push(...rendered.structuredData);
-        let candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText, new Date(), fixtureMatches, knownFootballTeams) : [])]);
+        let candidates = uniqueOdds([...(apiResult?.candidates || []), ...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText, new Date(), fixtureMatches, knownFootballTeams) : [])]);
         if (!candidates.length && !rendered) {
           rendered = await renderWithBrowser(page.finalUrl);
           if (rendered) {
             page = rendered;
             discovered = discoverBookmakerLinks(page.html, page.finalUrl, 12);
             embedded = [...embedded, ...extractEmbeddedJson(page.html), ...(rendered.structuredData || [])];
-            candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText) : [])]);
+            candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText, new Date(), fixtureMatches, knownFootballTeams) : [])]);
           }
         }
-        const text = rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000));
+        const text = apiResult?.candidates?.length ? apiResult.visibleText : (rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000)));
         const status = candidates.length > 0 ? "success" : "empty";
         const saved = await db.query(`INSERT INTO ash_scraper_runs(
           source_id,bookmaker,source_url,final_url,status,http_status,content_type,extracted_text,structured_data,odds_candidates
@@ -616,7 +779,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
           page.status, page.contentType, text, jsonDatabaseValue(db, embedded), jsonDatabaseValue(db, candidates)
         ]);
         await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
-        results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, finalUrl: page.finalUrl });
+        results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, siteJsonUsed: !!apiResult?.candidates?.length, siteJsonEvents: apiResult?.events || 0, siteJsonDetailFailures: apiResult?.detailFailures || 0, finalUrl: page.finalUrl });
       } catch (error) {
         const message = String(error?.message || error).slice(0, 1200);
         await db.query(`INSERT INTO ash_scraper_runs(source_id,bookmaker,source_url,status,error_message)
@@ -630,7 +793,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
     if (browser) await browser.close().catch(() => {});
   }
   const importedOdds = await importScrapedOdds(db);
-  return { sourcesChecked: results.length, discoveredPages: results.reduce((n,x)=>n+Number(x.discoveredPages||0),0), newPagesQueued: results.reduce((n,x)=>n+Number(x.newPagesQueued||0),0), succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, renderedSources: results.filter(x => x.rendered).length, importedOdds, results };
+  return { sourcesChecked: results.length, discoveredPages: results.reduce((n,x)=>n+Number(x.discoveredPages||0),0), newPagesQueued: results.reduce((n,x)=>n+Number(x.newPagesQueued||0),0), succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, renderedSources: results.filter(x => x.rendered).length, siteJsonSources: results.filter(x => x.siteJsonUsed).length, importedOdds, results };
 }
 
 export function fixtureFromCandidate(candidate, now = new Date()) {
