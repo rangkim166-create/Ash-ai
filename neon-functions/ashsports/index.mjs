@@ -538,7 +538,7 @@ if(p==="/v1/scraper/run"&&req.method==="POST"){
  const body=await req.json().catch(()=>({}));
  const limit=Number(body.limit||8);
  if(!Number.isInteger(limit)||limit<1||limit>20)return reply({error:"limit_must_be_1_to_20"},400);
- return reply(await runBookmakerScrapers(db,{limit}));
+ return reply(await runBookmakerScrapersOnce({limit}));
 }
 
 try{
