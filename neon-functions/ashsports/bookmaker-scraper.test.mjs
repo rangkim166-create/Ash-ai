@@ -196,3 +196,20 @@ test("coalesces overlapping bookmaker scraper invocations", async () => {
   release("next-result");
   assert.equal(await next, "next-result");
 });
+
+test("extracts flat football odds using known historical team names", () => {
+  const pageText = "Soccer Betting | Football Betting Odds | Betika - Uganda " +
+    "International Clubs • UEFA Europa League 05/11, 17:45 Crystal Palace Hoffenheim 1.89 4.00 3.80 Upcoming Live +82 Markets";
+  const candidates = extractVisibleOddsCandidates(pageText, new Date("2026-11-05T00:00:00Z"), [], [
+    "Crystal Palace FC", "TSG 1899 Hoffenheim", "AC Milan", "Bayer Leverkusen"
+  ]);
+  assert.equal(candidates.length, 3);
+  assert.equal(candidates[0].homeTeam, "Crystal Palace FC");
+  assert.equal(candidates[0].awayTeam, "TSG 1899 Hoffenheim");
+  assert.equal(candidates[0].sport, "football");
+  assert.equal(candidates[0].decimalOdds, 1.89);
+});
+test("does not create flat-text fixtures from unknown team pairs", () => {
+  const pageText = "05/11, 17:45 Mystery Club Other Mystery 1.90 3.50 4.00 Upcoming Live +82 Markets";
+  assert.equal(extractVisibleOddsCandidates(pageText, new Date("2026-11-05T00:00:00Z"), [], ["Known FC"]).length, 0);
+});
