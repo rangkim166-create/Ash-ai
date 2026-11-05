@@ -398,7 +398,7 @@ async function renderBookmakerPage(session, inputUrl) {
     const response = await page.goto(initialUrl.toString(), { waitUntil: "commit", timeout: 20000 });
     await page.waitForFunction(() => {
       const text = document.body?.innerText || "";
-      return /\\d{1,2}\\/\\d{1,2},\\s*\\d{1,2}:\\d{2}/.test(text) && /\\d+\\s+markets?/i.test(text);
+      return /\d{1,2}\/\d{1,2},\s*\d{1,2}:\d{2}/.test(text) && /\d+\s+markets?/i.test(text);
     }, null, { timeout: 8000 }).catch(() => {});
     await Promise.allSettled(responseTasks);
     const browserState = await page.evaluate(() => {
