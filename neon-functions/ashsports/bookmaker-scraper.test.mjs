@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, extractBetikaListItems, extractBetikaEventCandidates } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -263,4 +263,53 @@ test("rejects incomplete BetPawa event JSON rather than guessing teams", () => {
     participants: [{ name: "Arsenal" }, { name: "Chelsea" }],
     markets: []
   }), []);
+});
+
+test("reads Betika public match-list payloads without treating malformed data as empty", () => {
+  const items = [{ parent_match_id: 101 }, { parent_match_id: 102 }];
+  assert.deepEqual(extractBetikaListItems({ data: items }), { status: "ok", items });
+  assert.deepEqual(extractBetikaListItems({ data: { data: items } }), { status: "ok", items });
+  assert.deepEqual(extractBetikaListItems({ data: null }), { status: "malformed", items: [] });
+});
+test("extracts Betika football 1X2 prices and converts Uganda kickoff to UTC", () => {
+  const base = {
+    parent_match_id: 101, home_team: "Arsenal", away_team: "Chelsea",
+    start_time: "2026-11-05 17:45:00", sport_id: 14, competition_name: "Premier League"
+  };
+  const detail = {
+    meta: { sport_id: 14 },
+    data: [{ sub_type_id: 1, name: "Fulltime Result", odds: [
+      { display: "1", odd_value: "2.10" },
+      { display: "X", odd_value: "3.40" },
+      { display: "2", odd_value: "3.80" }
+    ] }]
+  };
+  const candidates = extractBetikaEventCandidates(base, detail);
+  assert.equal(candidates.length, 3);
+  assert.equal(candidates[0].sport, "football");
+  assert.equal(candidates[0].homeTeam, "Arsenal");
+  assert.equal(candidates[0].selection, "Arsenal");
+  assert.equal(candidates[0].decimalOdds, 2.1);
+  assert.equal(candidates[0].startsAt, "2026-11-05T14:45:00.000Z");
+  assert.equal(candidates[1].selection, "Draw");
+  assert.equal(candidates[2].selection, "Chelsea");
+});
+test("extracts Betika two-way basketball match-winner prices", () => {
+  const base = {
+    parent_match_id: 202, home_team: "Lakers", away_team: "Celtics",
+    start_time: "2026-11-05 18:00:00", sport_id: 139, competition_name: "NBA"
+  };
+  const detail = {
+    meta: { sport_id: 139 },
+    data: [{ sub_type_id: 1, name: "Match Winner", odds: [
+      { display: "Home", odd_value: "1.80" },
+      { display: "Away", odd_value: "2.05" }
+    ] }]
+  };
+  const candidates = extractBetikaEventCandidates(base, detail);
+  assert.equal(candidates.length, 2);
+  assert.equal(candidates[0].sport, "basketball");
+  assert.equal(candidates[0].market, "Match Winner");
+  assert.equal(candidates[0].selection, "Lakers");
+  assert.equal(candidates[1].selection, "Celtics");
 });
