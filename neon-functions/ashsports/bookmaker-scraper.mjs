@@ -513,6 +513,162 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   };
 }
 
+export function extractBetikaListItems(body) {
+  if (Array.isArray(body?.data)) return { status: "ok", items: body.data };
+  if (Array.isArray(body?.data?.data)) return { status: "ok", items: body.data.data };
+  return { status: "malformed", items: [] };
+}
+
+function parseBetikaStartTime(value) {
+  if (typeof value === "number" || /^\d{10,13}$/.test(String(value || ""))) {
+    const numeric = Number(value);
+    const date = new Date(numeric < 1e12 ? numeric * 1000 : numeric);
+    return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+  }
+  const raw = String(value || "").trim();
+  const local = raw.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::(\d{2}))?$/);
+  const date = new Date(local ? `${local[1]}T${local[2]}:${local[3] || "00"}+03:00` : raw);
+  return Number.isFinite(date.getTime()) ? date.toISOString() : null;
+}
+
+export function extractBetikaEventCandidates(base, detail) {
+  const meta = detail?.meta && typeof detail.meta === "object" ? detail.meta : {};
+  const game = { ...base, ...meta };
+  const homeTeam = String(game.home_team || base?.home_team || "").trim();
+  const awayTeam = String(game.away_team || base?.away_team || "").trim();
+  const startsAt = parseBetikaStartTime(game.start_time || base?.start_time);
+  if (!homeTeam || !awayTeam || !startsAt) return [];
+  const sportId = Number(game.sport_id || base?.sport_id || 0);
+  const sportLabel = String(game.sport_name || game.sport || game.category || base?.category || "").toLowerCase();
+  const sport = sportId === 14 || /football|soccer/.test(sportLabel) ? "football"
+    : sportId === 139 || /basket/.test(sportLabel) ? "basketball"
+    : /tennis/.test(sportLabel) ? "tennis" : null;
+  const markets = Array.isArray(detail?.data) ? detail.data
+    : Array.isArray(detail?.data?.data) ? detail.data.data
+    : Array.isArray(game.odds) ? game.odds : [];
+  const competition = String(game.competition_name || game.category || "Betika");
+  const eventName = homeTeam + " vs " + awayTeam;
+  const candidates = [];
+  for (const market of markets) {
+    const subtype = Number(market?.sub_type_id);
+    const marketName = String(market?.name || market?.market_name || "");
+    if (subtype !== 1 && !/(?:1x2|match result|full.?time result|match winner|moneyline)/i.test(marketName)) continue;
+    const prices = Array.isArray(market?.odds) ? market.odds : [];
+    if (prices.length < 2) continue;
+    const marketLabel = prices.length === 3 ? "Match Result" : "Match Winner";
+    if (prices.length === 2 && !sport) continue;
+    for (const price of prices) {
+      const decimalOdds = Number(price?.odd_value ?? price?.odds);
+      if (!Number.isFinite(decimalOdds) || decimalOdds <= 1 || decimalOdds > 1000) continue;
+      const rawSelection = String(price?.display || price?.name || "").trim();
+      let selection = rawSelection;
+      if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
+      else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
+      else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
+      if (![homeTeam, awayTeam, "Draw"].includes(selection)) continue;
+      candidates.push({
+        selection, decimalOdds, market: marketLabel, homeTeam, awayTeam,
+        eventName, sport: sport || (prices.length === 3 ? "football" : null),
+        competition, startsAt
+      });
+    }
+  }
+  return uniqueOdds(candidates);
+}
+
+async function fetchBetikaPublicOdds(now = new Date()) {
+  const apiOrigin = "https://api.betika.com";
+  const basePath = "/v1/uo";
+  const baseHeaders = {
+    accept: "application/json, text/plain, */*",
+    "accept-language": "en-GB,en-US;q=0.9,en;q=0.8",
+    "cache-control": "no-cache",
+    dnt: "1",
+    origin: "https://www.betika.com",
+    pragma: "no-cache",
+    referer: "https://www.betika.com/en-ug/",
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36"
+  };
+  const requestJson = async url => {
+    const safeUrl = validateSourceUrl(url);
+    const response = await fetch(safeUrl.toString(), {
+      redirect: "manual",
+      headers: baseHeaders,
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    });
+    if ([301,302,303,307,308].includes(response.status)) {
+      const location = response.headers.get("location");
+      if (!location) throw new Error("Betika public endpoint redirect missing location");
+      const target = validateSourceUrl(new URL(location, safeUrl).toString());
+      return requestJson(target.toString());
+    }
+    if (!response.ok) throw new Error("Betika public endpoint returned HTTP " + response.status);
+    const finalUrl = validateSourceUrl(response.url || safeUrl.toString()).toString();
+    const body = await response.text();
+    if (body.length > MAX_HTML_BYTES) throw new Error("Betika JSON response exceeds the 2 MB limit");
+    const data = safeJson(body);
+    if (!data || typeof data !== "object") throw new Error("Betika public endpoint returned invalid JSON");
+    return { data, status: response.status, finalUrl };
+  };
+
+  const structuredData = [];
+  const eventMap = new Map();
+  const listUrls = [];
+  for (const period of [-1, 1]) {
+    const listUrl = new URL(basePath + "/matches", apiOrigin);
+    for (const [key,value] of Object.entries({
+      page: "1", limit: "50", tab: "upcoming", sub_type_id: "1",
+      sport_id: "14,139", sort_id: "2", period_id: String(period), esports: "false"
+    })) listUrl.searchParams.set(key, value);
+    listUrls.push(listUrl.toString());
+    try {
+      const response = await requestJson(listUrl.toString());
+      const outcome = extractBetikaListItems(response.data);
+      if (outcome.status === "malformed") throw new Error("Betika event-list response shape was not recognized");
+      structuredData.push(response.data);
+      for (const event of outcome.items) {
+        const id = String(event?.parent_match_id || "");
+        if (id) eventMap.set(id, event);
+      }
+    } catch (error) {
+      if (period === 1 && eventMap.size) continue;
+      throw error;
+    }
+  }
+  const events = [...eventMap.values()]
+    .sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""))
+    .slice(0, 24);
+  const candidates = [];
+  const failures = [];
+  for (let offset = 0; offset < events.length; offset += 6) {
+    const batch = await Promise.all(events.slice(offset, offset + 6).map(async event => {
+      const detailUrl = new URL(basePath + "/match", apiOrigin);
+      detailUrl.searchParams.set("parent_match_id", String(event.parent_match_id));
+      try {
+        const detail = await requestJson(detailUrl.toString());
+        return { data: detail.data, candidates: extractBetikaEventCandidates(event, detail.data), error: null };
+      } catch (error) {
+        return { data: null, candidates: [], error: String(error?.message || error).slice(0, 240) };
+      }
+    }));
+    for (const result of batch) {
+      if (result.data) structuredData.push(result.data);
+      if (result.error) failures.push(result.error);
+      candidates.push(...result.candidates);
+    }
+  }
+  const unique = uniqueOdds(candidates);
+  return {
+    candidates: unique,
+    structuredData,
+    events: events.length,
+    detailFailures: failures.length,
+    visibleText: "Betika public website JSON: " + events.length + " events, " + unique.length + " match-result prices",
+    finalUrl: listUrls[0],
+    status: 200
+  };
+}
+
 
 export function discoverBookmakerLinks(html, baseUrl, limit = 12) {
   const base = validateSourceUrl(baseUrl);
@@ -687,7 +843,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   const results = [];
   const fixtureRows = await db.query(`SELECT id,sport,home_or_player_one AS home,away_or_player_two AS away,starts_at
     FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '5 minutes'
-    AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 500`);
+    AND starts_at<=now()+interval '36 hours' AND COALESCE(source,'')<>'public_scrape' ORDER BY starts_at ASC LIMIT 500`);
   const fixtureMatches = fixtureRows.rows;
   const teamRows = await db.query(`SELECT team FROM (
     SELECT home_or_player_one AS team FROM sports_matches WHERE lower(sport) IN ('football','soccer')
@@ -737,6 +893,9 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         if (String(source.bookmaker).toLowerCase() === "betpawa") {
           try { apiResult = await fetchBetPawaPublicOdds(source.source_url); }
           catch (error) { console.warn("[ash-bookmaker-scraper] BetPawa public JSON fallback:", String(error?.message || error).slice(0, 300)); }
+        } else if (String(source.bookmaker).toLowerCase() === "betika") {
+          try { apiResult = await fetchBetikaPublicOdds(); }
+          catch (error) { console.warn("[ash-bookmaker-scraper] Betika public JSON fallback:", String(error?.message || error).slice(0, 300)); }
         }
         if (apiResult?.candidates?.length) {
           page = { html: "", finalUrl: apiResult.finalUrl, status: apiResult.status, contentType: "application/json" };
