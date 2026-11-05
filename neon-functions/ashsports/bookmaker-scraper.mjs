@@ -189,8 +189,98 @@ function parseUgandaKickoff(value, now = new Date()) {
   return Number.isFinite(parsed.getTime()) ? parsed.toISOString() : null;
 }
 
-export function extractVisibleOddsCandidates(text, now = new Date()) {
-  const lines = String(text || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+export function extractVisibleOddsCandidates(text, now = new Date(), fixtures = [], knownTeams = []) {
+  const rawText = String(text || "");
+  const lines = rawText.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  if (lines.length < 3 && ((fixtures?.length || 0) > 0 || (knownTeams?.length || 0) > 0)) {
+    const markers = [...rawText.matchAll(/(\d{1,2}\/\d{1,2},\s*\d{1,2}:\d{2})/g)];
+    const flatCandidates = [];
+    const aliasOwners = new Map();
+    const ignored = new Set(["fc","afc","cf","sc","sv","tsg","ac","1899","real","bayer","borussia","olympique","deportivo","club","athletic","sporting","union"]);
+    for (const rawTeam of knownTeams || []) {
+      const canonical = String(rawTeam || "").trim();
+      const full = normalizeTeam(canonical);
+      if (!full) continue;
+      const cleaned = full.split(" ").filter(token => !ignored.has(token)).join(" ");
+      for (const alias of new Set([full, cleaned])) {
+        if (alias.length < 5) continue;
+        const owners = aliasOwners.get(alias) || [];
+        if (!owners.includes(canonical)) owners.push(canonical);
+        aliasOwners.set(alias, owners);
+      }
+    }
+    for (let index = 0; index < markers.length; index++) {
+      const marker = markers[index];
+      const startsAt = parseUgandaKickoff(marker[1], now);
+      if (!startsAt) continue;
+      const segment = rawText.slice(marker.index + marker[0].length, markers[index + 1]?.index ?? rawText.length);
+      const pricePattern = /(?<![A-Za-z0-9])([1-9]\d{0,2}[.,]\d{1,3})(?![A-Za-z0-9])/g;
+      const priceMatches = [...segment.matchAll(pricePattern)];
+      const prices = priceMatches.map(match => Number(match[1].replace(",", "."))).filter(price => price > 1 && price <= 1000).slice(0, 3);
+      if (prices.length < 2) continue;
+      const normalizedTeams = normalizeTeam(segment.slice(0, priceMatches[0]?.index ?? segment.length));
+      const startMs = Date.parse(startsAt);
+      let best = null;
+      for (const fixture of fixtures || []) {
+        const kickoff = Date.parse(fixture.starts_at || fixture.startsAt || "");
+        if (!Number.isFinite(kickoff) || Math.abs(kickoff - startMs) > 6 * 60 * 60 * 1000) continue;
+        const home = normalizeTeam(fixture.home || fixture.home_or_player_one);
+        const away = normalizeTeam(fixture.away || fixture.away_or_player_two);
+        if (!home || !away) continue;
+        const homeIndex = normalizedTeams.indexOf(home);
+        const awayIndex = normalizedTeams.indexOf(away);
+        if (homeIndex < 0 || awayIndex < 0 || homeIndex >= awayIndex) continue;
+        const score = home.length + away.length;
+        if (!best || score > best.score) best = {
+          homeTeam: fixture.home || fixture.home_or_player_one,
+          awayTeam: fixture.away || fixture.away_or_player_two,
+          sport: fixture.sport || null,
+          competition: fixture.competition || "Public bookmaker fixtures",
+          score
+        };
+      }
+      if (!best && prices.length === 3) {
+        const matches = [];
+        for (const [alias, owners] of aliasOwners) {
+          const position = normalizedTeams.indexOf(alias);
+          if (position < 0) continue;
+          const before = normalizedTeams[position - 1] || " ";
+          const after = normalizedTeams[position + alias.length] || " ";
+          if (before !== " " || after !== " ") continue;
+          const canonical = [...owners].sort((a,b) => normalizeTeam(a).length - normalizeTeam(b).length)[0];
+          matches.push({ alias, canonical, start: position, end: position + alias.length });
+        }
+        let pair = null;
+        for (const home of matches) for (const away of matches) {
+          if (home === away || home.end > away.start) continue;
+          const gap = normalizedTeams.slice(home.end, away.start).trim();
+          if (gap && !/^(?:v|vs|at)$/i.test(gap)) continue;
+          const trailing = normalizedTeams.slice(away.end).trim();
+          if (trailing && trailing.split(" ").length > 1) continue;
+          const score = home.alias.length + away.alias.length - gap.length * 2 - trailing.length;
+          if (!pair || score > pair.score) pair = { home, away, score };
+        }
+        if (pair) best = {
+          homeTeam: pair.home.canonical,
+          awayTeam: pair.away.canonical,
+          sport: "football",
+          competition: "Public bookmaker fixtures",
+          score: pair.score
+        };
+      }
+      if (!best) continue;
+      const { homeTeam, awayTeam, sport, competition } = best;
+      const eventName = homeTeam + " vs " + awayTeam;
+      const market = prices.length === 3 ? "Match Result" : "Match Winner";
+      const outcomes = prices.length === 3
+        ? [[homeTeam, prices[0]], ["Draw", prices[1]], [awayTeam, prices[2]]]
+        : [[homeTeam, prices[0]], [awayTeam, prices[1]]];
+      for (const [selection, decimalOdds] of outcomes) flatCandidates.push({
+        selection, decimalOdds, market, homeTeam, awayTeam, eventName, sport, competition, startsAt
+      });
+    }
+    return uniqueOdds(flatCandidates);
+  }
   const candidates = [];
   const datePattern = /^\d{1,2}\/\d{1,2},\s*\d{1,2}:\d{2}$/;
   const pricePattern = /^\d{1,3}(?:[.,]\d{1,3})$/;
@@ -440,6 +530,15 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
   await ensureScraperTables(db);
   const sources = await db.query("SELECT id,bookmaker,source_url FROM ash_scraper_sources WHERE enabled=true ORDER BY COALESCE(last_scraped_at,'epoch'::timestamptz) ASC,id ASC LIMIT $1", [Math.max(1, Math.min(20, Number(limit) || 8))]);
   const results = [];
+  const fixtureRows = await db.query(`SELECT id,sport,home_or_player_one AS home,away_or_player_two AS away,starts_at
+    FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '5 minutes'
+    AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 500`);
+  const fixtureMatches = fixtureRows.rows;
+  const teamRows = await db.query(`SELECT team FROM (
+    SELECT home_or_player_one AS team FROM sports_matches WHERE lower(sport) IN ('football','soccer')
+    UNION SELECT away_or_player_two AS team FROM sports_matches WHERE lower(sport) IN ('football','soccer')
+  ) known WHERE team IS NOT NULL AND team<>'' ORDER BY length(team) DESC LIMIT 2000`);
+  const knownFootballTeams = teamRows.rows.map(row => row.team);
   let browser = null, browserSession = null, browserAttempted = false;
   const getBrowserSession = async () => {
     if (process.env.ASH_BROWSER_SCRAPER_ENABLED !== "true") return null;
@@ -497,7 +596,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         const json = page.contentType.includes("application/json") ? safeJson(page.html) : null;
         let embedded = json == null ? extractEmbeddedJson(page.html) : [json];
         if (rendered?.structuredData?.length) embedded.push(...rendered.structuredData);
-        let candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText) : [])]);
+        let candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText, new Date(), fixtureMatches, knownFootballTeams) : [])]);
         if (!candidates.length && !rendered) {
           rendered = await renderWithBrowser(page.finalUrl);
           if (rendered) {
