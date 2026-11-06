@@ -164,3 +164,17 @@ test("parses Atom sports feed entries and href links",()=>{
  assert.equal(entries[0].publishedAt,"2026-11-06T10:00:00.000Z");
  assert.match(entries[0].description,/player is unavailable/);
 });
+
+
+test("matches international clubs when headlines omit one generic name token",()=>{
+ const fixture={home:"Al-Kholood",away:"Hapoel Bnei Musmus"};
+ assert.equal(isFixtureRelevantResult({title:"Kholood confirm squad update"},fixture),true);
+ assert.equal(isFixtureRelevantResult({title:"Bnei Musmus injury update"},fixture),true);
+ assert.equal(isFixtureRelevantResult({title:"Hapoel training news"},fixture),false);
+ assert.equal(isFixtureRelevantResult({title:"Bnei unrelated derby"},fixture),false);
+});
+test("near-match participant coverage still requires distinct whole-word evidence",()=>{
+ const fixture={home:"Hapoel Bnei Musmus",away:"Al-Khaleej"};
+ assert.deepEqual(hasParticipantCoverage({title:"Bnei Musmus squad update",excerpt:"Fitness update"},fixture),{home:true,away:false});
+ assert.deepEqual(hasParticipantCoverage({title:"Al-Khaleej vs Hapoel Bnei Musmus preview"},fixture),{home:true,away:true});
+});
