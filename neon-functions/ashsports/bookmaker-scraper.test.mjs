@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent, countOddsCandidatesBySport, summarizeBookmakerScraperResults } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent, countOddsCandidatesBySport, summarizeBookmakerScraperResults, normalizeScrapedSport } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -618,4 +618,20 @@ test("aggregates live bookmaker ingestion diagnostics without mixing sports", ()
   assert.equal(summary.succeeded, 2);
   assert.equal(summary.failed, 1);
   assert.equal(summary.bookmakers[2].error, "blocked");
+});
+
+
+test("normalizes Betika soccer labels into football totals", () => {
+  assert.equal(normalizeScrapedSport("soccer"), "football");
+  assert.equal(normalizeScrapedSport("Football"), "football");
+  assert.equal(normalizeScrapedSport("basketball"), "basketball");
+  assert.equal(normalizeScrapedSport("virtual soccer"), null);
+  const summary = summarizeBookmakerScraperResults([
+    { eventCountsBySport: { soccer: 200, basketball: 200, tennis: 72 },
+      candidateCountsBySport: { football: 48, basketball: 48, tennis: 32 } },
+    { eventCountsBySport: { football: 100, basketball: 50, tennis: 49 },
+      candidateCountsBySport: { football: 110, basketball: 6, tennis: 34 } }
+  ]);
+  assert.deepEqual(summary.eventCountsBySport, { football: 300, basketball: 250, tennis: 121 });
+  assert.deepEqual(summary.candidateCountsBySport, { football: 158, basketball: 54, tennis: 66 });
 });
