@@ -86,3 +86,7 @@ test("uses the database JSON encoder for research arrays and objects",()=>{
   {jsonValue:sources},{jsonValue:assessment},{jsonValue:coverage}
  ]);
 });
+
+test("research AI rejects a Qwen environment override",()=>{
+ assert.equal(buildResearchModelOptions("qwen/qwen3.8-27b").model,"openai/gpt-oss-20b");
+});
