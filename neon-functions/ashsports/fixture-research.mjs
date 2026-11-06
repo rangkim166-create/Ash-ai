@@ -210,6 +210,21 @@ async function searchCuratedSportsFeeds(sport){
  return {items,errors,diagnostics};
 }
 export function collectNewsProviderFailures(diagnostics=[]){return (diagnostics||[]).filter(item=>!!item?.error);}
+export function collectResearchProviderFailures(searchFailures=[],curatedErrors=[]){
+ const failures=collectNewsProviderFailures(searchFailures).map(item=>({
+  provider:String(item.provider||"unknown"),
+  error:String(item.error||"provider_failed").slice(0,240)
+ }));
+ for(const item of curatedErrors||[]){
+  const value=String(item||"");
+  const separator=value.indexOf(":");
+  failures.push({
+   provider:separator>0?value.slice(0,separator):"curated_feed",
+   error:(separator>0?value.slice(separator+1).trim():value).slice(0,240)
+  });
+ }
+ return failures;
+}
 async function search(query){
  const providers=buildNewsSearchProviders(query);
  const results=await Promise.allSettled(providers.map(provider=>fetchFeed(provider)));
@@ -355,7 +370,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   if(!fixtureResult.rowCount){await db.query("DELETE FROM ash_fixture_research_queue WHERE match_id=$1",[row.match_id]);continue;}
   const f=fixtureResult.rows[0],home=f.home,away=f.away,competition=f.competition;
   const queries=buildFixtureQueries(f);
-  const found=[],errors=[];
+  const found=[],errors=[],searchProviderFailures=[],curatedFeedFailures=[];
   const curatedPromise=searchCuratedSportsFeeds(f.sport).catch(error=>({items:[],errors:[String(error?.message||error).slice(0,120)]}));
   // Keep outbound traffic bounded: 14 queries × 3 providers at once was
   // causing transient fetch failures and starving fixture-specific discovery.
@@ -366,14 +381,15 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   }
   const curatedResults=await curatedPromise;
   found.push(...(curatedResults.items||curatedResults));
-  for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);
+  for(const error of curatedResults.errors||[]){curatedFeedFailures.push(error);errors.push("curated_feed: "+error);}
   if(curatedResults.diagnostics?.length)errors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
   for(const result of searchResults){
     if(result.status==='fulfilled'){
      found.push(...result.value.items);
-     if(result.value.diagnostics?.length)errors.push("news_provider_failures: "+JSON.stringify(result.value.diagnostics.slice(0,6)).slice(0,700));
+     if(result.value.diagnostics?.length){searchProviderFailures.push(...result.value.diagnostics);errors.push("news_provider_failures: "+JSON.stringify(result.value.diagnostics.slice(0,6)).slice(0,700));}
     }else errors.push(String(result.reason?.message||result.reason).slice(0,240));
    }
+  const providerFailures=collectResearchProviderFailures(searchProviderFailures,curatedFeedFailures);
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
   const relevantFound=freshFound.filter(x=>isFixtureRelevantResult(x,f));
@@ -389,7 +405,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const fullArticleCount=fullPages.length;
   const categoryCounts=Object.fromEntries(["injury_fitness","player_availability","rest_fatigue","team_statistics","roster_lineups","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,{groqKey,openrouterKey});
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,rawProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,found.filter(item=>(item.searchProvider||"unknown")===provider).length])),categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,rawProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,found.filter(item=>(item.searchProvider||"unknown")===provider).length])),categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),providerFailures,failedProviderCount:providerFailures.length,searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
