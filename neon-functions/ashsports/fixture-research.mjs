@@ -91,7 +91,7 @@ export function parseRss(xml){
  const blocks=[...source.matchAll(/<(item|entry)\b[^>]*>([\s\S]*?)<\/\1>/gi)];
  for(const match of blocks){
   const block=match[2],atom=match[1].toLowerCase()==="entry";
-  const value=tag=>{const m=block.match(new RegExp("<"+tag+"(?:\s[^>]*)?>([\s\S]*?)</"+tag+">","i"));return m?decode(m[1]).trim():"";};
+  const value=tag=>{const m=block.match(new RegExp(String.raw`<${tag}(?:\s[^>]*)?>([\s\S]*?)</${tag}>`,"i"));return m?decode(m[1]).trim():"";};
   const title=strip(value("title"),240);
   const linkTag=block.match(/<link\b([^>]*)\/?\s*>/i);
   const href=linkTag?.[1]?.match(/href=["']([^"']+)["']/i)?.[1];
