@@ -788,10 +788,20 @@ async function fetchBetikaPublicOdds(now = new Date()) {
     }
   }
   const unique = uniqueOdds(candidates);
+  const eventCountsBySport = Object.fromEntries(sports.map(({ id, name }) => [
+    name.toLowerCase(), bySport.get(id)?.length || 0
+  ]));
+  const candidateCountsBySport = Object.fromEntries(
+    ["football", "basketball", "tennis"].map(sport => [
+      sport, unique.filter(candidate => candidate.sport === sport).length
+    ])
+  );
   return {
     candidates: unique,
     structuredData,
     events: events.length,
+    eventCountsBySport,
+    candidateCountsBySport,
     detailFailures: failures.length,
     visibleText: "Betika public website JSON: " + events.length + " events, " + unique.length + " match-result prices",
     finalUrl: listUrls[0],
@@ -1068,7 +1078,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
           page.status, page.contentType, text, jsonDatabaseValue(db, embedded), jsonDatabaseValue(db, candidates)
         ]);
         await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
-        results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, siteJsonUsed: !!apiResult?.candidates?.length, siteJsonEvents: apiResult?.events || 0, siteJsonDetailFailures: apiResult?.detailFailures || 0, finalUrl: page.finalUrl });
+        results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, siteJsonUsed: !!apiResult?.candidates?.length, siteJsonEvents: apiResult?.events || 0, eventCountsBySport: apiResult?.eventCountsBySport || null, candidateCountsBySport: apiResult?.candidateCountsBySport || null, siteJsonDetailFailures: apiResult?.detailFailures || 0, finalUrl: page.finalUrl });
       } catch (error) {
         const message = String(error?.message || error).slice(0, 1200);
         await db.query(`INSERT INTO ash_scraper_runs(source_id,bookmaker,source_url,status,error_message)
