@@ -330,7 +330,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   ]);
   found.push(...(curatedResults.items||curatedResults));
   for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);
-  if(curatedResults.diagnostics?.lengtherrors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
+  if(curatedResults.diagnostics?.length)errors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
