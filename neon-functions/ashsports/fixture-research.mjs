@@ -86,20 +86,28 @@ const decodeEntities = value => String(value || "")
  .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)));
 const strip=(s,n=1600)=>decodeEntities(s).replace(/<(script|style|noscript|svg|iframe|nav|footer|header)\b[^>]*>[\s\S]*?<\/\1>/gi," ").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,n);
 export function parseRss(xml){
- const out=[];
- for(const block of String(xml||"").split("<item>").slice(1).map(x=>x.split("</item>")[0])){
-  const value=tag=>{const m=block.match(new RegExp("<"+tag+"[^>]*>([\\s\\S]*?)</"+tag+">","i"));return m?m[1].trim():"";};
-  const title=strip(value("title"),240),url=decodeEntities(value("link")).trim(),raw=strip(value("pubDate"),100),ts=raw?Date.parse(raw):NaN;
-  const description=strip(value("description")||value("content:encoded"),1200);
+ const source=String(xml||""),out=[];
+ const decode=value=>decodeEntities(String(value||"").replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g,"$1"));
+ const blocks=[...source.matchAll(/<(item|entry)\\b[^>]*>([\\s\\S]*?)<\\/\\1>/gi)];
+ for(const match of blocks){
+  const block=match[2],atom=match[1].toLowerCase()==="entry";
+  const value=tag=>{const m=block.match(new RegExp("<"+tag+"(?:\\s[^>]*)?>([\\s\\S]*?)</"+tag+">","i"));return m?decode(m[1]).trim():"";};
+  const title=strip(value("title"),240);
+  const linkTag=block.match(/<link\\b([^>]*)\\/?\\s*>/i);
+  const href=linkTag?.[1]?.match(/href=["']([^"']+)["']/i)?.[1];
+  const url=decodeEntities(href||value("link")).trim();
+  const raw=value("pubDate")||value("published")||value("updated")||value("dc:date");
+  const ts=raw?Date.parse(raw):NaN;
+  const description=strip(value("description")||value("summary")||value("content:encoded")||value("content"),1200);
   if(!title||!(url.startsWith("https://")||url.startsWith("http://")))continue;
   let domain="unknown",sourceName="";
   try{
-   const source=block.match(/<source\b[^>]*url=["']([^"']+)["'][^>]*>([\s\S]*?)<\/source>/i);
-   domain=new URL(decodeEntities(source?.[1]||url)).hostname.replace(/^www[.]/,"");
-   sourceName=strip(source?.[2]||"",120);
+   const sourceTag=block.match(/<source\\b[^>]*url=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/source>/i);
+   domain=new URL(decodeEntities(sourceTag?.[1]||url)).hostname.replace(/^www[.]/,"");
+   sourceName=strip(sourceTag?.[2]||"",120);
   }catch{}
   out.push({title,url,description,date:raw||null,publishedAt:Number.isFinite(ts)?new Date(ts).toISOString():null,ageHours:Number.isFinite(ts)?Math.max(0,Math.round((Date.now()-ts)/3600000)):null,domain,sourceName,sourceTier:publisherTier(domain),categories:classifyEvidenceCategory(title+" "+description)});
-  if(out.length>=10)break;
+  if(out.length>=20)break;
  }
  return out;
 }
@@ -157,7 +165,13 @@ async function searchCuratedSportsFeeds(sport){
   if(!response.ok)throw Error(feed.name+" HTTP "+response.status);
   return parseRss(await response.text()).map(item=>({...item,searchProvider:feed.name}));
  }));
- return results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
+ const items=[],errors=[];
+ for(let index=0;index<results.length;index++){
+  const result=results[index];
+  if(result.status==="fulfilled")items.push(...result.value);
+  else errors.push(feeds[index].name+": "+String(result.reason?.message||result.reason).slice(0,140));
+ }
+ return {items,errors};
 }
 async function search(query){
  const providers=buildNewsSearchProviders(query);
@@ -305,9 +319,10 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const found=[],errors=[];
   const [searchResults,curatedResults]=await Promise.all([
    Promise.allSettled(queries.map(q=>search(q))),
-   searchCuratedSportsFeeds(f.sport).catch(error=>{errors.push("curated_feeds: "+String(error?.message||error).slice(0,100));return [];})
+   searchCuratedSportsFeeds(f.sport).catch(error=>({items:[],errors:[String(error?.message||error).slice(0,120)]}))
   ]);
-  found.push(...curatedResults);
+  found.push(...(curatedResults.items||curatedResults));
+  for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
@@ -324,7 +339,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const fullArticleCount=fullPages.length;
   const categoryCounts=Object.fromEntries(["injury_fitness","player_availability","rest_fatigue","team_statistics","roster_lineups","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,{groqKey,openrouterKey});
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,rawProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,found.filter(item=>(item.searchProvider||"unknown")===provider).length])),categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
