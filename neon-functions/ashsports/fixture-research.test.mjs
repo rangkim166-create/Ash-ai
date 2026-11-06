@@ -7,7 +7,7 @@ test("generic headlines remain general news",()=>assert.deepEqual(classifyEviden
 
 test("searches latest updates on a short freshness window as well as weekly context",()=>{const q=buildFixtureQueries({home:"Vipers SC",away:"KCCA",competition:"Uganda Premier League"},new Date("2026-11-04T12:00:00Z"));const s=q.join(" ");assert.ok(s.includes("after:2026-11-02"));assert.ok(s.includes("after:2026-10-28"));assert.ok(s.includes('"Vipers SC"'));assert.ok(s.includes('"KCCA"'));});
 
-import { parseRss, isFixtureRelevantResult } from "./fixture-research.mjs";
+import { parseRss, isFixtureRelevantResult, resolvePublisherUrl } from "./fixture-research.mjs";
 
 test("retains RSS descriptions and source metadata for blocked article fallbacks", () => {
   const xml = `<?xml version="1.0"?><rss><channel><item>
