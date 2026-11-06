@@ -520,6 +520,3 @@ test("Betika tennis does not import a fabricated draw from a three-way market", 
   });
   assert.deepEqual(candidates, []);
 });
-    assert.deepEqual(candidates, []);
-  }
-});
