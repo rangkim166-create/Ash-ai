@@ -233,12 +233,17 @@ test("BetPawa event pagination covers seven days in bounded 50-event pages", () 
   const now = new Date("2026-11-06T00:00:00.000Z");
   const first = buildBetPawaListQuery(now, 0).queries[0];
   const second = buildBetPawaListQuery(now, 50).queries[0];
+  const basketball = buildBetPawaListQuery(now, 0, "3").queries[0];
+  const tennis = buildBetPawaListQuery(now, 0, "452").queries[0];
   assert.equal(first.query.startTime.gte, now.toISOString());
   assert.equal(first.query.startTime.lt, "2026-11-13T00:00:00.000Z");
   assert.equal(first.take, 50);
   assert.equal(first.skip, 0);
   assert.equal(second.skip, 50);
   assert.deepEqual(first.query.categories, ["2"]);
+  assert.deepEqual(basketball.query.categories, ["3"]);
+  assert.deepEqual(tennis.query.categories, ["452"]);
+  assert.throws(() => buildBetPawaListQuery(now, 0, "101"), /Unsupported real-sport/);
   assert.equal(first.query.eventType, "UPCOMING");
 });
 
@@ -378,4 +383,49 @@ test("rejects explicitly flagged Betika esports and virtual matches", () => {
     { display: "1", odd_value: "2.10" }, { display: "X", odd_value: "3.20" }, { display: "2", odd_value: "3.30" }
   ] }] };
   assert.deepEqual(extractBetikaEventCandidates(base, detail), []);
+});
+
+
+test("extracts BetPawa basketball and tennis match-winner prices without inventing a draw", () => {
+  const base = {
+    startTime: "2026-11-07T18:00:00.000Z",
+    participants: [{ name: "Player or Team A" }, { name: "Player or Team B" }]
+  };
+  const basketball = extractBetPawaEventCandidates({
+    ...base, category: { id: "3", name: "Basketball" },
+    competition: { name: "NBA" },
+    markets: [{ marketType: { displayName: "Match Winner" }, row: [{ prices: [
+      { name: "1", odds: "1.80" }, { name: "2", odds: "2.05" }
+    ] }] }]
+  });
+  assert.equal(basketball.length, 2);
+  assert.equal(basketball[0].sport, "basketball");
+  assert.equal(basketball[0].market, "Match Winner");
+  assert.equal(basketball.some(x => x.selection === "Draw"), false);
+
+  const tennis = extractBetPawaEventCandidates({
+    ...base, category: { id: "452", name: "Tennis" },
+    competition: { name: "ATP Challenger" },
+    markets: [{ marketType: { displayName: "Match Winner" }, row: [{ prices: [
+      { name: "1", odds: "1.65" }, { name: "2", odds: "2.30" }
+    ] }] }]
+  });
+  assert.equal(tennis.length, 2);
+  assert.equal(tennis[0].sport, "tennis");
+  assert.equal(tennis[1].selection, "Player or Team B");
+});
+
+test("BetPawa non-football extractor rejects football 1X2 and unrelated markets", () => {
+  const candidates = extractBetPawaEventCandidates({
+    startTime: "2026-11-07T18:00:00.000Z",
+    category: { id: "452", name: "Tennis" },
+    participants: [{ name: "Player A" }, { name: "Player B" }],
+    markets: [
+      { marketType: { id: "3743", displayName: "1X2" }, row: [{ prices: [
+        { name: "1", odds: "1.5" }, { name: "X", odds: "4.0" }, { name: "2", odds: "2.5" }
+      ] }] },
+      { marketType: { displayName: "Total Games" }, row: [{ prices: [{ name: "Over 22.5", odds: "1.9" }] }] }
+    ]
+  });
+  assert.deepEqual(candidates, []);
 });
