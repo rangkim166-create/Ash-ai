@@ -103,17 +103,34 @@ export function parseRss(xml){
  }
  return out;
 }
+function normalizeTeamText(value){
+ return String(value||"").toLowerCase()
+  .normalize("NFKD").replace(/[\u0300-\u036f]/g,"")
+  .replace(/&/g," and ").replace(/\b(fc|cf|sc|afc|cfc|united|city|club|basketball|bc)\b/g," ")
+  .replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
+}
+function mentionsParticipant(text,participant){
+ const target=normalizeTeamText(participant);
+ if(target.length<3)return false;
+ const haystack=normalizeTeamText(text);
+ if(haystack.includes(target))return true;
+ const tokens=target.split(" ").filter(token=>token.length>=3);
+ return tokens.length>=2&&tokens.every(token=>haystack.includes(token));
+}
 export function isFixtureRelevantResult(item,fixture){
- const home=String(fixture?.home||"").trim().toLowerCase(),away=String(fixture?.away||"").trim().toLowerCase();
- const text=(String(item?.title||"")+" "+String(item?.description||"")).toLowerCase();
- const mentions=team=>team.length>=3&&(text.includes(team)||text.includes(team.replace(/\b(fc|cf|sc|afc|united|city)\b/g,"").replace(/\s+/g," ").trim()));
- return mentions(home)||mentions(away);
+ const text=String(item?.title||"")+" "+String(item?.description||"");
+ return mentionsParticipant(text,fixture?.home)||mentionsParticipant(text,fixture?.away);
+}
+export function hasParticipantCoverage(item,fixture){
+ const text=String(item?.title||"")+" "+String(item?.excerpt||item?.description||"");
+ return {home:mentionsParticipant(text,fixture?.home),away:mentionsParticipant(text,fixture?.away)};
 }
 
 export function buildNewsSearchProviders(query){
  const encoded=encodeURIComponent(query);
  return [
-  {name:"google_news",url:"https://news.google.com/rss/search?q="+encoded+"&hl=en-US&gl=US&ceid=US:en"},
+  {name:"google_news_us",url:"https://news.google.com/rss/search?q="+encoded+"&hl=en-US&gl=US&ceid=US:en"},
+  {name:"google_news_uk",url:"https://news.google.com/rss/search?q="+encoded+"&hl=en-GB&gl=GB&ceid=GB:en"},
   {name:"bing_news",url:"https://www.bing.com/news/search?q="+encoded+"&format=rss"}
  ];
 }
@@ -270,14 +287,15 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
    .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999) || (a.sourceTier==="official_league_or_federation"?-1:0)).slice(0,24);
   const pageResults=await Promise.allSettled(unique.slice(0,12).map(item=>readArticle(item)));
   const pages=pageResults.filter(result=>result.status==='fulfilled'&&result.value).map(result=>result.value);
-  const homePages=pages.filter(p=>p.title.toLowerCase().includes(home.toLowerCase())||p.excerpt.toLowerCase().includes(home.toLowerCase()));
-  const awayPages=pages.filter(p=>p.title.toLowerCase().includes(away.toLowerCase())||p.excerpt.toLowerCase().includes(away.toLowerCase()));
+  const participantCoverage=pages.map(page=>hasParticipantCoverage(page,f));
+  const homePages=pages.filter((page,index)=>participantCoverage[index].home);
+  const awayPages=pages.filter((page,index)=>participantCoverage[index].away);
   const domains=[...new Set(pages.map(p=>p.domain))];
   const fullPages=pages.filter(p=>p.contentLevel!=="rss_snippet");
   const fullArticleCount=fullPages.length;
   const categoryCounts=Object.fromEntries(["injury_fitness","player_availability","rest_fatigue","team_statistics","roster_lineups","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,{groqKey,openrouterKey});
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
