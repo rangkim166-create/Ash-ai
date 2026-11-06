@@ -163,7 +163,7 @@ async function fetchFeed(feed){
  const body=await response.text();
  const items=parseRss(body).map(item=>({...item,searchProvider:feed.name}));
  const contentType=response.headers.get("content-type")||"unknown";
- const diagnostic={provider:feed.name,status:response.status,contentType,bodyBytes:new TextEncoder().encode(body).length,parsedItems:items.length,bodyLooksHtml:/<html[\\s>]/i.test(body.slice(0,1000))};
+ const diagnostic={provider:feed.name,status:response.status,contentType,bodyBytes:new TextEncoder().encode(body).length,parsedItems:items.length,bodyLooksHtml:/<html[\s>]/i.test(body.slice(0,1000))};
  if(!response.ok)throw Error(JSON.stringify(diagnostic));
  if(!items.length)throw Error(JSON.stringify(diagnostic));
  return {items,diagnostic};
@@ -329,7 +329,8 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
    searchCuratedSportsFeeds(f.sport).catch(error=>({items:[],errors:[String(error?.message||error).slice(0,120)]}))
   ]);
   found.push(...(curatedResults.items||curatedResults));
-  for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);\n  if(curatedResults.diagnostics?.length)errors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
+  for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);
+  if(curatedResults.diagnostics?.lengtherrors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
