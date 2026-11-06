@@ -159,14 +159,21 @@ export function buildCuratedSportsFeeds(sport="football"){
  ];
 }
 async function fetchFeed(feed){
- const response=await fetch(feed.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0)","accept":"application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
- const body=await response.text();
- const items=parseRss(body).map(item=>({...item,searchProvider:feed.name}));
- const contentType=response.headers.get("content-type")||"unknown";
- const diagnostic={provider:feed.name,status:response.status,contentType,bodyBytes:new TextEncoder().encode(body).length,parsedItems:items.length,bodyLooksHtml:/<html[\s>]/i.test(body.slice(0,1000))};
- if(!response.ok)throw Error(JSON.stringify(diagnostic));
- if(!items.length)throw Error(JSON.stringify(diagnostic));
- return {items,diagnostic};
+ let lastError=null;
+ for(let attempt=0;attempt<2;attempt++){
+  try{
+   const response=await fetch(feed.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0)","accept":"application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
+   const body=await response.text();
+   const items=parseRss(body).map(item=>({...item,searchProvider:feed.name}));
+   const contentType=response.headers.get("content-type")||"unknown";
+   const diagnostic={provider:feed.name,status:response.status,contentType,bodyBytes:new TextEncoder().encode(body).length,parsedItems:items.length,bodyLooksHtml:/<html[\s>]/i.test(body.slice(0,1000)),attempt:attempt+1};
+   if(response.ok&&items.length)return {items,diagnostic};
+   lastError=Error(JSON.stringify(diagnostic));
+   if(response.status<500&&response.status!==429)break;
+  }catch(error){lastError=error;}
+  if(attempt===0)await new Promise(resolve=>setTimeout(resolve,350));
+ }
+ throw lastError||new Error("feed_fetch_failed");
 }
 async function searchCuratedSportsFeeds(sport){
  const feeds=buildCuratedSportsFeeds(sport);
@@ -324,10 +331,15 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const f=fixtureResult.rows[0],home=f.home,away=f.away,competition=f.competition;
   const queries=buildFixtureQueries(f);
   const found=[],errors=[];
-  const [searchResults,curatedResults]=await Promise.all([
-   Promise.allSettled(queries.map(q=>search(q))),
-   searchCuratedSportsFeeds(f.sport).catch(error=>({items:[],errors:[String(error?.message||error).slice(0,120)]}))
-  ]);
+  const curatedPromise=searchCuratedSportsFeeds(f.sport).catch(error=>({items:[],errors:[String(error?.message||error).slice(0,120)]}));
+  // Keep outbound traffic bounded: 14 queries × 3 providers at once was
+  // causing transient fetch failures and starving fixture-specific discovery.
+  const searchResults=[];
+  for(let offset=0;offset<queries.length;offset+=3){
+   const batch=await Promise.allSettled(queries.slice(offset,offset+3).map(q=>search(q)));
+   searchResults.push(...batch);
+  }
+  const curatedResults=await curatedPromise;
   found.push(...(curatedResults.items||curatedResults));
   for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);
   if(curatedResults.diagnostics?.length)errors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
