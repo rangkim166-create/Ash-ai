@@ -239,6 +239,22 @@ test("extracts BetPawa 1X2 prices from its public event JSON", () => {
         ] }]
       },
       {
+        marketType: { id: 28000810, displayName: "1X2 1UP | Full Time" },
+        row: [{ prices: [
+          { name: "1", odds: "1.98" },
+          { name: "X", odds: "3.45" },
+          { name: "2", odds: "1.61" }
+        ] }]
+      },
+      {
+        marketType: { id: 28000850, displayName: "1X2 2UP | Full Time" },
+        row: [{ prices: [
+          { name: "1", odds: "3.01" },
+          { name: "X", odds: "3.45" },
+          { name: "2", odds: "2.10" }
+        ] }]
+      },
+      {
         marketType: { id: 9999, displayName: "Over/Under" },
         row: [{ prices: [{ name: "Over 2.5", odds: "1.95" }] }]
       }
@@ -312,4 +328,26 @@ test("extracts Betika two-way basketball match-winner prices", () => {
   assert.equal(candidates[0].market, "Match Winner");
   assert.equal(candidates[0].selection, "Lakers");
   assert.equal(candidates[1].selection, "Celtics");
+});
+
+test("rejects Betika Zoom Soccer even when its sport ID resembles basketball", () => {
+  const base = {
+    parent_match_id: 752051, home_team: "Z.Genoa", away_team: "Z.Venezia",
+    start_time: "2026-11-06 04:45:00", sport_id: 139,
+    sport_name: "Zoom Soccer", competition_name: "SerieA-Zoom", is_esport: false
+  };
+  const detail = { meta: { sport_id: 139 }, data: [{ sub_type_id: 1, name: "1X2", odds: [
+    { display: "1", odd_value: "2.46" }, { display: "X", odd_value: "3.40" }, { display: "2", odd_value: "2.78" }
+  ] }] };
+  assert.deepEqual(extractBetikaEventCandidates(base, detail), []);
+});
+test("rejects explicitly flagged Betika esports and virtual matches", () => {
+  const base = {
+    home_team: "Alpha", away_team: "Beta", start_time: "2026-11-06 18:00:00",
+    sport_id: 14, is_esport: true
+  };
+  const detail = { data: [{ sub_type_id: 1, name: "1X2", odds: [
+    { display: "1", odd_value: "2.10" }, { display: "X", odd_value: "3.20" }, { display: "2", odd_value: "3.30" }
+  ] }] };
+  assert.deepEqual(extractBetikaEventCandidates(base, detail), []);
 });
