@@ -178,6 +178,6 @@ test("basketball regulation-result markets include the draw in no-vig probabilit
   });
   assert.equal(picks.length, 1);
   assert.equal(picks[0].selection, fixture.home);
-  // 1/2.0 divided by (1/2.0 + 1/4.0 + 1/3.5) = 46.7%.
+  // 1/2.0 divided by (1/2.0 + 1/4.0 + 1/3.5) = 48.3%.
   assert.equal(picks[0].market_probability_pct, 46.7);
 });
