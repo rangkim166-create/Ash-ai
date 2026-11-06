@@ -124,7 +124,7 @@ async function readArticle(item){
  const meaningful=snippet.length>=120&&snippet.toLowerCase()!==String(item.title||"").toLowerCase();
  return meaningful?{...item,excerpt:snippet,contentLevel:"rss_snippet",categories:classifyEvidenceCategory(item.title+" "+snippet),fetchedAt:new Date().toISOString()}:null;
 }
-export function buildResearchModelOptions(model=process.env.ASH_GROQ_RESEARCH_MODEL||"qwen/qwen3.8-27b"){
+export function buildResearchModelOptions(model=process.env.ASH_GROQ_RESEARCH_MODEL||"llama-3.3-70b-versatile"){
  return {model,temperature:0.1,max_tokens:1500,response_format:{type:"json_object"},tool_choice:"none"};
 }
 async function summarizeEvidence(fixture,pages,apiKey){
