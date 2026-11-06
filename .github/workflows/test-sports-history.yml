@@ -1,0 +1,26 @@
+name: Test sports history models
+
+on:
+  push:
+    paths:
+      - "sports_ai/**"
+      - ".github/workflows/test-sports-history.yml"
+      - ".github/workflows/collect-sports-history.yml"
+  pull_request:
+    paths:
+      - "sports_ai/**"
+      - ".github/workflows/test-sports-history.yml"
+      - ".github/workflows/collect-sports-history.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Syntax-check historical data and model scripts
+        run: python -m py_compile sports_ai/*.py
+      - name: Test sports history parsers and Elo backtest
+        run: python -m unittest discover -s sports_ai -p "test_*.py"

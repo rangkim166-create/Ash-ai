@@ -22,7 +22,7 @@ No free source contains literally every match ever played, and match results are
 
 ## Model status
 
-The Elo baseline now supports football, tennis and basketball. It is a starting point, not a production-validated prediction system. It does not account for injuries, lineups, tennis surface, fatigue, venue effects, odds or team/player identity changes. Run chronological backtests and calibration before using predictions to make decisions. No prediction is guaranteed.
+The Elo baseline now supports football, tennis and basketball. The history workflow runs a chronological pre-match backtest and publishes accuracy, Brier score, log loss and calibration bins by sport. This is a validation report, not proof of betting profitability. It does not account for injuries, lineups, tennis surface, fatigue, venue effects, odds or team/player identity changes. Run chronological backtests and calibration before using predictions to make decisions. No prediction is guaranteed.
 
 The full SQLite database is built on the GitHub Actions runner and attached as an artifact. A compact, per-participant Elo snapshot is committed as data/history/ratings.json; the Android app downloads it from the public branch, caches ratings in its private SQLite database and uses them as a small supporting adjustment when ranking researched picks. The full raw match archive is not downloaded to the phone.
 
