@@ -178,3 +178,11 @@ test("near-match participant coverage still requires distinct whole-word evidenc
  assert.deepEqual(hasParticipantCoverage({title:"Bnei Musmus squad update",excerpt:"Fitness update"},fixture),{home:true,away:false});
  assert.deepEqual(hasParticipantCoverage({title:"Al-Khaleej vs Hapoel Bnei Musmus preview"},fixture),{home:true,away:true});
 });
+
+
+test("recognizes exact three-letter initials used by publishers for clubs",()=>{
+ assert.equal(isFixtureRelevantResult({title:"PSG injury update ahead of European match"}, {home:"Paris Saint-Germain",away:"Chelsea"}),true);
+ assert.equal(isFixtureRelevantResult({title:"PSG injury update"}, {home:"Paris Saint-Germain",away:"Chelsea"}),true);
+ assert.equal(isFixtureRelevantResult({title:"PSG are not the subject of this article"}, {home:"Paris Saint-Germain",away:"Chelsea"}),true);
+ assert.equal(isFixtureRelevantResult({title:"PSGx unrelated report"}, {home:"Paris Saint-Germain",away:"Chelsea"}),false);
+});
