@@ -61,11 +61,25 @@ const decodeEntities = value => String(value || "")
  .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
  .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)));
 const strip=(s,n=1600)=>decodeEntities(s).replace(/<(script|style|noscript|svg|iframe|nav|footer|header)\b[^>]*>[\s\S]*?<\/\1>/gi," ").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,n);
+export function resolvePublisherUrl(value){
+ const raw=decodeEntities(value).trim();
+ try{
+  const parsed=new URL(raw),host=parsed.hostname.toLowerCase();
+  if(host==="bing.com"||host.endsWith(".bing.com")){
+   const target=parsed.searchParams.get("url");
+   if(target){
+    const resolved=new URL(target);
+    if(resolved.protocol==="https:"||resolved.protocol==="http:")return resolved.toString();
+   }
+  }
+ }catch{}
+ return raw;
+}
 export function parseRss(xml){
  const out=[];
  for(const block of String(xml||"").split("<item>").slice(1).map(x=>x.split("</item>")[0])){
   const value=tag=>{const m=block.match(new RegExp("<"+tag+"[^>]*>([\\s\\S]*?)</"+tag+">","i"));return m?m[1].trim():"";};
-  const title=strip(value("title"),240),url=decodeEntities(value("link")).trim(),raw=strip(value("pubDate"),100),ts=raw?Date.parse(raw):NaN;
+  const title=strip(value("title"),240),rawUrl=decodeEntities(value("link")).trim(),url=resolvePublisherUrl(rawUrl),raw=strip(value("pubDate"),100),ts=raw?Date.parse(raw):NaN;
   const description=strip(value("description")||value("content:encoded"),1200);
   if(!title||!(url.startsWith("https://")||url.startsWith("http://")))continue;
   let domain="unknown",sourceName="";
