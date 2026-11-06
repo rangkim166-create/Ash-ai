@@ -1,3 +1,4 @@
+import { normalizeResearchConfidence } from "./fixture-research.mjs";
 const normalize = value => String(value ?? "").trim().toLocaleLowerCase("en-US");
 const normalizeTeam = value => {
   const raw = String(value ?? "").trim();
@@ -243,7 +244,7 @@ export function isAvailabilityResearchSufficient(report, { fixtureStart, sport =
   return Number(report.sourceCount) >= 2 &&
     Number(report.independentDomains) >= 2 &&
     coverage.home === true && coverage.away === true && sportCoverage &&
-    assessment.error == null && Number(assessment.confidence) >= 60 &&
+    assessment.error == null && normalizeResearchConfidence(assessment.confidence) >= 60 &&
     !(Array.isArray(assessment.contradictions) && assessment.contradictions.length > 0);
 }
 
