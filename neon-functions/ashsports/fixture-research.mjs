@@ -23,27 +23,31 @@ export function buildFixtureQueries(fixture,now=new Date()){
  const sport=String(fixture.sport||"football").toLowerCase();
  const recent=new Date(now.getTime()-2*86400000).toISOString().slice(0,10);
  const week=new Date(now.getTime()-7*86400000).toISOString().slice(0,10);
- const pair='"'+h+'" "'+a+'"',league=c?'"'+c+'"':"";
+ const pair=h+" "+a,league=c?c:"";
  if(sport==="tennis")return [
   pair+" "+league+" tennis match preview analysis form head to head after:"+week,
-  '"'+h+'" tennis injury fitness withdrawal retirement medical update after:'+recent,
-  '"'+a+'" tennis injury fitness withdrawal retirement medical update after:'+recent,
-  '"'+h+'" latest tennis results surface record recent form after:'+week,
-  '"'+a+'" latest tennis results surface record recent form after:'+week,
+  h+" tennis latest news injury fitness withdrawal retirement medical update after:"+recent,
+  a+" tennis latest news injury fitness withdrawal retirement medical update after:"+recent,
+  h+" tennis injury fitness withdrawal retirement medical update after:"+recent,
+  a+" tennis injury fitness withdrawal retirement medical update after:"+recent,
+  h+" latest tennis results surface record recent form after:"+week,
+  a+" latest tennis results surface record recent form after:"+week,
   pair+" tennis head to head previous meetings match statistics after:"+week,
   pair+" tournament draw schedule official match update after:"+week,
-  '"'+h+'" tennis player profile official tournament news after:'+week,
-  '"'+a+'" tennis player profile official tournament news after:'+week,
+  h+" tennis player profile official tournament news after:"+week,
+  a+" tennis player profile official tournament news after:"+week,
   pair+" tennis hard court clay grass indoor surface performance after:"+week,
   pair+" tennis retirement withdrawal walkover latest news after:"+recent,
   pair+" tennis breaking news tournament update after:"+recent
  ].map(x=>x.replace(/\s+/g," ").trim());
  return [
   pair+" "+league+" match preview analysis expert prediction after:"+week,
-  '"'+h+'" latest team news injury fitness doubtful ruled out after:'+recent,
-  '"'+a+'" latest team news injury fitness doubtful ruled out after:'+recent,
-  '"'+h+'" injury medical fitness availability update after:'+week,
-  '"'+a+'" injury medical fitness availability update after:'+week,
+  h+" "+league+" latest team news injury fitness doubtful ruled out after:"+recent,
+  a+" "+league+" latest team news injury fitness doubtful ruled out after:"+recent,
+  h+" latest team news injury fitness doubtful ruled out after:"+recent,
+  a+" latest team news injury fitness doubtful ruled out after:"+recent,
+  h+" injury medical fitness availability update after:"+week,
+  a+" injury medical fitness availability update after:"+week,
   pair+" confirmed lineup predicted lineup starting XI team sheet formation after:"+week,
   pair+" suspensions bans manager coach press conference training squad update after:"+week,
   pair+" stadium weather forecast rain wind pitch conditions matchday after:"+week,
