@@ -102,6 +102,8 @@ export function teamsEquivalent(left, right) {
   const a = normalizeTeam(left), b = normalizeTeam(right);
   if (!a || !b) return false;
   if (a === b) return true;
+  const gender = value => value.split(" ").filter(token => ["women","woman","ladies","female","men","man","male","girls","boys"].includes(token) || /^u(?:1[0-9]|2[0-3])$/.test(token)).sort().join("|");
+  if (gender(a) !== gender(b)) return false;
   const tokens = value => new Set(value.split(" ").filter(token => token.length >= 3 && !GENERIC_TEAM_TOKENS.has(token)));
   const leftTokens = tokens(a), rightTokens = tokens(b);
   const [shorter, longer] = leftTokens.size <= rightTokens.size
