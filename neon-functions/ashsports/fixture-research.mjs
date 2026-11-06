@@ -158,30 +158,37 @@ export function buildCuratedSportsFeeds(sport="football"){
   {name:"athletic_football",url:"https://www.nytimes.com/athletic/rss/football/"}
  ];
 }
+async function fetchFeed(feed){
+ const response=await fetch(feed.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0)","accept":"application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
+ const body=await response.text();
+ const items=parseRss(body).map(item=>({...item,searchProvider:feed.name}));
+ const contentType=response.headers.get("content-type")||"unknown";
+ const diagnostic={provider:feed.name,status:response.status,contentType,bodyBytes:new TextEncoder().encode(body).length,parsedItems:items.length,bodyLooksHtml:/<html[\\s>]/i.test(body.slice(0,1000))};
+ if(!response.ok)throw Error(JSON.stringify(diagnostic));
+ if(!items.length)throw Error(JSON.stringify(diagnostic));
+ return {items,diagnostic};
+}
 async function searchCuratedSportsFeeds(sport){
  const feeds=buildCuratedSportsFeeds(sport);
- const results=await Promise.allSettled(feeds.map(async feed=>{
-  const response=await fetch(feed.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0)","accept":"application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
-  if(!response.ok)throw Error(feed.name+" HTTP "+response.status);
-  return parseRss(await response.text()).map(item=>({...item,searchProvider:feed.name}));
- }));
- const items=[],errors=[];
+ const results=await Promise.allSettled(feeds.map(feed=>fetchFeed(feed)));
+ const items=[],errors=[],diagnostics=[];
  for(let index=0;index<results.length;index++){
   const result=results[index];
-  if(result.status==="fulfilled")items.push(...result.value);
-  else errors.push(feeds[index].name+": "+String(result.reason?.message||result.reason).slice(0,140));
+  if(result.status==="fulfilled"){items.push(...result.value.items);diagnostics.push(result.value.diagnostic);}
+  else errors.push(feeds[index].name+": "+String(result.reason?.message||result.reason).slice(0,240));
  }
- return {items,errors};
+ return {items,errors,diagnostics};
 }
 async function search(query){
  const providers=buildNewsSearchProviders(query);
- const results=await Promise.allSettled(providers.map(async provider=>{
-  const r=await fetch(provider.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0; +https://example.com/bot)","accept":"application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
-  if(!r.ok)throw Error(provider.name+" HTTP "+r.status);
-  return parseRss(await r.text()).map(item=>({...item,searchProvider:provider.name}));
- }));
- const items=results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
- if(!items.length&&results.every(result=>result.status==="rejected"))throw Error("All public news search providers failed");
+ const results=await Promise.allSettled(providers.map(provider=>fetchFeed(provider)));
+ const items=[],diagnostics=[];
+ for(let index=0;index<results.length;index++){
+  const result=results[index];
+  if(result.status==="fulfilled"){items.push(...result.value.items);diagnostics.push(result.value.diagnostic);}
+  else diagnostics.push({provider:providers[index].name,error:String(result.reason?.message||result.reason).slice(0,240)});
+ }
+ if(!items.length)throw Error("News discovery returned no parseable feed items: "+JSON.stringify(diagnostics).slice(0,900));
  return items;
 }
 async function readArticle(item){
@@ -322,7 +329,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
    searchCuratedSportsFeeds(f.sport).catch(error=>({items:[],errors:[String(error?.message||error).slice(0,120)]}))
   ]);
   found.push(...(curatedResults.items||curatedResults));
-  for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);
+  for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);\n  if(curatedResults.diagnostics?.length)errors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
