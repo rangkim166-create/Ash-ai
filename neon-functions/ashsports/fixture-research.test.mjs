@@ -71,7 +71,7 @@ test("uses global English news editions for international fixture coverage",()=>
  assert.equal(providers[2].name,"bing_news");
 });
 
-import { normalizeResearchConfidence, collectNewsProviderFailures } from "./fixture-research.mjs";
+import { normalizeResearchConfidence, collectNewsProviderFailures, collectResearchProviderFailures } from "./fixture-research.mjs";
 test("normalizes numeric and labelled AI confidence consistently",()=>{
  assert.equal(normalizeResearchConfidence(82),82);
  assert.equal(normalizeResearchConfidence("73"),73);
@@ -197,5 +197,19 @@ test("retains failed Google and Bing providers when another news feed succeeds",
  assert.deepEqual(collectNewsProviderFailures(diagnostics),[
   {provider:"google_news_uk",error:"HTTP 503"},
   {provider:"bing_news",error:"HTTP 429"}
+ ]);
+});
+
+
+test("exposes structured search and curated feed failures in research coverage",()=>{
+ const failures=collectResearchProviderFailures([
+  {provider:"google_news_uk",error:"HTTP 503"},
+  {provider:"bing_news",error:"HTTP 429"}
+ ],["bbc_football: HTTP 503","sky_football: no parseable RSS entries"]);
+ assert.deepEqual(failures,[
+  {provider:"google_news_uk",error:"HTTP 503"},
+  {provider:"bing_news",error:"HTTP 429"},
+  {provider:"bbc_football",error:"HTTP 503"},
+  {provider:"sky_football",error:"no parseable RSS entries"}
  ]);
 });
