@@ -170,7 +170,7 @@ export function isRealWorldCandidate(candidate) {
 export function mapCandidateToFixture(candidate, fixture) {
   if (!isRealWorldCandidate(candidate)) return null;
   const market = String(candidate?.market || "").toLowerCase();
-  if (!/^(h2h|1x2|match result|full[ -]?time result|match winner|moneyline|winner|to win match)$/.test(market.trim())) return null;
+  if (!/^(h2h|1x2|match result|regulation result|full[ -]?time result|match winner|moneyline|winner|to win match)$/.test(market.trim())) return null;
   let home = candidate.homeTeam, away = candidate.awayTeam;
   if (!home || !away) ({ homeTeam: home, awayTeam: away } = parseEventTeams(candidate.eventName || ""));
   const fixtureHome = normalizeTeam(fixture.home), fixtureAway = normalizeTeam(fixture.away);
@@ -184,7 +184,10 @@ export function mapCandidateToFixture(candidate, fixture) {
   let outcomeName = null;
   if (selection === fixtureHome) outcomeName = fixture.home;
   else if (selection === fixtureAway) outcomeName = fixture.away;
-  else if (["draw","the draw","tie","x"].includes(selection) && String(fixture.sport).toLowerCase() === "football") outcomeName = "Draw";
+  else if (["draw","the draw","tie","x"].includes(selection) && (
+    String(fixture.sport).toLowerCase() === "football" ||
+    (String(fixture.sport).toLowerCase() === "basketball" && market.trim() === "regulation result")
+  )) outcomeName = "Draw";
   if (!outcomeName) return null;
   const price = Number(candidate.decimalOdds);
   if (!Number.isFinite(price) || price <= 1 || price > 1000) return null;
@@ -432,8 +435,13 @@ export function extractBetPawaEventCandidates(game) {
     const isStandardOneXTwo = sport === "football" && (typeId
       ? typeId === "3743"
       : /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?|match result|full.?time result)$/i.test(marketName));
+    // BetPawa's verified basketball 1X2 - FT market is regulation time only;
+    // its own market explainer explicitly excludes overtime.
+    const isBasketballRegulationResult = sport === "basketball" && (typeId
+      ? typeId === "3743" && /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?)$/i.test(marketName)
+      : /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?)$/i.test(marketName));
     const isTwoWayWinner = sport !== "football" && /^(?:match winner|winner|to win match|moneyline|match result)$/i.test(marketName);
-    if (!isStandardOneXTwo && !isTwoWayWinner) continue;
+    if (!isStandardOneXTwo && !isBasketballRegulationResult && !isTwoWayWinner) continue;
     for (const row of Array.isArray(market?.row) ? market.row : []) {
       for (const price of Array.isArray(row?.prices) ? row.prices : []) {
         const decimalOdds = Number(price?.odds ?? price?.odd_value);
@@ -443,9 +451,11 @@ export function extractBetPawaEventCandidates(game) {
         if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
         else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
         else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
-        if (![homeTeam, awayTeam, ...(sport === "football" ? ["Draw"] : [])].includes(selection)) continue;
+        const allowsDraw = sport === "football" || isBasketballRegulationResult;
+        if (![homeTeam, awayTeam, ...(allowsDraw ? ["Draw"] : [])].includes(selection)) continue;
         candidates.push({
-          selection, decimalOdds, market: sport === "football" ? "Match Result" : "Match Winner",
+          selection, decimalOdds,
+          market: sport === "football" ? "Match Result" : isBasketballRegulationResult ? "Regulation Result" : "Match Winner",
           homeTeam, awayTeam, eventName, sport, competition, startsAt: startsAtDate.toISOString()
         });
       }
