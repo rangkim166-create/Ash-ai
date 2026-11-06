@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -550,4 +550,16 @@ test("does not treat duplicate or missing outcomes as a complete market", () => 
     { sport: "football", market: "Match Result", homeTeam: "A", awayTeam: "B", startsAt: "2026-11-07T12:00:00Z", selection: "B" }
   ];
   assert.deepEqual(filterCompleteScrapedMarkets(candidates), []);
+});
+
+
+test("matches shortened basketball team aliases to one canonical fixture", () => {
+  assert.equal(teamsEquivalent("New Zealand Breakers", "Breakers"), true);
+  assert.equal(teamsEquivalent("San Miguel Beermen", "S.M. Beermen"), true);
+  assert.equal(teamsEquivalent("Hiroshima Dragonflies", "Dragonflies"), true);
+  assert.equal(teamsEquivalent("Arsenal", "Chelsea"), false);
+  const fixture = { id: "basketball:nbl-canonical", sport: "basketball", home: "Tasmania Jackjumpers", away: "New Zealand Breakers", starts_at: "2026-11-06T08:30:00.000Z" };
+  const mapped = mapCandidateToFixture({ eventName: "Tasmania Jackjumpers vs Breakers", sport: "basketball", market: "Match Winner", selection: "Breakers", decimalOdds: 2.2, startsAt: fixture.starts_at }, fixture);
+  assert.equal(mapped.matchId, fixture.id);
+  assert.equal(mapped.outcomeName, "New Zealand Breakers");
 });
