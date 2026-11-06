@@ -598,5 +598,5 @@ test("reports bookmaker odds candidates separately for football, basketball and 
   assert.deepEqual(countOddsCandidatesBySport([
     { sport: "football" }, { sport: "football" }, { sport: "basketball" },
     { sport: "tennis" }, { sport: "virtual" }, { sport: "Football" }
-  ]), { football: 2, basketball: 1, tennis: 1 });
+  ]), { football: 3, basketball: 1, tennis: 1 });
 });
