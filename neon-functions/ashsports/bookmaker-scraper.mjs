@@ -373,13 +373,15 @@ async function fetchPublicPage(inputUrl) {
 }
 
 const BETPAWA_MARKET_TYPES = ["3743","28000810","28000850","4693","1096755","3795"];
-export function buildBetPawaListQuery(now = new Date(), skip = 0) {
+export function buildBetPawaListQuery(now = new Date(), skip = 0, categoryId = "2") {
+  const category = String(categoryId);
+  if (!["2", "3", "452"].includes(category)) throw new Error("Unsupported real-sport BetPawa category");
   const start = new Date(now);
   return {
     queries: [{
       query: {
         eventType: "UPCOMING",
-        categories: ["2"],
+        categories: [category],
         zones: {},
         hasOdds: true,
         startTime: {
@@ -413,18 +415,23 @@ export function extractBetPawaEventCandidates(game) {
   const awayTeam = String(away?.name || "").trim();
   const startsAtDate = new Date(game?.startTime || game?.start_time || "");
   if (!homeTeam || !awayTeam || !Number.isFinite(startsAtDate.getTime())) return [];
-  const startsAt = startsAtDate.toISOString();
+  const categoryId = String(game?.category?.id ?? game?.categoryId ?? game?.category_id ?? "");
+  const categoryName = String(game?.category?.name || game?.sport?.name || game?.sportName || "").toLowerCase();
+  const sport = categoryId === "2" || /football|soccer/.test(categoryName) ? "football"
+    : categoryId === "3" || /basketball/.test(categoryName) ? "basketball"
+    : categoryId === "452" || /tennis/.test(categoryName) ? "tennis" : null;
+  if (!sport) return [];
   const competition = String(game?.competition?.name || game?.category?.name || game?.tournament?.name || "BetPawa");
   const eventName = homeTeam + " vs " + awayTeam;
   const candidates = [];
   for (const market of Array.isArray(game?.markets) ? game.markets : []) {
     const typeId = String(market?.marketType?.id ?? market?.marketTypeId ?? "");
-    const marketName = String(market?.marketType?.displayName || market?.marketType?.name || market?.name || "");
-    // BetPawa's 1UP and 2UP markets are also labelled 1X2. Only accept
-    // the standard full-time 1X2 market (ID 3743), never early-payout variants.
-    const isStandardOneXTwo = typeId ? typeId === "3743"
-      : /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?|match result|full.?time result)$/i.test(marketName.trim());
-    if (!isStandardOneXTwo) continue;
+    const marketName = String(market?.marketType?.displayName || market?.marketType?.name || market?.name || "").trim();
+    const isStandardOneXTwo = sport === "football" && (typeId
+      ? typeId === "3743"
+      : /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?|match result|full.?time result)$/i.test(marketName));
+    const isTwoWayWinner = sport !== "football" && /^(?:match winner|winner|to win match|moneyline|match result)$/i.test(marketName);
+    if (!isStandardOneXTwo && !isTwoWayWinner) continue;
     for (const row of Array.isArray(market?.row) ? market.row : []) {
       for (const price of Array.isArray(row?.prices) ? row.prices : []) {
         const decimalOdds = Number(price?.odds ?? price?.odd_value);
@@ -434,10 +441,10 @@ export function extractBetPawaEventCandidates(game) {
         if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
         else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
         else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
-        if (![homeTeam, awayTeam, "Draw"].includes(selection)) continue;
+        if (![homeTeam, awayTeam, ...(sport === "football" ? ["Draw"] : [])].includes(selection)) continue;
         candidates.push({
-          selection, decimalOdds, market: "Match Result", homeTeam, awayTeam,
-          eventName, sport: "football", competition, startsAt
+          selection, decimalOdds, market: sport === "football" ? "Match Result" : "Match Winner",
+          homeTeam, awayTeam, eventName, sport, competition, startsAt: startsAtDate.toISOString()
         });
       }
     }
@@ -449,17 +456,15 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   const source = validateSourceUrl(sourceUrl);
   const origin = source.origin;
   const listEndpoint = new URL("/api/sportsbook/v4/events/lists/by-queries", origin);
-  const buildListUrl = (skip = 0) => {
+  const buildListUrl = (skip = 0, categoryId = "2") => {
     const url = new URL(listEndpoint);
-    url.searchParams.set("q", JSON.stringify(buildBetPawaListQuery(now, skip)));
+    url.searchParams.set("q", JSON.stringify(buildBetPawaListQuery(now, skip, categoryId)));
     return url;
   };
   const baseHeaders = {
     accept: "application/json, text/plain, */*",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36",
-    devicetype: "web",
-    dnt: "1",
-    origin,
+    devicetype: "web", dnt: "1", origin,
     referer: origin + "/events?marketId=1X2&categoryId=2&day=tomorrow",
     "x-pawa-language": "en"
   };
@@ -467,11 +472,7 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
     if (depth > 2) throw new Error("BetPawa API redirected too many times");
     const headers = { ...baseHeaders };
     if (brand) headers["x-pawa-brand"] = brand;
-    const response = await fetch(url, {
-      redirect: "manual",
-      headers,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-    });
+    const response = await fetch(url, { redirect: "manual", headers, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
     if ([301,302,303,307,308].includes(response.status)) {
       const location = response.headers.get("location");
       if (!location) throw new Error("BetPawa API redirect missing location");
@@ -487,41 +488,38 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
     return { data, status: response.status, finalUrl };
   };
 
-  let listResult = null, selectedBrand = null, lastError = null;
-  // Pull two public pages (up to 100 real upcoming football events) across
-  // a seven-day window. Keep pagination bounded to protect the source and worker.
+  let selectedBrand = null, lastError = null, listResults = [];
   for (const brand of ["betpawa-uganda", "betpawa-ug", null]) {
     try {
-      const pages = [];
-      let latestResponse = null;
-      for (const skip of [0, 50]) {
-        const response = await requestJson(buildListUrl(skip).toString(), brand);
-        const outcome = extractBetPawaListEvents(response.data);
-        if (outcome.status === "malformed") throw new Error("BetPawa event-list response shape was not recognized");
-        latestResponse = response;
-        pages.push(...outcome.events);
-        if (outcome.events.length < 50) break;
+      const bySport = [];
+      for (const categoryId of ["2", "3", "452"]) {
+        const pageOffsets = categoryId === "2" ? [0, 50] : [0];
+        for (const skip of pageOffsets) {
+          const response = await requestJson(buildListUrl(skip, categoryId).toString(), brand);
+          const outcome = extractBetPawaListEvents(response.data);
+          if (outcome.status === "malformed") throw new Error("BetPawa event-list response shape was not recognized");
+          bySport.push({ categoryId, response, events: outcome.events });
+          if (outcome.events.length < 50) break;
+        }
       }
-      listResult = { ...(latestResponse || {}), events: pages };
+      listResults = bySport;
       selectedBrand = brand;
-      if (pages.length) break;
-    } catch (error) {
-      lastError = error;
-    }
+      if (bySport.some(group => group.events.length)) break;
+    } catch (error) { lastError = error; }
   }
-  if (!listResult) throw lastError || new Error("BetPawa public event list unavailable");
-  const uniqueEvents = new Map();
-  for (const event of listResult.events) {
+  if (!listResults.length) throw lastError || new Error("BetPawa public event list unavailable");
+
+  const eventMap = new Map();
+  for (const group of listResults) for (const event of group.events) {
     const id = String(event?.id ?? event?.eventId ?? "");
-    if (id) uniqueEvents.set(id, event);
+    if (id) eventMap.set(group.categoryId + ":" + id, { ...event, __ashCategoryId: group.categoryId });
   }
-  const events = [...uniqueEvents.values()]
+  const events = [...eventMap.values()]
     .filter(event => event && (event.id != null || event.eventId != null))
     .sort((a,b) => Date.parse(a.startTime || a.start_time || "") - Date.parse(b.startTime || b.start_time || ""))
-    .slice(0, 100);
-  const structuredData = [listResult.data];
-  const candidates = [];
-  const failures = [];
+    .slice(0, 200);
+  const structuredData = listResults.map(group => group.response.data);
+  const candidates = [], failures = [];
   for (let offset = 0; offset < events.length; offset += 4) {
     const batch = await Promise.all(events.slice(offset, offset + 4).map(async event => {
       const eventId = String(event.id ?? event.eventId);
@@ -529,10 +527,9 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
       try {
         const detail = await requestJson(eventUrl.toString(), selectedBrand);
         const game = detail.data?.data && !Array.isArray(detail.data.data) ? detail.data.data : (detail.data?.event || detail.data);
-        return { data: detail.data, candidates: extractBetPawaEventCandidates(game), error: null };
-      } catch (error) {
-        return { data: null, candidates: [], error: String(error?.message || error).slice(0, 240) };
-      }
+        const enriched = { ...game, category: game?.category || { id: event.__ashCategoryId, name: event.__ashCategoryId === "2" ? "Football" : event.__ashCategoryId === "3" ? "Basketball" : "Tennis" } };
+        return { data: detail.data, candidates: extractBetPawaEventCandidates(enriched), error: null };
+      } catch (error) { return { data: null, candidates: [], error: String(error?.message || error).slice(0, 240) }; }
     }));
     for (const result of batch) {
       if (result.data) structuredData.push(result.data);
@@ -541,14 +538,11 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
     }
   }
   const unique = uniqueOdds(candidates);
+  const lastResponse = listResults.at(-1)?.response;
   return {
-    candidates: unique,
-    structuredData,
-    events: events.length,
-    detailFailures: failures.length,
-    visibleText: "BetPawa public website JSON: " + events.length + " events, " + unique.length + " match-result prices",
-    finalUrl: listResult.finalUrl,
-    status: listResult.status
+    candidates: unique, structuredData, events: events.length, detailFailures: failures.length,
+    visibleText: "BetPawa public website JSON: " + events.length + " football, basketball and tennis events, " + unique.length + " match-winner prices",
+    finalUrl: lastResponse?.finalUrl || source.toString(), status: lastResponse?.status || 200
   };
 }
 
@@ -655,30 +649,36 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   const structuredData = [];
   const eventMap = new Map();
   const listUrls = [];
+  // Expand the existing authorized public board coverage: football and basketball,
+  // with bounded pagination across both upcoming periods. Tennis is not requested
+  // until Betika's Uganda sport ID is verified from its own public response.
   for (const period of [-1, 1]) {
-    const listUrl = new URL(basePath + "/matches", apiOrigin);
-    for (const [key,value] of Object.entries({
-      page: "1", limit: "50", tab: "upcoming", sub_type_id: "1",
-      sport_id: "14,139", sort_id: "2", period_id: String(period), esports: "false"
-    })) listUrl.searchParams.set(key, value);
-    listUrls.push(listUrl.toString());
-    try {
-      const response = await requestJson(listUrl.toString());
-      const outcome = extractBetikaListItems(response.data);
-      if (outcome.status === "malformed") throw new Error("Betika event-list response shape was not recognized");
-      structuredData.push(response.data);
-      for (const event of outcome.items) {
-        const id = String(event?.parent_match_id || "");
-        if (id) eventMap.set(id, event);
+    for (const page of [1, 2, 3]) {
+      const listUrl = new URL(basePath + "/matches", apiOrigin);
+      for (const [key,value] of Object.entries({
+        page: String(page), limit: "50", tab: "upcoming", sub_type_id: "1",
+        sport_id: "14,139", sort_id: "2", period_id: String(period), esports: "false"
+      })) listUrl.searchParams.set(key, value);
+      listUrls.push(listUrl.toString());
+      try {
+        const response = await requestJson(listUrl.toString());
+        const outcome = extractBetikaListItems(response.data);
+        if (outcome.status === "malformed") throw new Error("Betika event-list response shape was not recognized");
+        structuredData.push(response.data);
+        for (const event of outcome.items) {
+          const id = String(event?.parent_match_id || "");
+          if (id) eventMap.set(id, event);
+        }
+        if (outcome.items.length < 50) break;
+      } catch (error) {
+        if (eventMap.size) break;
+        throw error;
       }
-    } catch (error) {
-      if (period === 1 && eventMap.size) continue;
-      throw error;
     }
   }
   const events = [...eventMap.values()]
     .sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""))
-    .slice(0, 24);
+    .slice(0, 48);
   const candidates = [];
   const failures = [];
   for (let offset = 0; offset < events.length; offset += 6) {
