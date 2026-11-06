@@ -346,10 +346,10 @@ test("extracts Betika football 1X2 prices and converts Uganda kickoff to UTC", (
 test("extracts Betika two-way basketball match-winner prices", () => {
   const base = {
     parent_match_id: 202, home_team: "Lakers", away_team: "Celtics",
-    start_time: "2026-11-05 18:00:00", sport_id: 139, competition_name: "NBA"
+    start_time: "2026-11-05 18:00:00", sport_id: 6, competition_name: "NBA"
   };
   const detail = {
-    meta: { sport_id: 139 },
+    meta: { sport_id: 6, sport_name: "Basketball" },
     data: [{ sub_type_id: 1, name: "Match Winner", odds: [
       { display: "Home", odd_value: "1.80" },
       { display: "Away", odd_value: "2.05" }
@@ -428,4 +428,91 @@ test("BetPawa non-football extractor rejects football 1X2 and unrelated markets"
     ]
   });
   assert.deepEqual(candidates, []);
+});
+
+
+test("extracts BetPawa basketball regulation-time 1X2 with a correctly labelled draw", () => {
+  const candidates = extractBetPawaEventCandidates({
+    startTime: "2026-11-07T18:00:00.000Z",
+    category: { id: "3", name: "Basketball" },
+    competition: { name: "NBA" },
+    participants: [{ name: "Lakers" }, { name: "Celtics" }],
+    markets: [{
+      marketType: {
+        id: "3743",
+        name: "1X2 - FT",
+        displayName: "1X2 | Full Time",
+        explainer: "Result is based on regular playing time only - Overtime does not count."
+      },
+      row: [{ prices: [
+        { name: "1", odds: "2.10" },
+        { name: "X", odds: "12.00" },
+        { name: "2", odds: "1.75" }
+      ] }]
+    }]
+  });
+  assert.equal(candidates.length, 3);
+  assert.equal(candidates[0].sport, "basketball");
+  assert.equal(candidates[0].market, "Regulation Result");
+  assert.deepEqual(candidates.map(x => x.selection), ["Lakers", "Draw", "Celtics"]);
+  const draw = mapCandidateToFixture(candidates[1], {
+    id: "basketball-regulation-1", sport: "basketball",
+    home: "Lakers", away: "Celtics"
+  });
+  assert.equal(draw.outcomeName, "Draw");
+  assert.equal(draw.decimalOdds, 12);
+});
+
+test("does not mislabel BetPawa basketball regulation draw as an overtime match winner", () => {
+  const candidates = extractBetPawaEventCandidates({
+    startTime: "2026-11-07T18:00:00.000Z",
+    category: { id: "3", name: "Basketball" },
+    participants: [{ name: "Lakers" }, { name: "Celtics" }],
+    markets: [{
+      marketType: { id: "3743", name: "1X2 - FT", displayName: "1X2 | Full Time" },
+      row: [{ prices: [
+        { name: "1", odds: "2.10" }, { name: "X", odds: "12.00" }, { name: "2", odds: "1.75" }
+      ] }]
+    }]
+  });
+  assert.equal(candidates.some(x => x.market === "Match Winner"), false);
+  assert.equal(candidates.some(x => x.market === "Regulation Result" && x.selection === "Draw"), true);
+});
+
+
+test("extracts Betika two-way tennis match-winner prices from verified sport ID 1", () => {
+  const base = {
+    parent_match_id: 303, home_team: "Player A", away_team: "Player B",
+    start_time: "2026-11-06 12:30:00", sport_id: 1, competition_name: "ATP Challenger"
+  };
+  const detail = {
+    meta: { sport_id: 1, sport_name: "Tennis" },
+    data: [{ sub_type_id: 1, name: "Match Winner", odds: [
+      { display: "Home", odd_value: "1.72" },
+      { display: "Away", odd_value: "2.15" }
+    ] }]
+  };
+  const candidates = extractBetikaEventCandidates(base, detail);
+  assert.equal(candidates.length, 2);
+  assert.equal(candidates[0].sport, "tennis");
+  assert.equal(candidates[0].market, "Match Winner");
+  assert.equal(candidates[0].selection, "Player A");
+  assert.equal(candidates[1].selection, "Player B");
+});
+
+test("Betika tennis and basketball extraction never fabricates a draw", () => {
+  for (const sportId of [1, 6]) {
+    const candidates = extractBetikaEventCandidates({
+      home_team: "Player A", away_team: "Player B",
+      start_time: "2026-11-06 12:30:00", sport_id: sportId
+    }, {
+      meta: { sport_id: sportId },
+      data: [{ sub_type_id: 1, name: "1X2", odds: [
+        { display: "1", odd_value: "1.72" },
+        { display: "X", odd_value: "4.00" },
+        { display: "2", odd_value: "2.15" }
+      ] }]
+    });
+    assert.deepEqual(candidates, []);
+  }
 });

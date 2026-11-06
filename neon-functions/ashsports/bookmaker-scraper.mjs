@@ -170,7 +170,7 @@ export function isRealWorldCandidate(candidate) {
 export function mapCandidateToFixture(candidate, fixture) {
   if (!isRealWorldCandidate(candidate)) return null;
   const market = String(candidate?.market || "").toLowerCase();
-  if (!/^(h2h|1x2|match result|full[ -]?time result|match winner|moneyline|winner|to win match)$/.test(market.trim())) return null;
+  if (!/^(h2h|1x2|match result|regulation result|full[ -]?time result|match winner|moneyline|winner|to win match)$/.test(market.trim())) return null;
   let home = candidate.homeTeam, away = candidate.awayTeam;
   if (!home || !away) ({ homeTeam: home, awayTeam: away } = parseEventTeams(candidate.eventName || ""));
   const fixtureHome = normalizeTeam(fixture.home), fixtureAway = normalizeTeam(fixture.away);
@@ -184,7 +184,10 @@ export function mapCandidateToFixture(candidate, fixture) {
   let outcomeName = null;
   if (selection === fixtureHome) outcomeName = fixture.home;
   else if (selection === fixtureAway) outcomeName = fixture.away;
-  else if (["draw","the draw","tie","x"].includes(selection) && String(fixture.sport).toLowerCase() === "football") outcomeName = "Draw";
+  else if (["draw","the draw","tie","x"].includes(selection) && (
+    String(fixture.sport).toLowerCase() === "football" ||
+    (String(fixture.sport).toLowerCase() === "basketball" && market.trim() === "regulation result")
+  )) outcomeName = "Draw";
   if (!outcomeName) return null;
   const price = Number(candidate.decimalOdds);
   if (!Number.isFinite(price) || price <= 1 || price > 1000) return null;
@@ -432,8 +435,13 @@ export function extractBetPawaEventCandidates(game) {
     const isStandardOneXTwo = sport === "football" && (typeId
       ? typeId === "3743"
       : /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?|match result|full.?time result)$/i.test(marketName));
+    // BetPawa's verified basketball 1X2 - FT market is regulation time only;
+    // its own market explainer explicitly excludes overtime.
+    const isBasketballRegulationResult = sport === "basketball" && (typeId
+      ? typeId === "3743" && /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?)$/i.test(marketName)
+      : /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?)$/i.test(marketName));
     const isTwoWayWinner = sport !== "football" && /^(?:match winner|winner|to win match|moneyline|match result)$/i.test(marketName);
-    if (!isStandardOneXTwo && !isTwoWayWinner) continue;
+    if (!isStandardOneXTwo && !isBasketballRegulationResult && !isTwoWayWinner) continue;
     for (const row of Array.isArray(market?.row) ? market.row : []) {
       for (const price of Array.isArray(row?.prices) ? row.prices : []) {
         const decimalOdds = Number(price?.odds ?? price?.odd_value);
@@ -443,9 +451,11 @@ export function extractBetPawaEventCandidates(game) {
         if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
         else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
         else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
-        if (![homeTeam, awayTeam, ...(sport === "football" ? ["Draw"] : [])].includes(selection)) continue;
+        const allowsDraw = sport === "football" || isBasketballRegulationResult;
+        if (![homeTeam, awayTeam, ...(allowsDraw ? ["Draw"] : [])].includes(selection)) continue;
         candidates.push({
-          selection, decimalOdds, market: sport === "football" ? "Match Result" : "Match Winner",
+          selection, decimalOdds,
+          market: sport === "football" ? "Match Result" : isBasketballRegulationResult ? "Regulation Result" : "Match Winner",
           homeTeam, awayTeam, eventName, sport, competition, startsAt: startsAtDate.toISOString()
         });
       }
@@ -578,8 +588,8 @@ export function extractBetikaEventCandidates(base, detail) {
   // Zoom leagues and virtual/eSoccer events are simulated products, not real fixtures.
   if (game.is_esport === true || base?.is_esport === true || /zoom|virtual|esport|e.?soccer|simulated|cyber/.test(sportLabel)) return [];
   const sport = sportId === 14 || /football|soccer/.test(sportLabel) ? "football"
-    : sportId === 139 || /basket/.test(sportLabel) ? "basketball"
-    : /tennis/.test(sportLabel) ? "tennis" : null;
+    : sportId === 6 || /basket/.test(sportLabel) ? "basketball"
+    : sportId === 1 || /tennis/.test(sportLabel) ? "tennis" : null;
   const markets = Array.isArray(detail?.data) ? detail.data
     : Array.isArray(detail?.data?.data) ? detail.data.data
     : Array.isArray(game.odds) ? game.odds : [];
@@ -591,9 +601,12 @@ export function extractBetikaEventCandidates(base, detail) {
     const marketName = String(market?.name || market?.market_name || "");
     if (subtype !== 1 && !/(?:1x2|match result|full.?time result|match winner|moneyline)/i.test(marketName)) continue;
     const prices = Array.isArray(market?.odds) ? market.odds : [];
-    if (prices.length < 2) continue;
-    const marketLabel = prices.length === 3 ? "Match Result" : "Match Winner";
-    if (prices.length === 2 && !sport) continue;
+    if (prices.length < 2 || !sport) continue;
+    // Only football supports the three-way result here. Basketball and tennis
+    // are imported from two-way match-winner prices, never an invented draw.
+    if (prices.length === 3 && sport !== "football") continue;
+    if (prices.length === 2 && !/(?:match winner|winner|moneyline|1x2|full.?time result)/i.test(marketName) && subtype !== 1) continue;
+    const marketLabel = sport === "football" && prices.length === 3 ? "Match Result" : "Match Winner";
     for (const price of prices) {
       const decimalOdds = Number(price?.odd_value ?? price?.odds);
       if (!Number.isFinite(decimalOdds) || decimalOdds <= 1 || decimalOdds > 1000) continue;
@@ -602,11 +615,10 @@ export function extractBetikaEventCandidates(base, detail) {
       if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
       else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
       else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
-      if (![homeTeam, awayTeam, "Draw"].includes(selection)) continue;
+      if (![homeTeam, awayTeam, ...(sport === "football" && prices.length === 3 ? ["Draw"] : [])].includes(selection)) continue;
       candidates.push({
         selection, decimalOdds, market: marketLabel, homeTeam, awayTeam,
-        eventName, sport: sport || (prices.length === 3 ? "football" : null),
-        competition, startsAt
+        eventName, sport, competition, startsAt
       });
     }
   }
@@ -651,15 +663,14 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   const structuredData = [];
   const eventMap = new Map();
   const listUrls = [];
-  // Expand the existing authorized public board coverage: football and basketball,
-  // with bounded pagination across both upcoming periods. Tennis is not requested
-  // until Betika's Uganda sport ID is verified from its own public response.
+  // Use Betika's own public sport catalogue: 14=Soccer, 6=Basketball, 1=Tennis.
+  // Sport 139 is explicitly Zoom Soccer and is deliberately excluded.
   for (const period of [-1, 1]) {
     for (const page of [1, 2, 3]) {
       const listUrl = new URL(basePath + "/matches", apiOrigin);
       for (const [key,value] of Object.entries({
         page: String(page), limit: "50", tab: "upcoming", sub_type_id: "1",
-        sport_id: "14,139", sort_id: "2", period_id: String(period), esports: "false"
+        sport_id: "14,6,1", sort_id: "2", period_id: String(period), esports: "false"
       })) listUrl.searchParams.set(key, value);
       listUrls.push(listUrl.toString());
       try {
