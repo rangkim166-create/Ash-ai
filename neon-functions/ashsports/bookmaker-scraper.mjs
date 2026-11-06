@@ -373,6 +373,26 @@ async function fetchPublicPage(inputUrl) {
 }
 
 const BETPAWA_MARKET_TYPES = ["3743","28000810","28000850","4693","1096755","3795"];
+export function buildBetPawaListQuery(now = new Date(), skip = 0) {
+  const start = new Date(now);
+  return {
+    queries: [{
+      query: {
+        eventType: "UPCOMING",
+        categories: ["2"],
+        zones: {},
+        hasOdds: true,
+        startTime: {
+          gte: start.toISOString(),
+          lt: new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      },
+      view: { marketTypes: BETPAWA_MARKET_TYPES },
+      skip: Math.max(0, Math.floor(Number(skip) || 0)),
+      take: 50
+    }]
+  };
+}
 
 export function extractBetPawaListEvents(body) {
   const envelope = body?.responses;
@@ -428,25 +448,12 @@ export function extractBetPawaEventCandidates(game) {
 async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   const source = validateSourceUrl(sourceUrl);
   const origin = source.origin;
-  const listUrl = new URL("/api/sportsbook/v4/events/lists/by-queries", origin);
-  const query = {
-    queries: [{
-      query: {
-        eventType: "UPCOMING",
-        categories: ["2"],
-        zones: {},
-        hasOdds: true,
-        startTime: {
-          gte: now.toISOString(),
-          lt: new Date(now.getTime() + 36 * 60 * 60 * 1000).toISOString()
-        }
-      },
-      view: { marketTypes: BETPAWA_MARKET_TYPES },
-      skip: 0,
-      take: 50
-    }]
+  const listEndpoint = new URL("/api/sportsbook/v4/events/lists/by-queries", origin);
+  const buildListUrl = (skip = 0) => {
+    const url = new URL(listEndpoint);
+    url.searchParams.set("q", JSON.stringify(buildBetPawaListQuery(now, skip)));
+    return url;
   };
-  listUrl.searchParams.set("q", JSON.stringify(query));
   const baseHeaders = {
     accept: "application/json, text/plain, */*",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/134.0.0.0 Safari/537.36",
@@ -481,23 +488,37 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   };
 
   let listResult = null, selectedBrand = null, lastError = null;
+  // Pull two public pages (up to 100 real upcoming football events) across
+  // a seven-day window. Keep pagination bounded to protect the source and worker.
   for (const brand of ["betpawa-uganda", "betpawa-ug", null]) {
     try {
-      const response = await requestJson(listUrl.toString(), brand);
-      const outcome = extractBetPawaListEvents(response.data);
-      if (outcome.status === "malformed") throw new Error("BetPawa event-list response shape was not recognized");
-      listResult = { ...response, events: outcome.events };
+      const pages = [];
+      let latestResponse = null;
+      for (const skip of [0, 50]) {
+        const response = await requestJson(buildListUrl(skip).toString(), brand);
+        const outcome = extractBetPawaListEvents(response.data);
+        if (outcome.status === "malformed") throw new Error("BetPawa event-list response shape was not recognized");
+        latestResponse = response;
+        pages.push(...outcome.events);
+        if (outcome.events.length < 50) break;
+      }
+      listResult = { ...(latestResponse || {}), events: pages };
       selectedBrand = brand;
-      if (outcome.events.length) break;
+      if (pages.length) break;
     } catch (error) {
       lastError = error;
     }
   }
   if (!listResult) throw lastError || new Error("BetPawa public event list unavailable");
-  const events = listResult.events
+  const uniqueEvents = new Map();
+  for (const event of listResult.events) {
+    const id = String(event?.id ?? event?.eventId ?? "");
+    if (id) uniqueEvents.set(id, event);
+  }
+  const events = [...uniqueEvents.values()]
     .filter(event => event && (event.id != null || event.eventId != null))
     .sort((a,b) => Date.parse(a.startTime || a.start_time || "") - Date.parse(b.startTime || b.start_time || ""))
-    .slice(0, 24);
+    .slice(0, 100);
   const structuredData = [listResult.data];
   const candidates = [];
   const failures = [];

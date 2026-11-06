@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, extractBetikaListItems, extractBetikaEventCandidates } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, extractBetikaListItems, extractBetikaEventCandidates } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -227,6 +227,19 @@ test("extracts flat football odds using known historical team names", () => {
 test("does not create flat-text fixtures from unknown team pairs", () => {
   const pageText = "05/11, 17:45 Mystery Club Other Mystery 1.90 3.50 4.00 Upcoming Live +82 Markets";
   assert.equal(extractVisibleOddsCandidates(pageText, new Date("2026-11-05T00:00:00Z"), [], ["Known FC"]).length, 0);
+});
+
+test("BetPawa event pagination covers seven days in bounded 50-event pages", () => {
+  const now = new Date("2026-11-06T00:00:00.000Z");
+  const first = buildBetPawaListQuery(now, 0).queries[0];
+  const second = buildBetPawaListQuery(now, 50).queries[0];
+  assert.equal(first.query.startTime.gte, now.toISOString());
+  assert.equal(first.query.startTime.lt, "2026-11-13T00:00:00.000Z");
+  assert.equal(first.take, 50);
+  assert.equal(first.skip, 0);
+  assert.equal(second.skip, 50);
+  assert.deepEqual(first.query.categories, ["2"]);
+  assert.equal(first.query.eventType, "UPCOMING");
 });
 
 test("reads BetPawa public event-list response envelopes", () => {
