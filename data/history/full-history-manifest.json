@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-05T12:30:53Z",
+  "generated_at_utc": "2026-11-06T12:14:16Z",
   "coverage_note": "Best-effort public historical results, not every match ever played. Missing upstream seasons are expected. NBA source is team game logs; tennis mirror retains the original non-commercial CC BY-NC-SA terms. Results are not historical betting odds.",
   "sources": [
     {
@@ -3479,8 +3479,8 @@
     {
       "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_1997.tar.xz",
       "path": "data/history/raw/basketball/nbastats_1997.tar.xz",
-      "bytes": 7227600,
-      "status": "ok"
+      "status": "unavailable",
+      "error": "The read operation timed out"
     },
     {
       "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_1997.tar.xz",
@@ -3755,8 +3755,8 @@
     {
       "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_2020.tar.xz",
       "path": "data/history/raw/basketball/nbastats_2020.tar.xz",
-      "bytes": 7493576,
-      "status": "ok"
+      "status": "unavailable",
+      "error": "The read operation timed out"
     },
     {
       "url": "https://raw.githubusercontent.com/shufinskiy/nba_data/main/datasets/nbastats_po_2020.tar.xz",
@@ -3826,8 +3826,8 @@
     }
   ],
   "summary": {
-    "downloaded": 329,
-    "unavailable": 308,
-    "downloaded_bytes": 319934307
+    "downloaded": 327,
+    "unavailable": 310,
+    "downloaded_bytes": 305213131
   }
 }
