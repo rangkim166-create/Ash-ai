@@ -71,7 +71,7 @@ test("uses global English news editions for international fixture coverage",()=>
  assert.equal(providers[2].name,"bing_news");
 });
 
-import { normalizeResearchConfidence } from "./fixture-research.mjs";
+import { normalizeResearchConfidence, collectNewsProviderFailures } from "./fixture-research.mjs";
 test("normalizes numeric and labelled AI confidence consistently",()=>{
  assert.equal(normalizeResearchConfidence(82),82);
  assert.equal(normalizeResearchConfidence("73"),73);
@@ -185,4 +185,17 @@ test("recognizes exact three-letter initials used by publishers for clubs",()=>{
  assert.equal(isFixtureRelevantResult({title:"PSG injury update"}, {home:"Paris Saint-Germain",away:"Chelsea"}),true);
  assert.equal(isFixtureRelevantResult({title:"PSG are not the subject of this article"}, {home:"Paris Saint-Germain",away:"Chelsea"}),true);
  assert.equal(isFixtureRelevantResult({title:"PSGx unrelated report"}, {home:"Paris Saint-Germain",away:"Chelsea"}),false);
+});
+
+
+test("retains failed Google and Bing providers when another news feed succeeds",()=>{
+ const diagnostics=[
+  {provider:"google_news_us",status:200,parsedItems:4},
+  {provider:"google_news_uk",error:"HTTP 503"},
+  {provider:"bing_news",error:"HTTP 429"}
+ ];
+ assert.deepEqual(collectNewsProviderFailures(diagnostics),[
+  {provider:"google_news_uk",error:"HTTP 503"},
+  {provider:"bing_news",error:"HTTP 429"}
+ ]);
 });
