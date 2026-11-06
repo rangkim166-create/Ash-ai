@@ -60,3 +60,12 @@ test("Groq research assessment requests JSON mode and disables tool calls",()=>{
  assert.equal(options.tool_choice,"none");
  assert.equal(options.max_tokens,1500);
 });
+
+import { buildNewsSearchProviders } from "./fixture-research.mjs";
+test("uses global English news editions for international fixture coverage",()=>{
+ const providers=buildNewsSearchProviders("NK Osijek U19 HNK Rijeka U19 team news");
+ assert.equal(providers.length,2);
+ assert.match(providers[0].url,/hl=en-US&gl=US&ceid=US:en/);
+ assert.match(providers[0].url,/NK%20Osijek%20U19/);
+ assert.match(providers[1].url,/format=rss/);
+});

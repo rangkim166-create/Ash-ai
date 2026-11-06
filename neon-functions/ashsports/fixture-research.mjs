@@ -90,11 +90,15 @@ export function isFixtureRelevantResult(item,fixture){
  return mentions(home)||mentions(away);
 }
 
-async function search(query){
- const providers=[
-  {name:"google_news",url:"https://news.google.com/rss/search?q="+encodeURIComponent(query)+"&hl=en-UG&gl=UG&ceid=UG:en"},
-  {name:"bing_news",url:"https://www.bing.com/news/search?q="+encodeURIComponent(query)+"&format=rss"}
+export function buildNewsSearchProviders(query){
+ const encoded=encodeURIComponent(query);
+ return [
+  {name:"google_news",url:"https://news.google.com/rss/search?q="+encoded+"&hl=en-US&gl=US&ceid=US:en"},
+  {name:"bing_news",url:"https://www.bing.com/news/search?q="+encoded+"&format=rss"}
  ];
+}
+async function search(query){
+ const providers=buildNewsSearchProviders(query);
  const results=await Promise.allSettled(providers.map(async provider=>{
   const r=await fetch(provider.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0; +https://example.com/bot)","accept":"application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
   if(!r.ok)throw Error(provider.name+" HTTP "+r.status);
@@ -183,7 +187,10 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const found=[],errors=[];
   const searchResults=await Promise.allSettled(queries.map(q=>search(q)));
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
-  const unique=[...new Map(found.filter(x=>(x.ageHours==null||x.ageHours<=24*7)&&isFixtureRelevantResult(x,f)).map(x=>[x.url,x])).values()]
+  const rawSearchResultCount=found.length;
+  const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
+  const relevantFound=freshFound.filter(x=>isFixtureRelevantResult(x,f));
+  const unique=[...new Map(relevantFound.map(x=>[x.url,x])).values()]
    .sort((a,b)=>(a.ageHours??999999)-(b.ageHours??999999) || (a.sourceTier==="official_league_or_federation"?-1:0)).slice(0,24);
   const pageResults=await Promise.allSettled(unique.slice(0,12).map(item=>readArticle(item)));
   const pages=pageResults.filter(result=>result.status==='fulfilled'&&result.value).map(result=>result.value);
@@ -194,7 +201,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const fullArticleCount=fullPages.length;
   const categoryCounts=Object.fromEntries(["injury_fitness","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,groqKey);
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:Number(assessment?.confidence)||0,searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:Number(assessment?.confidence)||0,searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
