@@ -108,3 +108,15 @@ test("refuses unsupported or local AI providers",()=>{
  assert.throws(()=>buildResearchProviderRequest("qwen","test-key","prompt"),/Unsupported online AI provider/);
  assert.throws(()=>buildResearchProviderRequest("local","test-key","prompt"),/Unsupported online AI provider/);
 });
+
+test("basketball research covers player availability, roster, fatigue and team statistics",()=>{
+ const queries=buildFixtureQueries({sport:"basketball",home:"Boston Celtics",away:"Los Angeles Lakers",competition:"NBA"},new Date("2026-11-06T10:00:00Z"));
+ const all=queries.join(" ").toLowerCase();
+ assert.equal(queries.length,14);
+ for(const term of ["injury report","questionable","probable","minutes restriction","starting five","back to back","fatigue","offensive rating","defensive rating","head to head","inactive list"])assert.ok(all.includes(term),term);
+ assert.ok(!all.includes("starting xi"));
+});
+test("basketball news categories distinguish availability, rest and team metrics",()=>{
+ const categories=classifyEvidenceCategory("Player questionable with an ankle injury, minutes restriction after a back-to-back; team offensive rating and defensive rating updated");
+ for(const category of ["injury_fitness","player_availability","rest_fatigue","team_statistics"])assert.ok(categories.includes(category),category);
+});
