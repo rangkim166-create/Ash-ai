@@ -663,35 +663,54 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   const structuredData = [];
   const eventMap = new Map();
   const listUrls = [];
-  // Use Betika's own public sport catalogue: 14=Soccer, 6=Basketball, 1=Tennis.
-  // Sport 139 is explicitly Zoom Soccer and is deliberately excluded.
-  for (const period of [-1, 1]) {
-    for (const page of [1, 2, 3]) {
-      const listUrl = new URL(basePath + "/matches", apiOrigin);
-      for (const [key,value] of Object.entries({
-        page: String(page), limit: "50", tab: "upcoming", sub_type_id: "1",
-        sport_id: "14,6,1", sort_id: "2", period_id: String(period), esports: "false"
-      })) listUrl.searchParams.set(key, value);
-      listUrls.push(listUrl.toString());
-      try {
-        const response = await requestJson(listUrl.toString());
-        const outcome = extractBetikaListItems(response.data);
-        if (outcome.status === "malformed") throw new Error("Betika event-list response shape was not recognized");
-        structuredData.push(response.data);
-        for (const event of outcome.items) {
-          const id = String(event?.parent_match_id || "");
-          if (id) eventMap.set(id, event);
+  // Betika's public API accepts one sport ID per request:
+  // 14=Soccer, 6=Basketball, 1=Tennis. Sport 139 is Zoom Soccer and excluded.
+  const sportNames = { "14": "Soccer", "6": "Basketball", "1": "Tennis" };
+  for (const sportId of Object.keys(sportNames)) {
+    for (const period of [-1, 1]) {
+      for (const page of [1, 2]) {
+        const listUrl = new URL(basePath + "/matches", apiOrigin);
+        for (const [key,value] of Object.entries({
+          page: String(page), limit: "50", tab: "upcoming", sub_type_id: "1",
+          sport_id: sportId, sort_id: "2", period_id: String(period), esports: "false"
+        })) listUrl.searchParams.set(key, value);
+        listUrls.push(listUrl.toString());
+        try {
+          const response = await requestJson(listUrl.toString());
+          const outcome = extractBetikaListItems(response.data);
+          if (outcome.status === "malformed") throw new Error("Betika event-list response shape was not recognized");
+          structuredData.push(response.data);
+          for (const event of outcome.items) {
+            const id = String(event?.parent_match_id || "");
+            if (!id) continue;
+            eventMap.set(sportId + ":" + id, {
+              ...event,
+              sport_id: String(event?.sport_id ?? sportId),
+              sport_name: event?.sport_name || sportNames[sportId]
+            });
+          }
+          if (outcome.items.length < 50) break;
+        } catch (error) {
+          // Keep other sports flowing if one category is temporarily unavailable.
+          if (page === 1) console.warn("[ash-bookmaker-scraper] Betika sport list unavailable", sportId, String(error?.message || error).slice(0, 180));
+          break;
         }
-        if (outcome.items.length < 50) break;
-      } catch (error) {
-        if (eventMap.size) break;
-        throw error;
       }
     }
   }
-  const events = [...eventMap.values()]
-    .sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""))
-    .slice(0, 48);
+  const bySport = new Map(Object.keys(sportNames).map(id => [id, []]));
+  for (const event of eventMap.values()) {
+    const id = String(event.sport_id || "");
+    if (bySport.has(id)) bySport.get(id).push(event);
+  }
+  // Detail a balanced sample from each verified sport rather than letting
+  // football consume the entire 48-event processing budget.
+  const events = Object.values(sportNames).flatMap((_, index) => {
+    const sportId = Object.keys(sportNames)[index];
+    return bySport.get(sportId)
+      .sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""))
+      .slice(0, 16);
+  }).sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""));
   const candidates = [];
   const failures = [];
   for (let offset = 0; offset < events.length; offset += 6) {
