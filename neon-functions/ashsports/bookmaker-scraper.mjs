@@ -588,8 +588,8 @@ export function extractBetikaEventCandidates(base, detail) {
   // Zoom leagues and virtual/eSoccer events are simulated products, not real fixtures.
   if (game.is_esport === true || base?.is_esport === true || /zoom|virtual|esport|e.?soccer|simulated|cyber/.test(sportLabel)) return [];
   const sport = sportId === 14 || /football|soccer/.test(sportLabel) ? "football"
-    : sportId === 6 || /basket/.test(sportLabel) ? "basketball"
-    : sportId === 1 || /tennis/.test(sportLabel) ? "tennis" : null;
+    : sportId === 30 || /basket/.test(sportLabel) ? "basketball"
+    : sportId === 28 || /tennis/.test(sportLabel) ? "tennis" : null;
   const markets = Array.isArray(detail?.data) ? detail.data
     : Array.isArray(detail?.data?.data) ? detail.data.data
     : Array.isArray(game.odds) ? game.odds : [];
@@ -665,8 +665,14 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   const listUrls = [];
   // Betika's public API accepts one sport ID per request:
   // 14=Soccer, 6=Basketball, 1=Tennis. Sport 139 is Zoom Soccer and excluded.
-  const sportNames = { "14": "Soccer", "6": "Basketball", "1": "Tennis" };
-  for (const sportId of Object.keys(sportNames)) {
+  // IDs read from Betika's current Uganda public catalogue:
+  // 14=Soccer, 30=Basketball, 28=Tennis. Sport 139 is Zoom Soccer.
+  const sports = [
+    { id: "14", name: "Soccer" },
+    { id: "30", name: "Basketball" },
+    { id: "28", name: "Tennis" }
+  ];
+  for (const { id: sportId, name: sportName } of sports) {
     for (const period of [-1, 1]) {
       for (const page of [1, 2]) {
         const listUrl = new URL(basePath + "/matches", apiOrigin);
@@ -686,26 +692,25 @@ async function fetchBetikaPublicOdds(now = new Date()) {
             eventMap.set(sportId + ":" + id, {
               ...event,
               sport_id: String(event?.sport_id ?? sportId),
-              sport_name: event?.sport_name || sportNames[sportId]
+              sport_name: event?.sport_name || sportName
             });
           }
           if (outcome.items.length < 50) break;
         } catch (error) {
-          // Keep other sports flowing if one category is temporarily unavailable.
           if (page === 1) console.warn("[ash-bookmaker-scraper] Betika sport list unavailable", sportId, String(error?.message || error).slice(0, 180));
           break;
         }
       }
     }
   }
-  const bySport = new Map(Object.keys(sportNames).map(id => [id, []]));
+  const bySport = new Map(sports.map(({ id }) => [id, []]));
   for (const event of eventMap.values()) {
     const id = String(event.sport_id || "");
     if (bySport.has(id)) bySport.get(id).push(event);
   }
   // Detail a balanced sample from each verified sport rather than letting
   // football consume the entire 48-event processing budget.
-  const events = Object.keys(sportNames).flatMap(sportId =>
+  const events = sports.flatMap(({ id: sportId }) =>
     bySport.get(sportId)
       .sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""))
       .slice(0, 16)

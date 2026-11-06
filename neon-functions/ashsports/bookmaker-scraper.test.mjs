@@ -346,10 +346,10 @@ test("extracts Betika football 1X2 prices and converts Uganda kickoff to UTC", (
 test("extracts Betika two-way basketball match-winner prices", () => {
   const base = {
     parent_match_id: 202, home_team: "Lakers", away_team: "Celtics",
-    start_time: "2026-11-05 18:00:00", sport_id: 6, competition_name: "NBA"
+    start_time: "2026-11-05 18:00:00", sport_id: 30, competition_name: "NBA"
   };
   const detail = {
-    meta: { sport_id: 6, sport_name: "Basketball" },
+    meta: { sport_id: 30, sport_name: "Basketball" },
     data: [{ sub_type_id: 1, name: "Match Winner", odds: [
       { display: "Home", odd_value: "1.80" },
       { display: "Away", odd_value: "2.05" }
@@ -483,10 +483,10 @@ test("does not mislabel BetPawa basketball regulation draw as an overtime match 
 test("extracts Betika two-way tennis match-winner prices from verified sport ID 1", () => {
   const base = {
     parent_match_id: 303, home_team: "Player A", away_team: "Player B",
-    start_time: "2026-11-06 12:30:00", sport_id: 1, competition_name: "ATP Challenger"
+    start_time: "2026-11-06 12:30:00", sport_id: 28, competition_name: "ATP Challenger"
   };
   const detail = {
-    meta: { sport_id: 1, sport_name: "Tennis" },
+    meta: { sport_id: 28, sport_name: "Tennis" },
     data: [{ sub_type_id: 1, name: "Match Winner", odds: [
       { display: "Home", odd_value: "1.72" },
       { display: "Away", odd_value: "2.15" }
@@ -501,7 +501,7 @@ test("extracts Betika two-way tennis match-winner prices from verified sport ID 
 });
 
 test("Betika tennis and basketball extraction never fabricates a draw", () => {
-  for (const sportId of [1, 6]) {
+  for (const sportId of [28, 30]) {
     const candidates = extractBetikaEventCandidates({
       home_team: "Player A", away_team: "Player B",
       start_time: "2026-11-06 12:30:00", sport_id: sportId
