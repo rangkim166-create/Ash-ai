@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, extractBetikaListItems, extractBetikaEventCandidates } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -519,4 +519,35 @@ test("Betika tennis does not import a fabricated draw from a three-way market", 
     ] }]
   });
   assert.deepEqual(candidates, []);
+});
+
+
+test("imports only complete football, basketball regulation and tennis winner markets", () => {
+  const candidates = [
+    { sport: "football", market: "Match Result", homeTeam: "Team A", awayTeam: "Team B", startsAt: "2026-11-07T12:00:00Z", selection: "Team A" },
+    { sport: "football", market: "Match Result", homeTeam: "Team A", awayTeam: "Team B", startsAt: "2026-11-07T12:00:00Z", selection: "Draw" },
+    { sport: "football", market: "Match Result", homeTeam: "Team A", awayTeam: "Team B", startsAt: "2026-11-07T12:00:00Z", selection: "Team B" },
+    { sport: "football", market: "Match Result", homeTeam: "Team C", awayTeam: "Team D", startsAt: "2026-11-07T13:00:00Z", selection: "Team C" },
+    { sport: "football", market: "Match Result", homeTeam: "Team C", awayTeam: "Team D", startsAt: "2026-11-07T13:00:00Z", selection: "Team D" },
+    { sport: "basketball", market: "Regulation Result", homeTeam: "Hoops A", awayTeam: "Hoops B", startsAt: "2026-11-07T14:00:00Z", selection: "Hoops A" },
+    { sport: "basketball", market: "Regulation Result", homeTeam: "Hoops A", awayTeam: "Hoops B", startsAt: "2026-11-07T14:00:00Z", selection: "Draw" },
+    { sport: "basketball", market: "Regulation Result", homeTeam: "Hoops A", awayTeam: "Hoops B", startsAt: "2026-11-07T14:00:00Z", selection: "Hoops B" },
+    { sport: "basketball", market: "Match Winner", homeTeam: "Hoops C", awayTeam: "Hoops D", startsAt: "2026-11-07T15:00:00Z", selection: "Hoops C" },
+    { sport: "basketball", market: "Match Winner", homeTeam: "Hoops C", awayTeam: "Hoops D", startsAt: "2026-11-07T15:00:00Z", selection: "Hoops D" },
+    { sport: "tennis", market: "Match Winner", homeTeam: "Player A", awayTeam: "Player B", startsAt: "2026-11-07T16:00:00Z", selection: "Player A" },
+    { sport: "tennis", market: "Match Winner", homeTeam: "Player A", awayTeam: "Player B", startsAt: "2026-11-07T16:00:00Z", selection: "Player B" }
+  ];
+  const complete = filterCompleteScrapedMarkets(candidates);
+  assert.equal(complete.length, 8);
+  assert.equal(complete.some(x => x.homeTeam === "Team C"), false);
+  assert.equal(complete.some(x => x.market === "Match Winner" && x.sport === "basketball"), false);
+});
+
+test("does not treat duplicate or missing outcomes as a complete market", () => {
+  const candidates = [
+    { sport: "football", market: "Match Result", homeTeam: "A", awayTeam: "B", startsAt: "2026-11-07T12:00:00Z", selection: "A" },
+    { sport: "football", market: "Match Result", homeTeam: "A", awayTeam: "B", startsAt: "2026-11-07T12:00:00Z", selection: "A" },
+    { sport: "football", market: "Match Result", homeTeam: "A", awayTeam: "B", startsAt: "2026-11-07T12:00:00Z", selection: "B" }
+  ];
+  assert.deepEqual(filterCompleteScrapedMarkets(candidates), []);
 });
