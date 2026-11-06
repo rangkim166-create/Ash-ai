@@ -423,13 +423,24 @@ export function countOddsCandidatesBySport(candidates = []) {
   return counts;
 }
 
+export function normalizeScrapedSport(value) {
+  const sport = String(value || "").trim().toLowerCase();
+  if (["football", "soccer"].includes(sport)) return "football";
+  if (["basketball", "tennis"].includes(sport)) return sport;
+  return null;
+}
+
 export function summarizeBookmakerScraperResults(results = []) {
   const eventCountsBySport = { football: 0, basketball: 0, tennis: 0 };
   const candidateCountsBySport = { football: 0, basketball: 0, tennis: 0 };
   for (const result of results || []) {
-    for (const sport of Object.keys(eventCountsBySport)) {
-      eventCountsBySport[sport] += Number(result?.eventCountsBySport?.[sport] || 0);
-      candidateCountsBySport[sport] += Number(result?.candidateCountsBySport?.[sport] || 0);
+    for (const [rawSport, count] of Object.entries(result?.eventCountsBySport || {})) {
+      const sport = normalizeScrapedSport(rawSport);
+      if (sport) eventCountsBySport[sport] += Number(count || 0);
+    }
+    for (const [rawSport, count] of Object.entries(result?.candidateCountsBySport || {})) {
+      const sport = normalizeScrapedSport(rawSport);
+      if (sport) candidateCountsBySport[sport] += Number(count || 0);
     }
   }
   return {
@@ -822,7 +833,7 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   }
   const unique = uniqueOdds(candidates);
   const eventCountsBySport = Object.fromEntries(sports.map(({ id, name }) => [
-    name.toLowerCase(), bySport.get(id)?.length || 0
+    normalizeScrapedSport(name), bySport.get(id)?.length || 0
   ]));
   const candidateCountsBySport = countOddsCandidatesBySport(unique);
   return {
