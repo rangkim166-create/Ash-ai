@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -132,6 +132,27 @@ test("keeps legacy JSON-string odds payloads readable during import", async () =
   assert.equal(result.runs, 1);
   assert.equal(result.oddsSaved, 3);
   assert.equal(result.unmatchedCandidates, 0);
+});
+
+test("balances BetPawa event detail capacity across football basketball and tennis", () => {
+  const make = (categoryId, count) => ({
+    categoryId,
+    events: Array.from({ length: count }, (_, index) => ({
+      id: categoryId + "-" + index,
+      startTime: new Date(Date.parse("2026-11-06T10:00:00Z") + index * 60_000).toISOString()
+    }))
+  });
+  const selected = selectBalancedBetPawaEvents([
+    make("2", 150), make("3", 35), make("452", 18)
+  ]);
+  const counts = {
+    football: selected.filter(event => event.__ashCategoryId === "2").length,
+    basketball: selected.filter(event => event.__ashCategoryId === "3").length,
+    tennis: selected.filter(event => event.__ashCategoryId === "452").length
+  };
+  assert.deepEqual(counts, { football: 100, basketball: 35, tennis: 18 });
+  assert.equal(selected.length, 153);
+  assert.equal(new Set(selected.map(event => event.id)).size, selected.length);
 });
 
 test("extracts real three-way football prices from rendered bookmaker cards", () => {
