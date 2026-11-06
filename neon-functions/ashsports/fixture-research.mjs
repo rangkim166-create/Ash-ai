@@ -130,10 +130,12 @@ function mentionsParticipant(text,participant){
  // two-token-only rule rejected all of these, even when the full name was
  // present in the headline. Accept one distinctive long token, or a short
  // acronym explicitly present in the source name, using whole-word matches.
- if(tokens.length===1)return tokens[0].length>=5&&words.has(tokens[0]);
+ if(tokens.length===1){
+  if(tokens[0].length>=5&&words.has(tokens[0]))return true;
+  const acronyms=raw.split(/[^A-Za-z0-9]+/).filter(token=>/^[A-Z0-9]{3,5}$/.test(token));
+  return acronyms.some(token=>words.has(token.toLowerCase()));
+ }
  if(tokens.length>=2)return tokens.every(token=>words.has(token));
- const acronyms=raw.split(/[^A-Za-z0-9]+/).filter(token=>/^[A-Z0-9]{3,5}$/.test(token));
- return acronyms.some(token=>words.has(token.toLowerCase()));
 }
 export function isFixtureRelevantResult(item,fixture){
  const text=String(item?.title||"")+" "+String(item?.description||"");
