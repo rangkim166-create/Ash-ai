@@ -79,3 +79,11 @@ test("normalizes numeric and labelled AI confidence consistently",()=>{
  assert.equal(normalizeResearchConfidence({overall:"low"}),35);
  assert.equal(normalizeResearchConfidence({}),0);
 });
+import { buildResearchJsonParameters } from "./fixture-research.mjs";
+test("uses the database JSON encoder for research arrays and objects",()=>{
+ const db={json:value=>({jsonValue:value})};
+ const sources=[{title:"Official team update"}],assessment={confidence:{overall:"moderate"}},coverage={rawSearchResults:3};
+ assert.deepEqual(buildResearchJsonParameters(db,sources,assessment,coverage),[
+  {jsonValue:sources},{jsonValue:assessment},{jsonValue:coverage}
+ ]);
+});
