@@ -87,13 +87,13 @@ const decodeEntities = value => String(value || "")
 const strip=(s,n=1600)=>decodeEntities(s).replace(/<(script|style|noscript|svg|iframe|nav|footer|header)\b[^>]*>[\s\S]*?<\/\1>/gi," ").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,n);
 export function parseRss(xml){
  const source=String(xml||""),out=[];
- const decode=value=>decodeEntities(String(value||"").replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g,"$1"));
- const blocks=[...source.matchAll(/<(item|entry)\\b[^>]*>([\\s\\S]*?)<\\/\\1>/gi)];
+ const decode=value=>decodeEntities(String(value||"").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,"$1"));
+ const blocks=[...source.matchAll(/<(item|entry)\b[^>]*>([\s\S]*?)<\/\1>/gi)];
  for(const match of blocks){
   const block=match[2],atom=match[1].toLowerCase()==="entry";
-  const value=tag=>{const m=block.match(new RegExp("<"+tag+"(?:\\s[^>]*)?>([\\s\\S]*?)</"+tag+">","i"));return m?decode(m[1]).trim():"";};
+  const value=tag=>{const m=block.match(new RegExp("<"+tag+"(?:\s[^>]*)?>([\s\S]*?)</"+tag+">","i"));return m?decode(m[1]).trim():"";};
   const title=strip(value("title"),240);
-  const linkTag=block.match(/<link\\b([^>]*)\\/?\\s*>/i);
+  const linkTag=block.match(/<link\b([^>]*)\/?\s*>/i);
   const href=linkTag?.[1]?.match(/href=["']([^"']+)["']/i)?.[1];
   const url=decodeEntities(href||value("link")).trim();
   const raw=value("pubDate")||value("published")||value("updated")||value("dc:date");
@@ -102,7 +102,7 @@ export function parseRss(xml){
   if(!title||!(url.startsWith("https://")||url.startsWith("http://")))continue;
   let domain="unknown",sourceName="";
   try{
-   const sourceTag=block.match(/<source\\b[^>]*url=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/source>/i);
+   const sourceTag=block.match(/<source\b[^>]*url=["']([^"']+)["'][^>]*>([\s\S]*?)<\/source>/i);
    domain=new URL(decodeEntities(sourceTag?.[1]||url)).hostname.replace(/^www[.]/,"");
    sourceName=strip(sourceTag?.[2]||"",120);
   }catch{}
