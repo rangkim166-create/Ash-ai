@@ -414,6 +414,15 @@ export function buildBetPawaListQuery(now = new Date(), skip = 0, categoryId = "
   };
 }
 
+export function countOddsCandidatesBySport(candidates = []) {
+  const counts = { football: 0, basketball: 0, tennis: 0 };
+  for (const candidate of candidates || []) {
+    const sport = String(candidate?.sport || "").toLowerCase();
+    if (Object.hasOwn(counts, sport)) counts[sport]++;
+  }
+  return counts;
+}
+
 export function selectBalancedBetPawaEvents(groups, limits = {}) {
   const defaults = { "2": 100, "3": 50, "452": 50 };
   const seen = new Set();
@@ -586,11 +595,7 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
     }
   }
   const unique = uniqueOdds(candidates);
-  const candidateCountsBySport = {
-    football: unique.filter(candidate => candidate.sport === "football").length,
-    basketball: unique.filter(candidate => candidate.sport === "basketball").length,
-    tennis: unique.filter(candidate => candidate.sport === "tennis").length
-  };
+  const candidateCountsBySport = countOddsCandidatesBySport(unique);
   const lastResponse = listResults.at(-1)?.response;
   return {
     candidates: unique, structuredData, events: events.length, eventCountsBySport, candidateCountsBySport, detailFailures: failures.length,
@@ -791,11 +796,7 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   const eventCountsBySport = Object.fromEntries(sports.map(({ id, name }) => [
     name.toLowerCase(), bySport.get(id)?.length || 0
   ]));
-  const candidateCountsBySport = Object.fromEntries(
-    ["football", "basketball", "tennis"].map(sport => [
-      sport, unique.filter(candidate => candidate.sport === sport).length
-    ])
-  );
+  const candidateCountsBySport = countOddsCandidatesBySport(unique);
   return {
     candidates: unique,
     structuredData,
