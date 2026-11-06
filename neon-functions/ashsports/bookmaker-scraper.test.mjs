@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent, countOddsCandidatesBySport } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -591,4 +591,12 @@ test("does not merge men's and women's teams or ambiguous participant selections
   const fixture = { id: "basketball:ambiguous", sport: "basketball", home: "New Zealand Breakers", away: "Queensland Breakers", starts_at: "2026-11-06T08:30:00.000Z" };
   const mapped = mapCandidateToFixture({ eventName: "New Zealand Breakers vs Queensland Breakers", sport: "basketball", market: "Match Winner", selection: "Breakers", decimalOdds: 2.1, startsAt: fixture.starts_at }, fixture);
   assert.equal(mapped, null);
+});
+
+
+test("reports bookmaker odds candidates separately for football, basketball and tennis", () => {
+  assert.deepEqual(countOddsCandidatesBySport([
+    { sport: "football" }, { sport: "football" }, { sport: "basketball" },
+    { sport: "tennis" }, { sport: "virtual" }, { sport: "Football" }
+  ]), { football: 2, basketball: 1, tennis: 1 });
 });
