@@ -69,3 +69,13 @@ test("uses global English news editions for international fixture coverage",()=>
  assert.match(providers[0].url,/NK%20Osijek%20U19/);
  assert.match(providers[1].url,/format=rss/);
 });
+
+import { normalizeResearchConfidence } from "./fixture-research.mjs";
+test("normalizes numeric and labelled AI confidence consistently",()=>{
+ assert.equal(normalizeResearchConfidence(82),82);
+ assert.equal(normalizeResearchConfidence("73"),73);
+ assert.equal(normalizeResearchConfidence({overall:"moderate",details:{injury:"low"}}),65);
+ assert.equal(normalizeResearchConfidence({overall:"high"}),80);
+ assert.equal(normalizeResearchConfidence({overall:"low"}),35);
+ assert.equal(normalizeResearchConfidence({}),0);
+});

@@ -128,6 +128,21 @@ async function readArticle(item){
  const meaningful=snippet.length>=120&&snippet.toLowerCase()!==String(item.title||"").toLowerCase();
  return meaningful?{...item,excerpt:snippet,contentLevel:"rss_snippet",categories:classifyEvidenceCategory(item.title+" "+snippet),fetchedAt:new Date().toISOString()}:null;
 }
+export function normalizeResearchConfidence(value){
+ const numeric=v=>typeof v==="number"&&Number.isFinite(v)?Math.max(0,Math.min(100,v)):typeof v==="string"&&v.trim()!==""&&Number.isFinite(Number(v))?Math.max(0,Math.min(100,Number(v))):null;
+ const direct=numeric(value);
+ if(direct!==null)return direct;
+ const label=typeof value==="string"?value:
+  value&&typeof value==="object"?(value.overall??value.level??value.rating??value.confidence??value.score):null;
+ const number=numeric(label);
+ if(number!==null)return number;
+ const text=String(label||"").toLowerCase();
+ if(text.includes("very high")||text.includes("excellent"))return 90;
+ if(text.includes("high"))return 80;
+ if(text.includes("moderate")||text.includes("medium"))return 65;
+ if(text.includes("low"))return 35;
+ return 0;
+}
 export function buildResearchModelOptions(model=process.env.ASH_GROQ_RESEARCH_MODEL||"llama-3.3-70b-versatile"){
  return {model,temperature:0.1,max_tokens:1500,response_format:{type:"json_object"},tool_choice:"none"};
 }
@@ -201,7 +216,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
   const fullArticleCount=fullPages.length;
   const categoryCounts=Object.fromEntries(["injury_fitness","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,groqKey);
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:Number(assessment?.confidence)||0,searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
@@ -211,7 +226,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
    [f.id,payload.length,domains.length,JSON.stringify(payload),JSON.stringify(assessment||{}),JSON.stringify(coverage)]);
   const tennis=f.sport==="tennis";
   const sportCoverage=tennis?(categoryCounts.injury_fitness>0||categoryCounts.withdrawals_retirements>0)&&(categoryCounts.form_statistics>0||categoryCounts.preview_analysis>0):categoryCounts.injury_fitness>0&&categoryCounts.lineups>0;
-  const enoughEvidence=fullArticleCount>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0&&!assessment?.error&&sportCoverage&&Number(assessment?.confidence)>=60&&!(Array.isArray(assessment?.contradictions)&&assessment.contradictions.length>0);
+  const enoughEvidence=fullArticleCount>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0&&!assessment?.error&&sportCoverage&&normalizeResearchConfidence(assessment?.confidence)>=60&&!(Array.isArray(assessment?.contradictions)&&assessment.contradictions.length>0);
   if(!enoughEvidence){
    const reason="Insufficient verified coverage: require two full article pages, two independent domains, both participants, sport-appropriate availability and form coverage from full articles, and a usable non-conflicting AI assessment";
    await db.query("UPDATE ash_fixture_research_queue SET status='failed',due_at=now()+interval '6 hours',updated_at=now(),last_error=$2 WHERE match_id=$1",[f.id,reason]);
