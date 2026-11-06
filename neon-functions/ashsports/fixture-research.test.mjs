@@ -129,6 +129,13 @@ test("matches international club-name variants without accepting unrelated fixtu
  assert.equal(isFixtureRelevantResult({title:"KCCA injury update"},fixture),true);
  assert.equal(isFixtureRelevantResult({title:"Express FC vs URA preview"},fixture),false);
 });
+test("matches abbreviated clubs with a distinctive one-word name",()=>{
+ assert.equal(isFixtureRelevantResult({title:"JS Skikda team news ahead of kickoff"}, {home:"JS Skikda",away:"NRB Teleghma"}),true);
+ assert.equal(isFixtureRelevantResult({title:"NRB Teleghma injury update"}, {home:"JS Skikda",away:"NRB Teleghma"}),true);
+ assert.equal(isFixtureRelevantResult({title:"KCCA confirms squad update"}, {home:"Vipers SC",away:"KCCA FC"}),true);
+ assert.equal(isFixtureRelevantResult({title:"Skikda unrelated weather report"}, {home:"JS Skikda",away:"NRB Teleghma"}),true);
+ assert.equal(isFixtureRelevantResult({title:"Skikdaway derby preview"}, {home:"JS Skikda",away:"NRB Teleghma"}),false);
+});
 test("participant coverage requires both teams to be evidenced independently",()=>{
  const fixture={home:"Al-Kholood",away:"Al-Khaleej"};
  assert.deepEqual(hasParticipantCoverage({title:"Al Kholood squad update",excerpt:"Team news ahead of kickoff"},fixture),{home:true,away:false});
