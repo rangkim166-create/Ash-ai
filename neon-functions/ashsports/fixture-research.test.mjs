@@ -60,7 +60,7 @@ test("Groq research assessment requests JSON mode and disables tool calls",()=>{
  assert.equal(options.max_tokens,1500);
 });
 
-import { buildNewsSearchProviders } from "./fixture-research.mjs";
+import { buildNewsSearchProviders, buildCuratedSportsFeeds } from "./fixture-research.mjs";
 test("uses global English news editions for international fixture coverage",()=>{
  const providers=buildNewsSearchProviders("NK Osijek U19 HNK Rijeka U19 team news");
  assert.equal(providers.length,3);
@@ -133,4 +133,17 @@ test("participant coverage requires both teams to be evidenced independently",()
  const fixture={home:"Al-Kholood",away:"Al-Khaleej"};
  assert.deepEqual(hasParticipantCoverage({title:"Al Kholood squad update",excerpt:"Team news ahead of kickoff"},fixture),{home:true,away:false});
  assert.deepEqual(hasParticipantCoverage({title:"Al-Khaleej vs Al-Kholood preview"},fixture),{home:true,away:true});
+});
+
+test("adds curated independent publisher feeds for football, tennis and basketball",()=>{
+ const football=buildCuratedSportsFeeds("football");
+ const tennis=buildCuratedSportsFeeds("tennis");
+ const basketball=buildCuratedSportsFeeds("basketball");
+ assert.ok(football.some(feed=>feed.name==="bbc_football"));
+ assert.ok(football.some(feed=>feed.name==="sky_football"));
+ assert.ok(football.some(feed=>feed.name==="athletic_football"));
+ assert.ok(tennis.some(feed=>feed.name==="sky_tennis"));
+ assert.ok(basketball.some(feed=>feed.name==="cbs_nba"));
+ assert.ok(basketball.some(feed=>feed.name==="athletic_nba"));
+ for(const feed of [...football,...tennis,...basketball])assert.match(feed.url,/^https:\/\//);
 });
