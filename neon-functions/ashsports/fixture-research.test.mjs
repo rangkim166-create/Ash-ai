@@ -52,6 +52,15 @@ test("classifies tennis withdrawals and surface reporting separately", () => {
  for (const category of ["injury_fitness","withdrawals_retirements","surface_conditions","form_statistics"]) assert.ok(categories.includes(category),category);
 });
 
+import { buildResearchModelOptions } from "./fixture-research.mjs";
+test("Groq research assessment requests JSON mode and disables tool calls",()=>{
+ const options=buildResearchModelOptions("llama-3.3-70b-versatile");
+ assert.equal(options.model,"llama-3.3-70b-versatile");
+ assert.deepEqual(options.response_format,{type:"json_object"});
+ assert.equal(options.tool_choice,"none");
+ assert.equal(options.max_tokens,1500);
+});
+
 import { buildNewsSearchProviders } from "./fixture-research.mjs";
 test("uses global English news editions for international fixture coverage",()=>{
  const providers=buildNewsSearchProviders("NK Osijek U19 HNK Rijeka U19 team news");
