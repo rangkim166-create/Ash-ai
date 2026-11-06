@@ -563,3 +563,11 @@ test("matches shortened basketball team aliases to one canonical fixture", () =>
   assert.equal(mapped.matchId, fixture.id);
   assert.equal(mapped.outcomeName, "New Zealand Breakers");
 });
+
+
+test("does not merge men's and women's teams or ambiguous participant selections", () => {
+  assert.equal(teamsEquivalent("Arsenal", "Arsenal Women"), false);
+  const fixture = { id: "basketball:ambiguous", sport: "basketball", home: "New Zealand Breakers", away: "Queensland Breakers", starts_at: "2026-11-06T08:30:00.000Z" };
+  const mapped = mapCandidateToFixture({ eventName: "New Zealand Breakers vs Queensland Breakers", sport: "basketball", market: "Match Winner", selection: "Breakers", decimalOdds: 2.1, startsAt: fixture.starts_at }, fixture);
+  assert.equal(mapped, null);
+});
