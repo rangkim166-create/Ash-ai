@@ -588,8 +588,8 @@ export function extractBetikaEventCandidates(base, detail) {
   // Zoom leagues and virtual/eSoccer events are simulated products, not real fixtures.
   if (game.is_esport === true || base?.is_esport === true || /zoom|virtual|esport|e.?soccer|simulated|cyber/.test(sportLabel)) return [];
   const sport = sportId === 14 || /football|soccer/.test(sportLabel) ? "football"
-    : sportId === 139 || /basket/.test(sportLabel) ? "basketball"
-    : /tennis/.test(sportLabel) ? "tennis" : null;
+    : sportId === 6 || /basket/.test(sportLabel) ? "basketball"
+    : sportId === 1 || /tennis/.test(sportLabel) ? "tennis" : null;
   const markets = Array.isArray(detail?.data) ? detail.data
     : Array.isArray(detail?.data?.data) ? detail.data.data
     : Array.isArray(game.odds) ? game.odds : [];
@@ -601,9 +601,12 @@ export function extractBetikaEventCandidates(base, detail) {
     const marketName = String(market?.name || market?.market_name || "");
     if (subtype !== 1 && !/(?:1x2|match result|full.?time result|match winner|moneyline)/i.test(marketName)) continue;
     const prices = Array.isArray(market?.odds) ? market.odds : [];
-    if (prices.length < 2) continue;
-    const marketLabel = prices.length === 3 ? "Match Result" : "Match Winner";
-    if (prices.length === 2 && !sport) continue;
+    if (prices.length < 2 || !sport) continue;
+    // Only football supports the three-way result here. Basketball and tennis
+    // are imported from two-way match-winner prices, never an invented draw.
+    if (prices.length === 3 && sport !== "football") continue;
+    if (prices.length === 2 && !/(?:match winner|winner|moneyline|1x2|full.?time result)/i.test(marketName) && subtype !== 1) continue;
+    const marketLabel = sport === "football" && prices.length === 3 ? "Match Result" : "Match Winner";
     for (const price of prices) {
       const decimalOdds = Number(price?.odd_value ?? price?.odds);
       if (!Number.isFinite(decimalOdds) || decimalOdds <= 1 || decimalOdds > 1000) continue;
@@ -612,11 +615,10 @@ export function extractBetikaEventCandidates(base, detail) {
       if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
       else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
       else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
-      if (![homeTeam, awayTeam, "Draw"].includes(selection)) continue;
+      if (![homeTeam, awayTeam, ...(sport === "football" && prices.length === 3 ? ["Draw"] : [])].includes(selection)) continue;
       candidates.push({
         selection, decimalOdds, market: marketLabel, homeTeam, awayTeam,
-        eventName, sport: sport || (prices.length === 3 ? "football" : null),
-        competition, startsAt
+        eventName, sport, competition, startsAt
       });
     }
   }
@@ -661,15 +663,14 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   const structuredData = [];
   const eventMap = new Map();
   const listUrls = [];
-  // Expand the existing authorized public board coverage: football and basketball,
-  // with bounded pagination across both upcoming periods. Tennis is not requested
-  // until Betika's Uganda sport ID is verified from its own public response.
+  // Use Betika's own public sport catalogue: 14=Soccer, 6=Basketball, 1=Tennis.
+  // Sport 139 is explicitly Zoom Soccer and is deliberately excluded.
   for (const period of [-1, 1]) {
     for (const page of [1, 2, 3]) {
       const listUrl = new URL(basePath + "/matches", apiOrigin);
       for (const [key,value] of Object.entries({
         page: String(page), limit: "50", tab: "upcoming", sub_type_id: "1",
-        sport_id: "14,139", sort_id: "2", period_id: String(period), esports: "false"
+        sport_id: "14,6,1", sort_id: "2", period_id: String(period), esports: "false"
       })) listUrl.searchParams.set(key, value);
       listUrls.push(listUrl.toString());
       try {
