@@ -67,7 +67,8 @@ test("uses global English news editions for international fixture coverage",()=>
  assert.match(providers[1].url,/hl=en-GB&gl=GB&ceid=GB:en/);
  assert.match(providers[0].url,/hl=en-US&gl=US&ceid=US:en/);
  assert.match(providers[0].url,/NK%20Osijek%20U19/);
- assert.match(providers[1].url,/format=rss/);
+ assert.match(providers[2].url,/format=rss/);
+ assert.equal(providers[2].name,"bing_news");
 });
 
 import { normalizeResearchConfidence } from "./fixture-research.mjs";
