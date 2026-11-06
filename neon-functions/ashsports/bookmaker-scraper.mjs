@@ -1075,6 +1075,39 @@ export function jsonDatabaseValue(db, value) {
   return typeof db?.json === "function" ? db.json(value) : JSON.stringify(value);
 }
 
+export function filterCompleteScrapedMarkets(candidates) {
+  const groups = new Map();
+  for (const candidate of Array.isArray(candidates) ? candidates : []) {
+    const sport = String(candidate?.sport || "").toLowerCase();
+    const market = String(candidate?.market || "").toLowerCase();
+    const home = String(candidate?.homeTeam || "").trim();
+    const away = String(candidate?.awayTeam || "").trim();
+    const startsAt = new Date(candidate?.startsAt || "");
+    if (!home || !away || !Number.isFinite(startsAt.getTime())) continue;
+    const expected = sport === "tennis" && market === "match winner"
+      ? [normalizeTeam(home), normalizeTeam(away)]
+      : sport === "football" && market === "match result"
+        ? [normalizeTeam(home), "draw", normalizeTeam(away)]
+        : sport === "basketball" && market === "regulation result"
+          ? [normalizeTeam(home), "draw", normalizeTeam(away)]
+          : null;
+    if (!expected) continue;
+    const key = [sport, market, normalizeTeam(home), normalizeTeam(away), startsAt.toISOString()].join("|");
+    if (!groups.has(key)) groups.set(key, { expected, rows: [] });
+    groups.get(key).rows.push(candidate);
+  }
+  const complete = [];
+  for (const group of groups.values()) {
+    const selected = new Set(group.rows.map(row =>
+      String(row?.selection || "").toLowerCase() === "draw" ? "draw" : normalizeTeam(row?.selection || "")
+    ));
+    if (group.rows.length !== group.expected.length) continue;
+    if (!group.expected.every(outcome => selected.has(outcome))) continue;
+    complete.push(...group.rows);
+  }
+  return complete;
+}
+
 export async function importScrapedOdds(db) {
   const runs = await db.query("SELECT bookmaker,odds_candidates,fetched_at FROM ash_scraper_runs WHERE status='success' AND fetched_at>now()-interval '6 hours' ORDER BY fetched_at DESC LIMIT 100");
   const fixturesResult = await db.query("SELECT id,sport,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()-interval '12 hours' AND starts_at<now()+interval '14 days'");
@@ -1082,8 +1115,9 @@ export async function importScrapedOdds(db) {
   let saved = 0, unmatched = 0, fixturesCreated = 0;
   for (const run of runs.rows) {
     const bookmakerKey = String(run.bookmaker || "unknown").toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "").slice(0, 80) || "unknown";
-    const candidates = Array.isArray(run.odds_candidates) ? run.odds_candidates : safeJson(run.odds_candidates) || [];
-    for (const candidate of Array.isArray(candidates) ? candidates : []) {
+    const rawCandidates = Array.isArray(run.odds_candidates) ? run.odds_candidates : safeJson(run.odds_candidates) || [];
+    const candidates = filterCompleteScrapedMarkets(rawCandidates);
+    for (const candidate of candidates) {
       const scrapedFixture = fixtureFromCandidate(candidate);
       const existingEvent = scrapedFixture ? fixtures.filter(f => normalizeTeam(f.home) === normalizeTeam(scrapedFixture.home) && normalizeTeam(f.away) === normalizeTeam(scrapedFixture.away) && Math.abs(new Date(f.starts_at).getTime()-new Date(scrapedFixture.starts_at).getTime()) <= 6*60*60*1000) : [];
       if (scrapedFixture && !existingEvent.length && !fixtures.some(f => f.id === scrapedFixture.id)) {
