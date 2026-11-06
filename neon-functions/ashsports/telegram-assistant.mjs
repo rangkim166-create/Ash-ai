@@ -146,7 +146,15 @@ async function saveLiveResearchSnapshots(db,live){
 }
 
 export function buildGroqModelFallback(env=process.env){
- return [...new Set([env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","openai/gpt-oss-20b"].filter(Boolean))];
+ const configured=String(env.ASH_GROQ_MODEL||"").trim();
+ const candidates=configured&&!/qwen/i.test(configured)
+  ? [configured,"openai/gpt-oss-20b"]
+  : ["openai/gpt-oss-120b","openai/gpt-oss-20b"];
+ return [...new Set(candidates)];
+}
+export function buildOpenRouterModel(env=process.env){
+ const configured=String(env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini").trim();
+ return /qwen/i.test(configured)?"openai/gpt-4o-mini":configured;
 }
 
 export function createTelegramAssistant({db,read,telegram}){
@@ -180,7 +188,7 @@ export function createTelegramAssistant({db,read,telegram}){
  async function ai(messages,provider,key){
   if(provider!=="groq"){
    const base="https://openrouter.ai/api/v1/chat/completions";
-   const model=process.env.ASH_OPENROUTER_MODEL||"openai/gpt-4o-mini";
+   const model=buildOpenRouterModel();
    const r=await fetch(base,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+key,"HTTP-Referer":"https://ash-sports-api.onrender.com","X-Title":"Ash Jarvis Sports"},body:JSON.stringify({model,messages,temperature:0.35,max_tokens:650}),signal:timeout(45000)});
    const j=await r.json();if(!r.ok)throw Error(model+" HTTP "+r.status+" "+JSON.stringify(j).slice(0,180));
    return j.choices?.[0]?.message?.content||"";
