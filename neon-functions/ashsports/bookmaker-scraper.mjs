@@ -598,15 +598,26 @@ export function extractBetikaEventCandidates(base, detail) {
   const candidates = [];
   for (const market of markets) {
     const subtype = Number(market?.sub_type_id);
-    const marketName = String(market?.name || market?.market_name || "");
-    if (subtype !== 1 && !/(?:1x2|match result|full.?time result|match winner|moneyline)/i.test(marketName)) continue;
+    const marketName = String(market?.name || market?.market_name || "").trim();
+    const isFootballResult = sport === "football" && (
+      subtype === 1 || /^(?:1x2|match result|full.?time result)$/i.test(marketName)
+    );
+    // Betika's basketball 1X2 is the regulation-time three-way result.
+    // Its separate "WINNER (INCL. OVERTIME)" market is intentionally excluded.
+    const isBasketballRegulationResult = sport === "basketball" &&
+      subtype === 1 && /^1x2$/i.test(marketName);
+    // The full-match tennis winner market has its own subtype (186).
+    // Exclude first-set winner and all handicap/total markets.
+    const isTennisMatchWinner = sport === "tennis" &&
+      subtype === 186 && /^winner$/i.test(marketName);
+    if (!isFootballResult && !isBasketballRegulationResult && !isTennisMatchWinner) continue;
     const prices = Array.isArray(market?.odds) ? market.odds : [];
-    if (prices.length < 2 || !sport) continue;
-    // Only football supports the three-way result here. Basketball and tennis
-    // are imported from two-way match-winner prices, never an invented draw.
-    if (prices.length === 3 && sport !== "football") continue;
-    if (prices.length === 2 && !/(?:match winner|winner|moneyline|1x2|full.?time result)/i.test(marketName) && subtype !== 1) continue;
-    const marketLabel = sport === "football" && prices.length === 3 ? "Match Result" : "Match Winner";
+    if (prices.length < 2) continue;
+    if (isBasketballRegulationResult && prices.length !== 3) continue;
+    if (isTennisMatchWinner && prices.length !== 2) continue;
+    if (prices.length === 3 && sport !== "football" && !isBasketballRegulationResult) continue;
+    const marketLabel = isBasketballRegulationResult ? "Regulation Result"
+      : sport === "football" && prices.length === 3 ? "Match Result" : "Match Winner";
     for (const price of prices) {
       const decimalOdds = Number(price?.odd_value ?? price?.odds);
       if (!Number.isFinite(decimalOdds) || decimalOdds <= 1 || decimalOdds > 1000) continue;
@@ -615,7 +626,8 @@ export function extractBetikaEventCandidates(base, detail) {
       if (/^(?:1|home)$/i.test(rawSelection)) selection = homeTeam;
       else if (/^(?:x|draw)$/i.test(rawSelection)) selection = "Draw";
       else if (/^(?:2|away)$/i.test(rawSelection)) selection = awayTeam;
-      if (![homeTeam, awayTeam, ...(sport === "football" && prices.length === 3 ? ["Draw"] : [])].includes(selection)) continue;
+      const allowsDraw = sport === "football" && prices.length === 3 || isBasketballRegulationResult;
+      if (![homeTeam, awayTeam, ...(allowsDraw ? ["Draw"] : [])].includes(selection)) continue;
       candidates.push({
         selection, decimalOdds, market: marketLabel, homeTeam, awayTeam,
         eventName, sport, competition, startsAt
