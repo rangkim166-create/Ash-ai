@@ -125,11 +125,16 @@ function mentionsParticipant(text,participant){
  const words=new Set(haystack.split(" ").filter(Boolean));
  if(words.has(target))return true;
  const tokens=target.split(" ").filter(token=>token.length>=3);
+ // Some publishers use standard initials (e.g. PSG) instead of the full
+ // three-word club name. Only infer an acronym from three or more distinctive
+ // words and require an exact whole-word match to avoid loose substring hits.
+ if(tokens.length>=3){
+  const initials=tokens.map(token=>token[0]).join("");
+  if(initials.length>=3&&initials.length<=5&&words.has(initials))return true;
+ }
  // Many international clubs are stored as an acronym plus one distinctive
- // place/name (e.g. "JS Skikda", "KCCA FC", "Vipers SC"). The previous
- // two-token-only rule rejected all of these, even when the full name was
- // present in the headline. Accept one distinctive long token, or a short
- // acronym explicitly present in the source name, using whole-word matches.
+ // place/name (e.g. "JS Skikda", "KCCA FC", "Vipers SC"). Accept one
+ // distinctive long token, or a short acronym explicitly present in the source.
  if(tokens.length===1){
   if(tokens[0].length>=5&&words.has(tokens[0]))return true;
   const acronyms=raw.split(/[^A-Za-z0-9]+/).filter(token=>/^[A-Z0-9]{3,5}$/.test(token));
