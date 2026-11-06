@@ -1,0 +1,226 @@
+{
+  "generated_at_utc": "2026-11-06T06:07:51.544152+00:00",
+  "method": "Pre-match chronological Elo; equal 1500 starting rating; K=24; update after prediction; no odds or injury/lineup adjustments.",
+  "warmup_matches_per_sport": 100,
+  "sports": {
+    "football": {
+      "matches_seen": 1392800,
+      "warmup_matches": 100,
+      "evaluated_matches": 1039602,
+      "draws_excluded": 353098,
+      "accuracy": 0.6434,
+      "brier_score": 0.2171,
+      "log_loss": 0.6222,
+      "calibration_bins": [
+        {
+          "range": "0.0-0.1",
+          "count": 3831,
+          "mean_predicted": 0.0805,
+          "observed_rate": 0.0647
+        },
+        {
+          "range": "0.1-0.2",
+          "count": 34569,
+          "mean_predicted": 0.1601,
+          "observed_rate": 0.1693
+        },
+        {
+          "range": "0.2-0.3",
+          "count": 83729,
+          "mean_predicted": 0.2558,
+          "observed_rate": 0.3224
+        },
+        {
+          "range": "0.3-0.4",
+          "count": 154714,
+          "mean_predicted": 0.3545,
+          "observed_rate": 0.4791
+        },
+        {
+          "range": "0.4-0.5",
+          "count": 236048,
+          "mean_predicted": 0.4523,
+          "observed_rate": 0.6083
+        },
+        {
+          "range": "0.5-0.6",
+          "count": 238372,
+          "mean_predicted": 0.5474,
+          "observed_rate": 0.7017
+        },
+        {
+          "range": "0.6-0.7",
+          "count": 158874,
+          "mean_predicted": 0.6459,
+          "observed_rate": 0.7841
+        },
+        {
+          "range": "0.7-0.8",
+          "count": 88741,
+          "mean_predicted": 0.7443,
+          "observed_rate": 0.8661
+        },
+        {
+          "range": "0.8-0.9",
+          "count": 36832,
+          "mean_predicted": 0.8396,
+          "observed_rate": 0.9322
+        },
+        {
+          "range": "0.9-1.0",
+          "count": 3892,
+          "mean_predicted": 0.9193,
+          "observed_rate": 0.9725
+        }
+      ]
+    },
+    "tennis": {
+      "matches_seen": 361571,
+      "warmup_matches": 100,
+      "evaluated_matches": 361471,
+      "draws_excluded": 0,
+      "accuracy": 0.6786,
+      "brier_score": 0.2041,
+      "log_loss": 0.5925,
+      "calibration_bins": [
+        {
+          "range": "0.0-0.1",
+          "count": 1907,
+          "mean_predicted": 0.0711,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.1-0.2",
+          "count": 9073,
+          "mean_predicted": 0.1588,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.2-0.3",
+          "count": 19091,
+          "mean_predicted": 0.255,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.3-0.4",
+          "count": 31548,
+          "mean_predicted": 0.354,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.4-0.5",
+          "count": 54545,
+          "mean_predicted": 0.4556,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.5-0.6",
+          "count": 68052,
+          "mean_predicted": 0.5476,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.6-0.7",
+          "count": 58160,
+          "mean_predicted": 0.6495,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.7-0.8",
+          "count": 52863,
+          "mean_predicted": 0.7486,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.8-0.9",
+          "count": 42522,
+          "mean_predicted": 0.8477,
+          "observed_rate": 1.0
+        },
+        {
+          "range": "0.9-1.0",
+          "count": 23710,
+          "mean_predicted": 0.9403,
+          "observed_rate": 1.0
+        }
+      ]
+    },
+    "basketball": {
+      "matches_seen": 21931,
+      "warmup_matches": 100,
+      "evaluated_matches": 21831,
+      "draws_excluded": 0,
+      "accuracy": 0.641,
+      "brier_score": 0.2219,
+      "log_loss": 0.6346,
+      "calibration_bins": [
+        {
+          "range": "0.0-0.1",
+          "count": 194,
+          "mean_predicted": 0.0768,
+          "observed_rate": 0.1289
+        },
+        {
+          "range": "0.1-0.2",
+          "count": 1436,
+          "mean_predicted": 0.1576,
+          "observed_rate": 0.2556
+        },
+        {
+          "range": "0.2-0.3",
+          "count": 2467,
+          "mean_predicted": 0.2539,
+          "observed_rate": 0.3729
+        },
+        {
+          "range": "0.3-0.4",
+          "count": 3183,
+          "mean_predicted": 0.3513,
+          "observed_rate": 0.4615
+        },
+        {
+          "range": "0.4-0.5",
+          "count": 3640,
+          "mean_predicted": 0.4507,
+          "observed_rate": 0.5404
+        },
+        {
+          "range": "0.5-0.6",
+          "count": 3789,
+          "mean_predicted": 0.5492,
+          "observed_rate": 0.6189
+        },
+        {
+          "range": "0.6-0.7",
+          "count": 3143,
+          "mean_predicted": 0.6488,
+          "observed_rate": 0.7181
+        },
+        {
+          "range": "0.7-0.8",
+          "count": 2367,
+          "mean_predicted": 0.7475,
+          "observed_rate": 0.7731
+        },
+        {
+          "range": "0.8-0.9",
+          "count": 1419,
+          "mean_predicted": 0.8421,
+          "observed_rate": 0.8527
+        },
+        {
+          "range": "0.9-1.0",
+          "count": 193,
+          "mean_predicted": 0.9204,
+          "observed_rate": 0.9326
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Historical results are not historical bookmaker odds.",
+    "Football draws are excluded from binary winner metrics; a separate draw model is still needed.",
+    "Tennis rows in the source archive place the winner first; accuracy evaluates whether pre-match Elo ranks that winner above the opponent.",
+    "Results measure historical ranking quality, not guaranteed future performance or betting profitability."
+  ]
+}

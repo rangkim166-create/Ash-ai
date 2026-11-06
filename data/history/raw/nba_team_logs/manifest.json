@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-10-31T16:14:38Z",
+  "generated_at_utc": "2026-11-06T06:05:34Z",
   "source": "llimllib/nba_data v2 stats.nba.com team_game_logs",
   "source_url": "https://github.com/llimllib/nba_data",
   "dataset_base": "https://basketball-data.billmill.org/nba/stats",
@@ -28,7 +28,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2010/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2010.parquet",
-      "bytes": 158851,
+      "bytes": 159967,
       "status": "ok"
     },
     {
@@ -46,7 +46,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2011/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2011.parquet",
-      "bytes": 158951,
+      "bytes": 160207,
       "status": "ok"
     },
     {
@@ -64,7 +64,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2012/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2012.parquet",
-      "bytes": 129801,
+      "bytes": 130771,
       "status": "ok"
     },
     {
@@ -82,7 +82,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2013/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2013.parquet",
-      "bytes": 157703,
+      "bytes": 158985,
       "status": "ok"
     },
     {
@@ -100,7 +100,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2014/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2014.parquet",
-      "bytes": 159486,
+      "bytes": 160756,
       "status": "ok"
     },
     {
@@ -118,7 +118,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2015/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2015.parquet",
-      "bytes": 158617,
+      "bytes": 159901,
       "status": "ok"
     },
     {
@@ -136,7 +136,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2016/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2016.parquet",
-      "bytes": 158285,
+      "bytes": 159543,
       "status": "ok"
     },
     {
@@ -154,7 +154,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2017/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2017.parquet",
-      "bytes": 158447,
+      "bytes": 159695,
       "status": "ok"
     },
     {
@@ -172,7 +172,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2018/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2018.parquet",
-      "bytes": 157272,
+      "bytes": 158440,
       "status": "ok"
     },
     {
@@ -190,7 +190,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2019/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2019.parquet",
-      "bytes": 158353,
+      "bytes": 159551,
       "status": "ok"
     },
     {
@@ -208,7 +208,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2020/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2020.parquet",
-      "bytes": 147896,
+      "bytes": 148996,
       "status": "ok"
     },
     {
@@ -226,7 +226,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2021/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2021.parquet",
-      "bytes": 141714,
+      "bytes": 142782,
       "status": "ok"
     },
     {
@@ -334,7 +334,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/team_game_logs/season=2027/data.parquet",
       "path": "data/history/raw/nba_team_logs/team_game_logs/season_2027.parquet",
-      "bytes": 34891,
+      "bytes": 40121,
       "status": "ok"
     },
     {
@@ -346,7 +346,7 @@
     {
       "url": "https://basketball-data.billmill.org/nba/stats/games/season=2027/data.parquet",
       "path": "data/history/raw/nba_team_logs/games/season_2027.parquet",
-      "bytes": 2602,
+      "bytes": 2905,
       "status": "ok"
     }
   ],
@@ -354,6 +354,6 @@
     "downloaded": 54,
     "unavailable": 0,
     "team_game_log_seasons": 18,
-    "downloaded_bytes": 2839590
+    "downloaded_bytes": 2859341
   }
 }
