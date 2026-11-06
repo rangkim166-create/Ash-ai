@@ -121,7 +121,7 @@ test("keeps legacy JSON-string odds payloads readable during import", async () =
   const db = { query: async (sql) => {
     calls.push(sql);
     if (sql.startsWith("SELECT bookmaker,odds_candidates")) {
-      return { rows: [{ bookmaker: "BetPawa", odds_candidates: '[{"eventName":"Arsenal vs Chelsea","market":"Match Result","selection":"Arsenal","decimalOdds":2.1}]', fetched_at: "2026-11-04T20:00:00Z" }], rowCount: 1 };
+      return { rows: [{ bookmaker: "BetPawa", odds_candidates: '[{"eventName":"Arsenal vs Chelsea","sport":"football","homeTeam":"Arsenal","awayTeam":"Chelsea","startsAt":"2026-11-04T20:00:00Z","market":"Match Result","selection":"Arsenal","decimalOdds":2.1},{"eventName":"Arsenal vs Chelsea","sport":"football","homeTeam":"Arsenal","awayTeam":"Chelsea","startsAt":"2026-11-04T20:00:00Z","market":"Match Result","selection":"Draw","decimalOdds":3.4},{"eventName":"Arsenal vs Chelsea","sport":"football","homeTeam":"Arsenal","awayTeam":"Chelsea","startsAt":"2026-11-04T20:00:00Z","market":"Match Result","selection":"Chelsea","decimalOdds":3.2}]', fetched_at: "2026-11-04T20:00:00Z" }], rowCount: 1 };
     }
     if (sql.startsWith("SELECT id,sport")) return { rows: [{ id: "fixture-1", sport: "football", home: "Arsenal", away: "Chelsea", starts_at: "2026-11-04T20:00:00Z" }], rowCount: 1 };
     if (sql.startsWith("INSERT INTO bookmaker_odds")) return { rows: [{ id: 1 }], rowCount: 1 };
