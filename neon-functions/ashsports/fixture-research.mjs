@@ -218,8 +218,9 @@ async function search(query){
   if(result.status==="fulfilled"){items.push(...result.value.items);diagnostics.push(result.value.diagnostic);}
   else diagnostics.push({provider:providers[index].name,error:String(result.reason?.message||result.reason).slice(0,240)});
  }
+ const failures=diagnostics.filter(item=>item.error);
  if(!items.length)throw Error("News discovery returned no parseable feed items: "+JSON.stringify(diagnostics).slice(0,900));
- return items;
+ return {items,diagnostics:failures};
 }
 async function readArticle(item){
  let article=null;
@@ -366,7 +367,12 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   found.push(...(curatedResults.items||curatedResults));
   for(const error of curatedResults.errors||[])errors.push("curated_feed: "+error);
   if(curatedResults.diagnostics?.length)errors.push("curated_feed_diagnostics: "+JSON.stringify(curatedResults.diagnostics).slice(0,900));
-  for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
+  for(const result of searchResults){
+    if(result.status==='fulfilled'){
+     found.push(...result.value.items);
+     if(result.value.diagnostics?.length)errors.push("news_provider_failures: "+JSON.stringify(result.value.diagnostics.slice(0,6)).slice(0,700));
+    }else errors.push(String(result.reason?.message||result.reason).slice(0,240));
+   }
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
   const relevantFound=freshFound.filter(x=>isFixtureRelevantResult(x,f));
