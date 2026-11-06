@@ -1019,7 +1019,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
     UNION SELECT away_or_player_two AS team FROM sports_matches WHERE lower(sport) IN ('football','soccer')
   ) known WHERE team IS NOT NULL AND team<>'' ORDER BY length(team) DESC LIMIT 2000`);
   const knownFootballTeams = teamRows.rows.map(row => row.team);
-  let browser = null, browserSession = null, browserAttempted = false;
+  let browser = null, browserSession = null, browserAttempted = false, browserClosing = false;
   const getBrowserSession = async () => {
     if (process.env.ASH_BROWSER_SCRAPER_ENABLED !== "true") return null;
     if (browser?.isConnected() && browserSession) return browserSession;
@@ -1031,7 +1031,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
       launched.on("disconnected", () => {
         if (browser === launched) { browser = null; browserSession = null; }
         browserAttempted = false;
-        console.error("[ash-bookmaker-scraper] Chromium session disconnected; it will be recreated");
+        if (!browserClosing) console.warn("[ash-bookmaker-scraper] Chromium session ended unexpectedly; it will be recreated");
       });
       browser = launched;
       browserSession = await createBrowserSession(browser);
@@ -1117,8 +1117,10 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
       }
     }
   } finally {
+    browserClosing = true;
     if (browserSession?.context) await browserSession.context.close().catch(() => {});
     if (browser) await browser.close().catch(() => {});
+    browserClosing = false;
   }
   const importedOdds = await importScrapedOdds(db);
   const diagnostics = summarizeBookmakerScraperResults(results);
