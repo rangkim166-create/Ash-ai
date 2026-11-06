@@ -386,7 +386,11 @@ export function extractBetPawaEventCandidates(game) {
   for (const market of Array.isArray(game?.markets) ? game.markets : []) {
     const typeId = String(market?.marketType?.id ?? market?.marketTypeId ?? "");
     const marketName = String(market?.marketType?.displayName || market?.marketType?.name || market?.name || "");
-    if (typeId !== "3743" && !/(?:1x2|match result|full.?time result)/i.test(marketName)) continue;
+    // BetPawa's 1UP and 2UP markets are also labelled 1X2. Only accept
+    // the standard full-time 1X2 market (ID 3743), never early-payout variants.
+    const isStandardOneXTwo = typeId ? typeId === "3743"
+      : /^(?:1x2(?:\s*[|/-]\s*full.?time|\s*-\s*ft)?|match result|full.?time result)$/i.test(marketName.trim());
+    if (!isStandardOneXTwo) continue;
     for (const row of Array.isArray(market?.row) ? market.row : []) {
       for (const price of Array.isArray(row?.prices) ? row.prices : []) {
         const decimalOdds = Number(price?.odds ?? price?.odd_value);
@@ -539,7 +543,9 @@ export function extractBetikaEventCandidates(base, detail) {
   const startsAt = parseBetikaStartTime(game.start_time || base?.start_time);
   if (!homeTeam || !awayTeam || !startsAt) return [];
   const sportId = Number(game.sport_id || base?.sport_id || 0);
-  const sportLabel = String(game.sport_name || game.sport || game.category || base?.category || "").toLowerCase();
+  const sportLabel = [game.sport_name, game.sport, game.category, game.competition_name, base?.category, base?.competition_name].filter(Boolean).join(" ").toLowerCase();
+  // Zoom leagues and virtual/eSoccer events are simulated products, not real fixtures.
+  if (game.is_esport === true || base?.is_esport === true || /zoom|virtual|esport|e.?soccer|simulated|cyber/.test(sportLabel)) return [];
   const sport = sportId === 14 || /football|soccer/.test(sportLabel) ? "football"
     : sportId === 139 || /basket/.test(sportLabel) ? "basketball"
     : /tennis/.test(sportLabel) ? "tennis" : null;
