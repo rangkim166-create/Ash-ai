@@ -209,6 +209,7 @@ async function searchCuratedSportsFeeds(sport){
  }
  return {items,errors,diagnostics};
 }
+export function collectNewsProviderFailures(diagnostics=[]){return (diagnostics||[]).filter(item=>!!item?.error);}
 async function search(query){
  const providers=buildNewsSearchProviders(query);
  const results=await Promise.allSettled(providers.map(provider=>fetchFeed(provider)));
@@ -218,7 +219,7 @@ async function search(query){
   if(result.status==="fulfilled"){items.push(...result.value.items);diagnostics.push(result.value.diagnostic);}
   else diagnostics.push({provider:providers[index].name,error:String(result.reason?.message||result.reason).slice(0,240)});
  }
- const failures=diagnostics.filter(item=>item.error);
+ const failures=collectNewsProviderFailures(diagnostics);
  if(!items.length)throw Error("News discovery returned no parseable feed items: "+JSON.stringify(diagnostics).slice(0,900));
  return {items,diagnostics:failures};
 }
