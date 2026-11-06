@@ -161,9 +161,9 @@ export function isRealWorldCandidate(candidate) {
   const competition = String(candidate?.competition || "").trim();
   const sport = String(candidate?.sport || "").trim();
   const descriptor = [event, competition, sport, home, away].join(" ").toLowerCase();
-  if (/\\b(virtual|zoom|esports?|e-sports?|cyber|simulated|simulation|e-?soccer|e-?football|srl|instant games?)\\b/i.test(descriptor)) return false;
-  if (/^z\\./i.test(home) || /^z\\./i.test(away)) return false;
-  if (/^\\s*(?:team|player)\\s*[0-9]+\\s*$/i.test(home) || /^\\s*(?:team|player)\\s*[0-9]+\\s*$/i.test(away)) return false;
+  if (/\b(virtual|zoom|esports?|e-sports?|cyber|simulated|simulation|e-?soccer|e-?football|srl|instant games?)\b/i.test(descriptor)) return false;
+  if (/^z\./i.test(home) || /^z\./i.test(away)) return false;
+  if (/^\s*(?:team|player)\s*[0-9]+\s*$/i.test(home) || /^\s*(?:team|player)\s*[0-9]+\s*$/i.test(away)) return false;
   return true;
 }
 
