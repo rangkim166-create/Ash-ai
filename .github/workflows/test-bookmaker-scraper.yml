@@ -3,15 +3,15 @@ name: Test bookmaker scraper and prediction filters
 on:
   push:
     branches:
-      - ash-bookmaker-scraper
+      - ash-bookmaker-scraper\n      - ash-neon-backend
     paths:
       - "neon-functions/ashsports/bookmaker-scraper.mjs"
       - "neon-functions/ashsports/bookmaker-scraper.test.mjs"
       - "neon-functions/ashsports/daily-picks.mjs"
       - "neon-functions/ashsports/daily-picks.test.mjs"
       - "neon-functions/ashsports/fixture-research.mjs"
-      - "neon-functions/ashsports/fixture-research.test.mjs"
-      - ".github/workflows/test-bookmaker-scraper.yml"
+      - "neon-functions/ashsports/fixture-research.test.mjs"\n      - "neon-functions/ashsports/results-tracker.mjs"\n      - "neon-functions/ashsports/results-tracker.test.mjs"
+      - "neon-functions/ashsports/results-tracker.mjs"\n      - "neon-functions/ashsports/results-tracker.test.mjs"\n      - ".github/workflows/test-bookmaker-scraper.yml"
   pull_request:
     paths:
       - "neon-functions/ashsports/bookmaker-scraper.mjs"
@@ -29,4 +29,4 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node --test neon-functions/ashsports/bookmaker-scraper.test.mjs neon-functions/ashsports/daily-picks.test.mjs neon-functions/ashsports/fixture-research.test.mjs
+      - run: npm test\n        working-directory: neon-functions/ashsports
