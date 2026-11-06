@@ -51,7 +51,10 @@ function summarizeBookmakerMarkets(books, fixture, sport) {
       const side = sideForOutcome(row.outcome_name, fixture.home, fixture.away);
       if (side) mapped.set(side, row);
     }
-    const required = sport === "football" ? ["home", "away", "draw"] : ["home", "away"];
+    // Basketball regulation-result markets can include a draw; when present,
+    // include it in the no-vig denominator instead of treating the market as 2-way.
+    const required = sport === "football" || (sport === "basketball" && mapped.has("draw"))
+      ? ["home", "away", "draw"] : ["home", "away"];
     if (!required.every(side => mapped.has(side))) continue;
     const overround = required.reduce((sum, side) => sum + 1 / Number(mapped.get(side).decimal_odds), 0);
     if (!Number.isFinite(overround) || overround <= 0) continue;

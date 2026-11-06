@@ -158,3 +158,26 @@ test("near-kickoff availability research must be refreshed within 20 minutes", (
     assessment: { confidence: 80, contradictions: [] } };
   assert.equal(isAvailabilityResearchSufficient(report, { fixtureStart: "2026-10-31T10:30:00.000Z", now }), false);
 });
+
+
+test("basketball regulation-result markets include the draw in no-vig probabilities", () => {
+  const fixture = { id: "basketball:test-regulation", sport: "basketball", competition: "Test League", home: "Home Hoops", away: "Away Hoops", starts_at: "2026-10-31T18:00:00.000Z" };
+  const rows = [];
+  for (let i = 1; i <= 5; i++) {
+    const bookmaker_key = "basket-book-" + i;
+    rows.push(
+      { match_id: fixture.id, bookmaker_key, market_key: "h2h", outcome_name: fixture.home, decimal_odds: 2.0, observed_at: now.toISOString() },
+      { match_id: fixture.id, bookmaker_key, market_key: "h2h", outcome_name: fixture.away, decimal_odds: 4.0, observed_at: now.toISOString() },
+      { match_id: fixture.id, bookmaker_key, market_key: "h2h", outcome_name: "Draw", decimal_odds: 3.5, observed_at: now.toISOString() }
+    );
+  }
+  const picks = selectDailyPicks([fixture], rows, [], {
+    now,
+    ratings: { basketball: { "home hoops": 1700, "away hoops": 1500 } },
+    ratingMatchCounts: { basketball: 100000 }
+  });
+  assert.equal(picks.length, 1);
+  assert.equal(picks[0].selection, fixture.home);
+  // 1/2.0 divided by (1/2.0 + 1/4.0 + 1/3.5) = 48.3%.
+  assert.equal(picks[0].market_probability_pct, 48.3);
+});
