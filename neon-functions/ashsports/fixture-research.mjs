@@ -135,7 +135,13 @@ function mentionsParticipant(text,participant){
   const acronyms=raw.split(/[^A-Za-z0-9]+/).filter(token=>/^[A-Z0-9]{3,5}$/.test(token));
   return acronyms.some(token=>words.has(token.toLowerCase()));
  }
- if(tokens.length>=2)return tokens.every(token=>words.has(token));
+ if(tokens.length>=2){
+  const matched=tokens.filter(token=>words.has(token));
+  if(matched.length===tokens.length)return true;
+  // Headlines often omit generic prefixes such as "Al" or "Hapoel".
+  // Accept one missing token only when at least two whole-word tokens match.
+  return matched.length>=2&&matched.length>=tokens.length-1;
+ }
 }
 export function isFixtureRelevantResult(item,fixture){
  const text=String(item?.title||"")+" "+String(item?.description||"");
