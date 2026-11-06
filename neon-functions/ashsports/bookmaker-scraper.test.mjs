@@ -429,3 +429,52 @@ test("BetPawa non-football extractor rejects football 1X2 and unrelated markets"
   });
   assert.deepEqual(candidates, []);
 });
+
+
+test("extracts BetPawa basketball regulation-time 1X2 with a correctly labelled draw", () => {
+  const candidates = extractBetPawaEventCandidates({
+    startTime: "2026-11-07T18:00:00.000Z",
+    category: { id: "3", name: "Basketball" },
+    competition: { name: "NBA" },
+    participants: [{ name: "Lakers" }, { name: "Celtics" }],
+    markets: [{
+      marketType: {
+        id: "3743",
+        name: "1X2 - FT",
+        displayName: "1X2 | Full Time",
+        explainer: "Result is based on regular playing time only - Overtime does not count."
+      },
+      row: [{ prices: [
+        { name: "1", odds: "2.10" },
+        { name: "X", odds: "12.00" },
+        { name: "2", odds: "1.75" }
+      ] }]
+    }]
+  });
+  assert.equal(candidates.length, 3);
+  assert.equal(candidates[0].sport, "basketball");
+  assert.equal(candidates[0].market, "Regulation Result");
+  assert.deepEqual(candidates.map(x => x.selection), ["Lakers", "Draw", "Celtics"]);
+  const draw = mapCandidateToFixture(candidates[1], {
+    id: "basketball-regulation-1", sport: "basketball",
+    home: "Lakers", away: "Celtics"
+  });
+  assert.equal(draw.outcomeName, "Draw");
+  assert.equal(draw.decimalOdds, 12);
+});
+
+test("does not mislabel BetPawa basketball regulation draw as an overtime match winner", () => {
+  const candidates = extractBetPawaEventCandidates({
+    startTime: "2026-11-07T18:00:00.000Z",
+    category: { id: "3", name: "Basketball" },
+    participants: [{ name: "Lakers" }, { name: "Celtics" }],
+    markets: [{
+      marketType: { id: "3743", name: "1X2 - FT", displayName: "1X2 | Full Time" },
+      row: [{ prices: [
+        { name: "1", odds: "2.10" }, { name: "X", odds: "12.00" }, { name: "2", odds: "1.75" }
+      ] }]
+    }]
+  });
+  assert.equal(candidates.some(x => x.market === "Match Winner"), false);
+  assert.equal(candidates.some(x => x.market === "Regulation Result" && x.selection === "Draw"), true);
+});
