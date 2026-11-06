@@ -396,7 +396,7 @@ async function runScheduledDailyPublisher(){
   const availabilityByMatch=new Map(availabilityRows.rows.map(row=>[String(row.match_id),row]));
   for(const pick of picks){const report=availabilityByMatch.get(String(pick.id));pick.availability_research=report?{researchedAt:report.researched_at,sourceCount:Number(report.source_count||0),independentDomains:Number(report.independent_domains||0),sources:report.sources||[],assessment:report.assessment||{},coverage:report.coverage||{}}:{status:"not_yet_researched",sourceCount:0,assessment:{unknowns:["No recent injury/lineup/news research is available for this fixture."]}};}
   // The Odds API finds candidate fixtures; independent web reporting adds match context.
-  const availabilityQualified=picks.filter(pick=>isAvailabilityResearchSufficient(pick.availability_research,{fixtureStart:pick.commence_time,now:new Date()}));
+  const availabilityQualified=picks.filter(pick=>isAvailabilityResearchSufficient(pick.availability_research,{fixtureStart:pick.commence_time,sport:pick.sport,now:new Date()}));
   const availabilityQualifiedIds=new Set(availabilityQualified.map(pick=>String(pick.id)));
   const webResearch=availabilityQualified.length?await telegramAssistant.researchDailyPicks(availabilityQualified):[];
   const researchByMatch=new Map(webResearch.map(item=>[String(item.matchId),item]));

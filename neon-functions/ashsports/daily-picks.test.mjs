@@ -181,3 +181,16 @@ test("basketball regulation-result markets include the draw in no-vig probabilit
   // 1/2.0 divided by (1/2.0 + 1/4.0 + 1/3.5) = 48.3%.
   assert.equal(picks[0].market_probability_pct, 48.3);
 });
+
+
+test("tennis availability gate uses player withdrawal and form evidence instead of team lineups", () => {
+ const report = {
+  researchedAt: "2026-10-31T09:50:00.000Z", sourceCount: 3, independentDomains: 3,
+  coverage: { home: true, away: true, injuryReportingFound: false, withdrawalReportingFound: true,
+   categoryCounts: { form_statistics: 2 }, lineupReportingFound: false },
+  assessment: { confidence: 78, contradictions: [] }
+ };
+ assert.equal(isAvailabilityResearchSufficient(report, { fixtureStart: "2026-10-31T18:00:00.000Z", sport: "tennis", now }), true);
+ assert.equal(isAvailabilityResearchSufficient({ ...report, coverage: { ...report.coverage, withdrawalReportingFound: false } }, { fixtureStart: "2026-10-31T18:00:00.000Z", sport: "tennis", now }), false);
+ assert.equal(isAvailabilityResearchSufficient(report, { fixtureStart: "2026-10-31T18:00:00.000Z", sport: "football", now }), false);
+});

@@ -219,7 +219,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
   return [...bestByFixture.values()].slice(0, maxPicks);
 }
 
-export function isAvailabilityResearchSufficient(report, { fixtureStart, now = new Date() } = {}) {
+export function isAvailabilityResearchSufficient(report, { fixtureStart, sport = "football", now = new Date() } = {}) {
   if (!report || !report.researchedAt) return false;
   const current = new Date(now), researched = new Date(report.researchedAt), starts = new Date(fixtureStart);
   if (!Number.isFinite(current.getTime()) || !Number.isFinite(researched.getTime()) || !Number.isFinite(starts.getTime())) return false;
@@ -229,10 +229,14 @@ export function isAvailabilityResearchSufficient(report, { fixtureStart, now = n
   if (ageMs < 0 || ageMs > maxAgeMs) return false;
   const coverage = report.coverage || {};
   const assessment = report.assessment || {};
+  const sportKey = String(sport || "football").toLowerCase();
+  const sportCoverage = sportKey === "tennis"
+    ? (coverage.injuryReportingFound === true || coverage.withdrawalReportingFound === true) &&
+      (Number(coverage.categoryCounts?.form_statistics || 0) > 0 || Number(coverage.categoryCounts?.preview_analysis || 0) > 0)
+    : coverage.injuryReportingFound === true && coverage.lineupReportingFound === true;
   return Number(report.sourceCount) >= 2 &&
     Number(report.independentDomains) >= 2 &&
-    coverage.home === true && coverage.away === true &&
-    coverage.injuryReportingFound === true && coverage.lineupReportingFound === true &&
+    coverage.home === true && coverage.away === true && sportCoverage &&
     assessment.error == null && Number(assessment.confidence) >= 60 &&
     !(Array.isArray(assessment.contradictions) && assessment.contradictions.length > 0);
 }

@@ -38,3 +38,16 @@ test("rejects unrelated news returned for a fixture search", () => {
  assert.equal(isFixtureRelevantResult({title:"Al-Kholood team news",description:"Squad update"},fixture),true);
  assert.equal(isFixtureRelevantResult({title:"Al-Khaleej injury update",description:"Fitness news"},fixture),true);
 });
+
+
+test("tennis research searches player-specific injury, withdrawal, form and tournament context", () => {
+ const queries = buildFixtureQueries({sport:"tennis",home:"Jannik Sinner",away:"Alexander Zverev",competition:"ATP Finals"},new Date("2026-11-04T12:00:00Z"));
+ const all = queries.join(" ").toLowerCase();
+ assert.equal(queries.length,12);
+ for (const term of ["tennis","withdrawal","retirement","surface","head to head","tournament draw","jannik sinner","alexander zverev"]) assert.ok(all.includes(term),term);
+ assert.ok(!all.includes("starting xi"));
+});
+test("classifies tennis withdrawals and surface reporting separately", () => {
+ const categories = classifyEvidenceCategory("Player withdrew with an ankle injury; hard court record and recent form");
+ for (const category of ["injury_fitness","withdrawals_retirements","surface_conditions","form_statistics"]) assert.ok(categories.includes(category),category);
+});
