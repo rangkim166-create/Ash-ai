@@ -414,6 +414,28 @@ export function buildBetPawaListQuery(now = new Date(), skip = 0, categoryId = "
   };
 }
 
+export function selectBalancedBetPawaEvents(groups, limits = {}) {
+  const defaults = { "2": 100, "3": 50, "452": 50 };
+  const seen = new Set();
+  const selected = [];
+  for (const group of groups || []) {
+    const categoryId = String(group?.categoryId || "");
+    const limit = Math.max(0, Math.min(200, Number(limits[categoryId] ?? defaults[categoryId] ?? 0)));
+    const ordered = [...(group?.events || [])].sort((a, b) =>
+      Date.parse(a.startTime || a.start_time || "") - Date.parse(b.startTime || b.start_time || ""));
+    let added = 0;
+    for (const event of ordered) {
+      const id = String(event?.id ?? event?.eventId ?? "");
+      if (!id || seen.has(categoryId + ":" + id) || added >= limit) continue;
+      seen.add(categoryId + ":" + id);
+      selected.push({ ...event, __ashCategoryId: categoryId });
+      added++;
+    }
+  }
+  return selected.sort((a, b) =>
+    Date.parse(a.startTime || a.start_time || "") - Date.parse(b.startTime || b.start_time || ""));
+}
+
 export function extractBetPawaListEvents(body) {
   const envelope = body?.responses;
   if (!Array.isArray(envelope) || envelope.length === 0) return { status: "malformed", events: [] };
@@ -536,15 +558,14 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   }
   if (!listResults.length) throw lastError || new Error("BetPawa public event list unavailable");
 
-  const eventMap = new Map();
-  for (const group of listResults) for (const event of group.events) {
-    const id = String(event?.id ?? event?.eventId ?? "");
-    if (id) eventMap.set(group.categoryId + ":" + id, { ...event, __ashCategoryId: group.categoryId });
-  }
-  const events = [...eventMap.values()]
-    .filter(event => event && (event.id != null || event.eventId != null))
-    .sort((a,b) => Date.parse(a.startTime || a.start_time || "") - Date.parse(b.startTime || b.start_time || ""))
-    .slice(0, 200);
+  // Reserve capacity for all three real sports. A single global earliest-kickoff
+  // slice can let football consume the entire 200-event detail budget.
+  const events = selectBalancedBetPawaEvents(listResults);
+  const eventCountsBySport = {
+    football: events.filter(event => event.__ashCategoryId === "2").length,
+    basketball: events.filter(event => event.__ashCategoryId === "3").length,
+    tennis: events.filter(event => event.__ashCategoryId === "452").length
+  };
   const structuredData = listResults.map(group => group.response.data);
   const candidates = [], failures = [];
   for (let offset = 0; offset < events.length; offset += 4) {
@@ -565,9 +586,14 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
     }
   }
   const unique = uniqueOdds(candidates);
+  const candidateCountsBySport = {
+    football: unique.filter(candidate => candidate.sport === "football").length,
+    basketball: unique.filter(candidate => candidate.sport === "basketball").length,
+    tennis: unique.filter(candidate => candidate.sport === "tennis").length
+  };
   const lastResponse = listResults.at(-1)?.response;
   return {
-    candidates: unique, structuredData, events: events.length, detailFailures: failures.length,
+    candidates: unique, structuredData, events: events.length, eventCountsBySport, candidateCountsBySport, detailFailures: failures.length,
     visibleText: "BetPawa public website JSON: " + events.length + " football, basketball and tennis events, " + unique.length + " match-winner prices",
     finalUrl: lastResponse?.finalUrl || source.toString(), status: lastResponse?.status || 200
   };
