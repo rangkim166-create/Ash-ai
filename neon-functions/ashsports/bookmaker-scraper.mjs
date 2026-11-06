@@ -423,6 +423,34 @@ export function countOddsCandidatesBySport(candidates = []) {
   return counts;
 }
 
+export function summarizeBookmakerScraperResults(results = []) {
+  const eventCountsBySport = { football: 0, basketball: 0, tennis: 0 };
+  const candidateCountsBySport = { football: 0, basketball: 0, tennis: 0 };
+  for (const result of results || []) {
+    for (const sport of Object.keys(eventCountsBySport)) {
+      eventCountsBySport[sport] += Number(result?.eventCountsBySport?.[sport] || 0);
+      candidateCountsBySport[sport] += Number(result?.candidateCountsBySport?.[sport] || 0);
+    }
+  }
+  return {
+    sourcesChecked: (results || []).length,
+    succeeded: (results || []).filter(result => result.status === "success").length,
+    failed: (results || []).filter(result => result.status === "failed").length,
+    eventCountsBySport,
+    candidateCountsBySport,
+    bookmakers: (results || []).map(result => ({
+      bookmaker: result.bookmaker,
+      status: result.status,
+      siteJsonUsed: !!result.siteJsonUsed,
+      events: Number(result.siteJsonEvents || 0),
+      eventCountsBySport: result.eventCountsBySport || null,
+      candidateCountsBySport: result.candidateCountsBySport || null,
+      oddsCandidates: Number(result.oddsCandidates || 0),
+      error: result.error || null
+    }))
+  };
+}
+
 export function selectBalancedBetPawaEvents(groups, limits = {}) {
   const defaults = { "2": 100, "3": 50, "452": 50 };
   const seen = new Set();
@@ -1093,7 +1121,9 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
     if (browser) await browser.close().catch(() => {});
   }
   const importedOdds = await importScrapedOdds(db);
-  return { sourcesChecked: results.length, discoveredPages: results.reduce((n,x)=>n+Number(x.discoveredPages||0),0), newPagesQueued: results.reduce((n,x)=>n+Number(x.newPagesQueued||0),0), succeeded: results.filter(x => x.status === "success").length, failed: results.filter(x => x.status === "failed").length, renderedSources: results.filter(x => x.rendered).length, siteJsonSources: results.filter(x => x.siteJsonUsed).length, importedOdds, results };
+  const diagnostics = summarizeBookmakerScraperResults(results);
+  console.info("[ash-bookmaker-scraper] ingestion summary", JSON.stringify({ ...diagnostics, importedOdds }));
+  return { ...diagnostics, discoveredPages: results.reduce((n,x)=>n+Number(x.discoveredPages||0),0), newPagesQueued: results.reduce((n,x)=>n+Number(x.newPagesQueued||0),0), renderedSources: results.filter(x => x.rendered).length, siteJsonSources: results.filter(x => x.siteJsonUsed).length, importedOdds, results };
 }
 
 export function fixtureFromCandidate(candidate, now = new Date()) {
