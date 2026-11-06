@@ -147,3 +147,13 @@ test("adds curated independent publisher feeds for football, tennis and basketba
  assert.ok(basketball.some(feed=>feed.name==="athletic_nba"));
  for(const feed of [...football,...tennis,...basketball])assert.match(feed.url,/^https:\/\//);
 });
+
+test("parses Atom sports feed entries and href links",()=>{
+ const xml='<feed xmlns="http://www.w3.org/2005/Atom"><entry><title>Team A injury update</title><link rel="alternate" href="https://sports.example/news/team-a"/><updated>2026-11-06T10:00:00Z</updated><summary>Team A confirms a player is unavailable before the match.</summary></entry></feed>';
+ const entries=parseRss(xml);
+ assert.equal(entries.length,1);
+ assert.equal(entries[0].title,"Team A injury update");
+ assert.equal(entries[0].url,"https://sports.example/news/team-a");
+ assert.equal(entries[0].publishedAt,"2026-11-06T10:00:00.000Z");
+ assert.match(entries[0].description,/player is unavailable/);
+});
