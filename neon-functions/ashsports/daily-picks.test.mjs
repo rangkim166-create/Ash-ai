@@ -36,8 +36,8 @@ test("selects a supported side only when form, complete market and value checks 
   assert.ok(picks[0].estimated_probability_pct > picks[0].implied_probability_pct);
 });
 
-test("rejects a fixture with too few independent bookmakers", () => {
-  const picks = selectDailyPicks([fixture], odds(fixture.id, 2), [...form("Arsenal", 9), ...form("Leicester", 2)], { now });
+test("rejects a fixture with only one independent bookmaker", () => {
+  const picks = selectDailyPicks([fixture], odds(fixture.id, 1), [...form("Arsenal", 9), ...form("Leicester", 2)], { now });
   assert.equal(picks.length, 0);
 });
 
@@ -112,8 +112,8 @@ test("supports tennis using imported Elo when recent result samples are unavaila
   assert.match(formatDailyPicks("31 Oct 2026", picks), /Historical Elo/);
 });
 
-test("Elo-only selections still require at least four supporting bookmakers for short odds", () => {
-  const picks = selectDailyPicks([tennisFixture], sportOdds(tennisFixture, 3), [], {
+test("Elo-only selections still require at least two supporting bookmakers for short odds", () => {
+  const picks = selectDailyPicks([tennisFixture], sportOdds(tennisFixture, 1), [], {
     now,
     ratings: { tennis: { "jannik sinner": 1950, "alexander zverev": 1850 } },
     ratingMatchCounts: { tennis: 361571 }
