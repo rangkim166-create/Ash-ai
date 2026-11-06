@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent, countOddsCandidatesBySport } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent, countOddsCandidatesBySport, summarizeBookmakerScraperResults } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -599,4 +599,23 @@ test("reports bookmaker odds candidates separately for football, basketball and 
     { sport: "football" }, { sport: "football" }, { sport: "basketball" },
     { sport: "tennis" }, { sport: "virtual" }, { sport: "Football" }
   ]), { football: 3, basketball: 1, tennis: 1 });
+});
+
+
+test("aggregates live bookmaker ingestion diagnostics without mixing sports", () => {
+  const summary = summarizeBookmakerScraperResults([
+    { bookmaker: "BetPawa", status: "success", siteJsonUsed: true, siteJsonEvents: 12,
+      eventCountsBySport: { football: 8, basketball: 3, tennis: 1 },
+      candidateCountsBySport: { football: 24, basketball: 9, tennis: 2 }, oddsCandidates: 35 },
+    { bookmaker: "Betika", status: "success", siteJsonUsed: true, siteJsonEvents: 7,
+      eventCountsBySport: { football: 2, basketball: 2, tennis: 3 },
+      candidateCountsBySport: { football: 6, basketball: 6, tennis: 6 }, oddsCandidates: 18 },
+    { bookmaker: "1xBet", status: "failed", error: "blocked" }
+  ]);
+  assert.deepEqual(summary.eventCountsBySport, { football: 10, basketball: 5, tennis: 4 });
+  assert.deepEqual(summary.candidateCountsBySport, { football: 30, basketball: 15, tennis: 8 });
+  assert.equal(summary.sourcesChecked, 3);
+  assert.equal(summary.succeeded, 2);
+  assert.equal(summary.failed, 1);
+  assert.equal(summary.bookmakers[2].error, "blocked");
 });
