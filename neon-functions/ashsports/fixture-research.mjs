@@ -128,6 +128,10 @@ async function readArticle(item){
  const meaningful=snippet.length>=120&&snippet.toLowerCase()!==String(item.title||"").toLowerCase();
  return meaningful?{...item,excerpt:snippet,contentLevel:"rss_snippet",categories:classifyEvidenceCategory(item.title+" "+snippet),fetchedAt:new Date().toISOString()}:null;
 }
+export function buildResearchJsonParameters(db,sources,assessment,coverage){
+ if(typeof db?.json!=="function")throw Error("Database JSON encoder is required for research persistence");
+ return [db.json(sources),db.json(assessment||{}),db.json(coverage)];
+}
 export function normalizeResearchConfidence(value){
  const numeric=v=>typeof v==="number"&&Number.isFinite(v)?Math.max(0,Math.min(100,v)):typeof v==="string"&&v.trim()!==""&&Number.isFinite(Number(v))?Math.max(0,Math.min(100,Number(v))):null;
  const direct=numeric(value);
@@ -172,6 +176,10 @@ export async function ensureFixtureResearchTables(db){
   assessment jsonb NOT NULL DEFAULT '{}'::jsonb,coverage jsonb NOT NULL DEFAULT '{}'::jsonb,
   freshness_hours integer NOT NULL DEFAULT 168,updated_at timestamptz NOT NULL DEFAULT now()
  )`);
+ // Older writes encoded JSON text as JSONB string scalars; unwrap them for JSON operators.
+ await db.query("UPDATE ash_fixture_research SET sources=(sources #>> '{}')::jsonb WHERE jsonb_typeof(sources)='string'");
+ await db.query("UPDATE ash_fixture_research SET assessment=(assessment #>> '{}')::jsonb WHERE jsonb_typeof(assessment)='string'");
+ await db.query("UPDATE ash_fixture_research SET coverage=(coverage #>> '{}')::jsonb WHERE jsonb_typeof(coverage)='string'");
 }
 export async function enqueueFixtureResearch(db){
  await ensureFixtureResearchTables(db);
@@ -223,7 +231,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null}={}){
    ON CONFLICT(match_id) DO UPDATE SET researched_at=now(),source_count=EXCLUDED.source_count,
    independent_domains=EXCLUDED.independent_domains,sources=EXCLUDED.sources,assessment=EXCLUDED.assessment,
    coverage=EXCLUDED.coverage,updated_at=now()`,
-   [f.id,payload.length,domains.length,JSON.stringify(payload),JSON.stringify(assessment||{}),JSON.stringify(coverage)]);
+   [f.id,payload.length,domains.length,...buildResearchJsonParameters(db,payload,assessment,coverage)]);
   const tennis=f.sport==="tennis";
   const sportCoverage=tennis?(categoryCounts.injury_fitness>0||categoryCounts.withdrawals_retirements>0)&&(categoryCounts.form_statistics>0||categoryCounts.preview_analysis>0):categoryCounts.injury_fitness>0&&categoryCounts.lineups>0;
   const enoughEvidence=fullArticleCount>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0&&!assessment?.error&&sportCoverage&&normalizeResearchConfidence(assessment?.confidence)>=60&&!(Array.isArray(assessment?.contradictions)&&assessment.contradictions.length>0);
