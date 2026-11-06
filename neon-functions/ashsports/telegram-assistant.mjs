@@ -146,8 +146,10 @@ async function saveLiveResearchSnapshots(db,live){
 }
 
 export function buildGroqModelFallback(env=process.env){
- const candidates=[env.ASH_GROQ_MODEL,"openai/gpt-oss-120b","openai/gpt-oss-20b"]
-  .filter(Boolean).map(value=>String(value).trim()).filter(value=>value&&!/qwen/i.test(value));
+ const configured=String(env.ASH_GROQ_MODEL||"").trim();
+ const candidates=configured&&!/qwen/i.test(configured)
+  ? [configured,"openai/gpt-oss-20b"]
+  : ["openai/gpt-oss-120b","openai/gpt-oss-20b"];
  return [...new Set(candidates)];
 }
 export function buildOpenRouterModel(env=process.env){
