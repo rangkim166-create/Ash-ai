@@ -349,7 +349,7 @@ test("extracts Betika two-way basketball match-winner prices", () => {
     start_time: "2026-11-05 18:00:00", sport_id: 6, competition_name: "NBA"
   };
   const detail = {
-    meta: { sport_id: 6 },
+    meta: { sport_id: 6, sport_name: "Basketball" },
     data: [{ sub_type_id: 1, name: "Match Winner", odds: [
       { display: "Home", odd_value: "1.80" },
       { display: "Away", odd_value: "2.05" }
