@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, extractBetikaListItems, extractBetikaEventCandidates } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, extractBetikaListItems, extractBetikaEventCandidates } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -43,6 +43,21 @@ test("maps only exact event, h2h market and valid outcome to an existing fixture
   assert.deepEqual(mapped, { matchId: "fixture-1", marketKey: "h2h", outcomeName: "Arsenal", decimalOdds: 2.1, line: null });
   assert.equal(mapCandidateToFixture({ eventName: "Arsenal vs Chelsea", market: "Total Goals", selection: "Over 2.5", decimalOdds: 1.8 }, fixture), null);
   assert.equal(mapCandidateToFixture({ eventName: "Arsenal vs Tottenham", market: "Match Result", selection: "Arsenal", decimalOdds: 2.1 }, fixture), null);
+});
+
+test("rejects virtual, esports, cyber and generated fixtures before import", () => {
+  for (const candidate of [
+    { eventName: "Z.Genoa vs Z.Venezia", sport: "football", competition: "Serie A Zoom" },
+    { eventName: "Alpha vs Beta", sport: "eSoccer", competition: "Cyber League" },
+    { eventName: "Team 1 vs Team 2", sport: "Football", competition: "Virtual Soccer" },
+    { eventName: "Alpha vs Beta", sport: "Football", competition: "Simulated Reality League" }
+  ]) {
+    assert.equal(isRealWorldCandidate(candidate), false);
+    assert.equal(fixtureFromCandidate({ ...candidate, startsAt: "2026-11-04T20:00:00.000Z" }, new Date("2026-11-04T10:00:00.000Z")), null);
+  }
+  const virtualCandidate = { eventName: "Z.Genoa vs Z.Venezia", sport: "football", competition: "Zoom Soccer", market: "Match Result", selection: "Z.Genoa", decimalOdds: 2.1 };
+  assert.equal(mapCandidateToFixture(virtualCandidate, { id: "fixture-virtual", sport: "football", home: "Z.Genoa", away: "Z.Venezia" }), null);
+  assert.equal(isRealWorldCandidate({ eventName: "Arsenal vs Chelsea", sport: "football", competition: "Premier League", homeTeam: "Arsenal", awayTeam: "Chelsea" }), true);
 });
 
 test("creates a fixture only from explicit sport and valid kickoff metadata", () => {
