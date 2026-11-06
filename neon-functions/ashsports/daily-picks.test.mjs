@@ -194,3 +194,16 @@ test("tennis availability gate uses player withdrawal and form evidence instead 
  assert.equal(isAvailabilityResearchSufficient({ ...report, coverage: { ...report.coverage, withdrawalReportingFound: false } }, { fixtureStart: "2026-10-31T18:00:00.000Z", sport: "tennis", now }), false);
  assert.equal(isAvailabilityResearchSufficient(report, { fixtureStart: "2026-10-31T18:00:00.000Z", sport: "football", now }), false);
 });
+
+
+test("allows two-book consensus for short odds but keeps long odds at three books", () => {
+  const shortOdds = selectDailyPicks([tennisFixture], sportOdds(tennisFixture, 2), [], {
+    now,
+    ratings: { tennis: { "jannik sinner": 1950, "alexander zverev": 1850 } },
+    ratingMatchCounts: { tennis: 361571 }
+  });
+  assert.equal(shortOdds.length, 1);
+  const longRows = odds(fixture.id, 2, now.toISOString(), 4.0);
+  const longOdds = selectDailyPicks([fixture], longRows, [...form("Arsenal", 9), ...form("Leicester", 2)], { now });
+  assert.equal(longOdds.length, 0);
+});
