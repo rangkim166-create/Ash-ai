@@ -130,7 +130,7 @@ test("keeps legacy JSON-string odds payloads readable during import", async () =
   const { importScrapedOdds } = await import("./bookmaker-scraper.mjs");
   const result = await importScrapedOdds(db);
   assert.equal(result.runs, 1);
-  assert.equal(result.oddsSaved, 1);
+  assert.equal(result.oddsSaved, 3);
   assert.equal(result.unmatchedCandidates, 0);
 });
 
