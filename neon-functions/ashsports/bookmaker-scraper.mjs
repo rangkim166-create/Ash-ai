@@ -97,6 +97,19 @@ function normalizeTeam(value) {
   return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
+const GENERIC_TEAM_TOKENS = new Set(["fc","cf","sc","afc","bc","club","the","women","men","basketball","team"]);
+export function teamsEquivalent(left, right) {
+  const a = normalizeTeam(left), b = normalizeTeam(right);
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const tokens = value => new Set(value.split(" ").filter(token => token.length >= 3 && !GENERIC_TEAM_TOKENS.has(token)));
+  const leftTokens = tokens(a), rightTokens = tokens(b);
+  const [shorter, longer] = leftTokens.size <= rightTokens.size
+    ? [leftTokens, rightTokens] : [rightTokens, leftTokens];
+  if (!shorter.size) return false;
+  return [...shorter].every(token => longer.has(token)) &&
+    [...shorter].some(token => token.length >= 4);
+}
 function parseEventTeams(value) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   const match = text.match(/^(.+?)\s+(?:vs?\.?|v\.|@|[-–—])\s+(.+?)(?:\s+[|•].*)?$/i);
@@ -173,18 +186,17 @@ export function mapCandidateToFixture(candidate, fixture) {
   if (!/^(h2h|1x2|match result|regulation result|full[ -]?time result|match winner|moneyline|winner|to win match)$/.test(market.trim())) return null;
   let home = candidate.homeTeam, away = candidate.awayTeam;
   if (!home || !away) ({ homeTeam: home, awayTeam: away } = parseEventTeams(candidate.eventName || ""));
-  const fixtureHome = normalizeTeam(fixture.home), fixtureAway = normalizeTeam(fixture.away);
-  const candidateHome = normalizeTeam(home), candidateAway = normalizeTeam(away);
-  if (!candidateHome || !candidateAway) return null;
-  const sameOrder = candidateHome === fixtureHome && candidateAway === fixtureAway;
-  const reverseOrder = candidateHome === fixtureAway && candidateAway === fixtureHome;
+  if (!home || !away) return null;
+  if (candidate.sport && fixture.sport && String(candidate.sport).toLowerCase() !== String(fixture.sport).toLowerCase()) return null;
+  const sameOrder = teamsEquivalent(home, fixture.home) && teamsEquivalent(away, fixture.away);
+  const reverseOrder = teamsEquivalent(home, fixture.away) && teamsEquivalent(away, fixture.home);
   if (!sameOrder && !reverseOrder) return null;
   if (candidate.startsAt && fixture.starts_at) { const delta=Math.abs(new Date(candidate.startsAt).getTime()-new Date(fixture.starts_at).getTime()); if (!Number.isFinite(delta) || delta > 6*60*60*1000) return null; }
-  const selection = normalizeTeam(candidate.selection);
+  const selection = String(candidate.selection || "");
   let outcomeName = null;
-  if (selection === fixtureHome) outcomeName = fixture.home;
-  else if (selection === fixtureAway) outcomeName = fixture.away;
-  else if (["draw","the draw","tie","x"].includes(selection) && (
+  if (teamsEquivalent(selection, fixture.home)) outcomeName = fixture.home;
+  else if (teamsEquivalent(selection, fixture.away)) outcomeName = fixture.away;
+  else if (["draw","the draw","tie","x"].includes(normalizeTeam(selection)) && (
     String(fixture.sport).toLowerCase() === "football" ||
     (String(fixture.sport).toLowerCase() === "basketball" && market.trim() === "regulation result")
   )) outcomeName = "Draw";
@@ -1119,14 +1131,17 @@ export async function importScrapedOdds(db) {
     const candidates = filterCompleteScrapedMarkets(rawCandidates);
     for (const candidate of candidates) {
       const scrapedFixture = fixtureFromCandidate(candidate);
-      const existingEvent = scrapedFixture ? fixtures.filter(f => normalizeTeam(f.home) === normalizeTeam(scrapedFixture.home) && normalizeTeam(f.away) === normalizeTeam(scrapedFixture.away) && Math.abs(new Date(f.starts_at).getTime()-new Date(scrapedFixture.starts_at).getTime()) <= 6*60*60*1000) : [];
+      const existingEvent = scrapedFixture ? fixtures.filter(f => String(f.sport).toLowerCase() === scrapedFixture.sport && teamsEquivalent(f.home,scrapedFixture.home) && teamsEquivalent(f.away,scrapedFixture.away) && Math.abs(new Date(f.starts_at).getTime()-new Date(scrapedFixture.starts_at).getTime()) <= 6*60*60*1000) : [];
       if (scrapedFixture && !existingEvent.length && !fixtures.some(f => f.id === scrapedFixture.id)) {
         await db.query("INSERT INTO sports_matches(id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source,source_updated_at,updated_at) VALUES($1,$2,$3,$4,$5,$6::timestamptz,'scheduled','public_scrape',now(),now()) ON CONFLICT(id) DO UPDATE SET competition=EXCLUDED.competition,source_updated_at=now(),updated_at=now()",
           [scrapedFixture.id,scrapedFixture.sport,scrapedFixture.competition,scrapedFixture.home,scrapedFixture.away,scrapedFixture.starts_at]);
         fixtures.push(scrapedFixture); fixturesCreated++;
       }
       const matches = fixtures.filter(fixture => mapCandidateToFixture(candidate, fixture));
-      if (matches.length !== 1) { unmatched++; continue; }
+      if (!matches.length) { unmatched++; continue; }
+      // When bookmakers use shortened aliases, merge prices into the most
+      // descriptive matching fixture instead of creating duplicate events.
+      matches.sort((a,b) => (normalizeTeam(b.home).length + normalizeTeam(b.away).length) - (normalizeTeam(a.home).length + normalizeTeam(a.away).length) || String(a.id).localeCompare(String(b.id)));
       const mapped = mapCandidateToFixture(candidate, matches[0]);
       const result = await db.query("INSERT INTO bookmaker_odds(match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at,source) VALUES($1,$2,$3,$4,$5,$6,$7::timestamptz,'public_scrape') ON CONFLICT DO NOTHING RETURNING id",
         [mapped.matchId,bookmakerKey,mapped.marketKey,mapped.outcomeName,mapped.decimalOdds,mapped.line,run.fetched_at]);
