@@ -154,7 +154,21 @@ export function collectOddsCandidates(value, output = [], depth = 0, inherited =
   }
   return output;
 }
+export function isRealWorldCandidate(candidate) {
+  const home = String(candidate?.homeTeam || "").trim();
+  const away = String(candidate?.awayTeam || "").trim();
+  const event = String(candidate?.eventName || "").trim();
+  const competition = String(candidate?.competition || "").trim();
+  const sport = String(candidate?.sport || "").trim();
+  const descriptor = [event, competition, sport, home, away].join(" ").toLowerCase();
+  if (/\\b(virtual|zoom|esports?|e-sports?|cyber|simulated|simulation|e-?soccer|e-?football|srl|instant games?)\\b/i.test(descriptor)) return false;
+  if (/^z\\./i.test(home) || /^z\\./i.test(away)) return false;
+  if (/^\\s*(?:team|player)\\s*[0-9]+\\s*$/i.test(home) || /^\\s*(?:team|player)\\s*[0-9]+\\s*$/i.test(away)) return false;
+  return true;
+}
+
 export function mapCandidateToFixture(candidate, fixture) {
+  if (!isRealWorldCandidate(candidate)) return null;
   const market = String(candidate?.market || "").toLowerCase();
   if (!/^(h2h|1x2|match result|full[ -]?time result|match winner|moneyline|winner|to win match)$/.test(market.trim())) return null;
   let home = candidate.homeTeam, away = candidate.awayTeam;
@@ -962,6 +976,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
 }
 
 export function fixtureFromCandidate(candidate, now = new Date()) {
+  if (!isRealWorldCandidate(candidate)) return null;
   let home = candidate?.homeTeam, away = candidate?.awayTeam;
   if (!home || !away) ({ homeTeam: home, awayTeam: away } = parseEventTeams(candidate?.eventName || ""));
   if (!home || !away) return null;
