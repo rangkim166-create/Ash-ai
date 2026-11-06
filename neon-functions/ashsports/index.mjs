@@ -248,14 +248,25 @@ async function deliverPendingResultNotifications(){
 }
 async function runTipResultsTracker(){
  await ensureTipResultsTables();
+ // Keep the live fixture feed clean without inventing scores or declaring a result.
+ const overdueFixtures=await db.query(`UPDATE sports_matches SET status='awaiting_result',updated_at=now()
+  WHERE status='scheduled' AND home_score IS NULL AND away_score IS NULL
+   AND starts_at < now() - CASE
+    WHEN LOWER(sport)='football' THEN interval '3 hours'
+    WHEN LOWER(sport)='basketball' THEN interval '4 hours'
+    WHEN LOWER(sport)='tennis' THEN interval '10 hours'
+    ELSE interval '6 hours' END
+  RETURNING sport`);
+ const overdueBySport=overdueFixtures.rows.reduce((counts,row)=>{const key=String(row.sport||"other");counts[key]=(counts[key]||0)+1;return counts;},{});
+
  const backfill=await backfillPublishedTips();
  // Keep old unresolved tips visible as unverified; never turn missing data into a loss or void.
  await db.query("UPDATE ash_tip_results SET status='unverified',updated_at=now() WHERE status='pending' AND commence_time<now()-interval '4 days'");
  await db.query("UPDATE ash_predictions p SET status='stale',settled_at=now() WHERE p.status='pending' AND EXISTS (SELECT 1 FROM ash_tip_results t WHERE t.match_id=p.match_id AND t.selection=p.selection AND t.status='unverified')");
  const apiKey=await read("the_odds_api");
- if(!apiKey)return{checked:0,settled:0,backfill,reason:"odds_api_not_configured"};
+ if(!apiKey)return{checked:0,settled:0,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,reason:"odds_api_not_configured"};
  const pending=await db.query("SELECT * FROM ash_tip_results WHERE status='pending' AND commence_time<=now()+interval '15 minutes' AND commence_time>=now()-interval '4 days' ORDER BY commence_time ASC LIMIT 250");
- if(!pending.rowCount){const notifications=await deliverPendingResultNotifications();const summary=await maybeSendDailyResultsSummary();return{checked:0,settled:0,backfill,notifications,summary,reason:"no_due_tips"};}
+ if(!pending.rowCount){const notifications=await deliverPendingResultNotifications();const summary=await maybeSendDailyResultsSummary();return{checked:0,settled:0,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,notifications,summary,reason:"no_due_tips"};}
  const groups=new Map();
  for(const tip of pending.rows){if(!groups.has(tip.sport_key))groups.set(tip.sport_key,[]);groups.get(tip.sport_key).push(tip);}
  let checked=0,settled=0;const errors=[];
@@ -294,7 +305,7 @@ async function runTipResultsTracker(){
  }
  const notifications=await deliverPendingResultNotifications();
  const summary=await maybeSendDailyResultsSummary();
- return{checked,settled,backfill,notifications,errors,summary};
+ return{checked,settled,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,notifications,errors,summary};
 }
 async function maybeSendDailyResultsSummary(){
  const localNow=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
@@ -449,13 +460,13 @@ export default {async configureTelegramWebhook(){return await telegramAssistant.
 if(p.startsWith("/v1/public/")){
 try{
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
-const r=await db.query("SELECT id,competition,sport FROM sports_matches WHERE starts_at>now()-interval '1 day' ORDER BY starts_at DESC LIMIT 500");
+const r=await db.query("SELECT id,competition,sport FROM sports_matches WHERE status='scheduled' AND starts_at>now()-interval '1 day' ORDER BY starts_at DESC LIMIT 500");
 const seen=new Set(),data=[];
 for(const row of r.rows){const key=String(row.id).split(":")[0];if(seen.has(key))continue;seen.add(key);data.push({key,title:row.competition,group:row.sport,active:true});}
 return reply({data});
 }
 if(p==="/v1/public/odds/events"&&req.method==="GET"){
-const matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source_updated_at FROM sports_matches WHERE starts_at>now()-interval '1 day' ORDER BY starts_at ASC LIMIT 400");
+const matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source_updated_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()-interval '1 day' ORDER BY starts_at ASC LIMIT 400");
 const ids=matches.rows.map(x=>x.id);
 if(!ids.length)return reply({data:[],observedAt:new Date().toISOString()});
 const odds=await db.query("SELECT DISTINCT ON (match_id,bookmaker_key,market_key,outcome_name,COALESCE(line,0)) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) ORDER BY match_id,bookmaker_key,market_key,outcome_name,COALESCE(line,0),observed_at DESC", [ids]);

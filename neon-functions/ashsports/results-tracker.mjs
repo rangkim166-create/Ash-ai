@@ -15,3 +15,18 @@ export function settleHeadToHead(selection, homeTeam, awayTeam, homeScore, awayS
   if (chosen === norm(awayTeam)) return Number(awayScore) > Number(homeScore) ? "won" : "lost";
   return null;
 }
+
+export function overdueFixtureThresholdHours(sport) {
+  const key = String(sport || "").trim().toLowerCase();
+  if (key === "football") return 3;
+  if (key === "basketball") return 4;
+  if (key === "tennis") return 10;
+  return 6;
+}
+export function shouldMoveFixtureToAwaitingResult({ sport, startsAt, now = new Date(), status = "scheduled", homeScore = null, awayScore = null }) {
+  if (status !== "scheduled" || homeScore != null || awayScore != null) return false;
+  const start = new Date(startsAt).getTime();
+  const current = new Date(now).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(current)) return false;
+  return current - start >= overdueFixtureThresholdHours(sport) * 3600000;
+}

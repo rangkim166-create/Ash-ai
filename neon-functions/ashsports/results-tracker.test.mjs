@@ -18,3 +18,20 @@ test("settles home and away h2h selections and treats a draw as a losing team pi
 test("normalizes accents and punctuation when matching participants",()=>{
  assert.equal(settleHeadToHead("Atletico-Madrid","Atlético Madrid","Real Madrid",3,0),"won");
 });
+
+import { overdueFixtureThresholdHours, shouldMoveFixtureToAwaitingResult } from "./results-tracker.mjs";
+test("uses conservative sport-specific result waiting windows", () => {
+ assert.equal(overdueFixtureThresholdHours("football"), 3);
+ assert.equal(overdueFixtureThresholdHours("basketball"), 4);
+ assert.equal(overdueFixtureThresholdHours("tennis"), 10);
+ assert.equal(overdueFixtureThresholdHours("other"), 6);
+});
+test("moves only overdue scheduled fixtures without a score to awaiting-result state", () => {
+ const now = new Date("2026-11-06T12:00:00Z");
+ assert.equal(shouldMoveFixtureToAwaitingResult({sport:"football",startsAt:"2026-11-06T08:59:59Z",now}),true);
+ assert.equal(shouldMoveFixtureToAwaitingResult({sport:"football",startsAt:"2026-11-06T09:30:00Z",now}),false);
+ assert.equal(shouldMoveFixtureToAwaitingResult({sport:"tennis",startsAt:"2026-11-06T03:00:00Z",now}),false);
+ assert.equal(shouldMoveFixtureToAwaitingResult({sport:"tennis",startsAt:"2026-11-06T01:59:59Z",now}),true);
+ assert.equal(shouldMoveFixtureToAwaitingResult({sport:"football",startsAt:"2026-11-06T08:00:00Z",now,status:"completed",homeScore:2,awayScore:1}),false);
+ assert.equal(shouldMoveFixtureToAwaitingResult({sport:"football",startsAt:"2026-11-06T08:00:00Z",now,homeScore:2,awayScore:1}),false);
+});
