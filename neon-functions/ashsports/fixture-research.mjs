@@ -6,7 +6,7 @@ function publisherTier(domain){const host=String(domain||"").toLowerCase().repla
 export function classifyEvidenceCategory(text){
  const s=String(text||"").toLowerCase(),out=[];
  if(/injur|injured|fitness|doubtful|ruled out|medical update|hamstring|ankle|knee|concussion/.test(s))out.push("injury_fitness");
- if(/withdraw|withdrawal|retired|retirement|walkover|pulled out|medical timeout/.test(s))out.push("withdrawals_retirements");
+ if(/withdraw|withdrew|withdrawal|retired|retirement|walkover|pulled out|medical timeout/.test(s))out.push("withdrawals_retirements");
  if(/line.?up|starting xi|starting eleven|team sheet|confirmed xi|predicted xi|probable lineup|formation/.test(s))out.push("lineups");
  if(/suspend|suspension|red card ban|yellow card ban|disciplinary|banned/.test(s))out.push("suspensions");
  if(/press conference|manager said|coach said|head coach|training|squad announcement|pre.?match interview/.test(s))out.push("manager_training");
