@@ -85,7 +85,7 @@ const decodeEntities = value => String(value || "")
  .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
  .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)));
 const strip=(s,n=1600)=>decodeEntities(s).replace(/<(script|style|noscript|svg|iframe|nav|footer|header)\b[^>]*>[\s\S]*?<\/\1>/gi," ").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim().slice(0,n);
-export function parseRss(xml){
+export export function parseRss(xml){
  const source=String(xml||""),out=[];
  const decode=value=>decodeEntities(String(value||"").replace(/<!\\[CDATA\\[([\\s\\S]*?)\\]\\]>/g,"$1"));
  const blocks=[...source.matchAll(/<(item|entry)\\b[^>]*>([\\s\\S]*?)<\\/\\1>/gi)];
