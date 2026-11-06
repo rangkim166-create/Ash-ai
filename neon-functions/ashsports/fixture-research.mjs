@@ -134,6 +134,31 @@ export function buildNewsSearchProviders(query){
   {name:"bing_news",url:"https://www.bing.com/news/search?q="+encoded+"&format=rss"}
  ];
 }
+export function buildCuratedSportsFeeds(sport="football"){
+ const common=[{name:"bbc_sport",url:"https://feeds.bbci.co.uk/sport/rss.xml"}];
+ const normalized=String(sport||"football").toLowerCase();
+ if(normalized==="basketball")return [...common,
+  {name:"athletic_nba",url:"https://www.nytimes.com/athletic/rss/nba/"},
+  {name:"cbs_nba",url:"https://www.cbssports.com/rss/headlines/nba/"}
+ ];
+ if(normalized==="tennis")return [...common,
+  {name:"sky_tennis",url:"https://www.skysports.com/rss/12110"}
+ ];
+ return [...common,
+  {name:"bbc_football",url:"https://feeds.bbci.co.uk/sport/football/rss.xml"},
+  {name:"sky_football",url:"https://www.skysports.com/rss/11095"},
+  {name:"athletic_football",url:"https://www.nytimes.com/athletic/rss/football/"}
+ ];
+}
+async function searchCuratedSportsFeeds(sport){
+ const feeds=buildCuratedSportsFeeds(sport);
+ const results=await Promise.allSettled(feeds.map(async feed=>{
+  const response=await fetch(feed.url,{signal:timeout(12000),headers:{"user-agent":"Mozilla/5.0 (compatible; AshSportsResearch/5.0)","accept":"application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8"}});
+  if(!response.ok)throw Error(feed.name+" HTTP "+response.status);
+  return parseRss(await response.text()).map(item=>({...item,searchProvider:feed.name}));
+ }));
+ return results.flatMap(result=>result.status==="fulfilled"?result.value:[]);
+}
 async function search(query){
  const providers=buildNewsSearchProviders(query);
  const results=await Promise.allSettled(providers.map(async provider=>{
@@ -278,7 +303,11 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const f=fixtureResult.rows[0],home=f.home,away=f.away,competition=f.competition;
   const queries=buildFixtureQueries(f);
   const found=[],errors=[];
-  const searchResults=await Promise.allSettled(queries.map(q=>search(q)));
+  const [searchResults,curatedResults]=await Promise.all([
+   Promise.allSettled(queries.map(q=>search(q))),
+   searchCuratedSportsFeeds(f.sport).catch(error=>{errors.push("curated_feeds: "+String(error?.message||error).slice(0,100));return [];})
+  ]);
+  found.push(...curatedResults);
   for(const result of searchResults){if(result.status==='fulfilled')found.push(...result.value);else errors.push(String(result.reason?.message||result.reason).slice(0,120));}
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
@@ -295,7 +324,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const fullArticleCount=fullPages.length;
   const categoryCounts=Object.fromEntries(["injury_fitness","player_availability","rest_fatigue","team_statistics","roster_lineups","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,{groqKey,openrouterKey});
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
+  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
   await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
    VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
