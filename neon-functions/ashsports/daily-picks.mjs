@@ -1,6 +1,10 @@
 const normalize = value => String(value ?? "").trim().toLocaleLowerCase("en-US");
-const normalizeTeam = value => normalize(value).normalize("NFKD")
-  .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+const normalizeTeam = value => {
+  const raw = String(value ?? "").trim();
+  const comma = raw.indexOf(",");
+  const ordered = comma > 0 ? raw.slice(comma + 1).trim() + " " + raw.slice(0, comma).trim() : raw;
+  return normalize(ordered).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+};
 const validPrice = value => Number.isFinite(Number(value)) && Number(value) > 1 && Number(value) <= 1000;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const DRAW_NAMES = new Set(["draw", "the draw", "tie", "x"]);
@@ -306,4 +310,14 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
   });
   lines.push("No outcome is guaranteed. Track every pick against its final result and evaluate long-run calibration before staking.");
   return lines.join("\n").slice(0, 3900);
+}
+
+
+export function shouldSkipSentDailyPublication(prior, now = new Date(), retryAfterMs = 2 * 60 * 60 * 1000) {
+  if (!prior || prior.status !== "sent") return false;
+  if (Number(prior.picks_count || 0) > 0) return true;
+  const current = new Date(now).getTime();
+  const started = new Date(prior.started_at || "").getTime();
+  if (!Number.isFinite(current) || !Number.isFinite(started)) return false;
+  return current >= started && current - started < retryAfterMs;
 }
