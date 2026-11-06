@@ -373,6 +373,26 @@ async function fetchPublicPage(inputUrl) {
 }
 
 const BETPAWA_MARKET_TYPES = ["3743","28000810","28000850","4693","1096755","3795"];
+export function buildBetPawaListQuery(now = new Date(), skip = 0) {
+  const start = new Date(now);
+  return {
+    queries: [{
+      query: {
+        eventType: "UPCOMING",
+        categories: ["2"],
+        zones: {},
+        hasOdds: true,
+        startTime: {
+          gte: start.toISOString(),
+          lt: new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      },
+      view: { marketTypes: BETPAWA_MARKET_TYPES },
+      skip: Math.max(0, Math.floor(Number(skip) || 0)),
+      take: 50
+    }]
+  };
+}
 
 export function extractBetPawaListEvents(body) {
   const envelope = body?.responses;
@@ -430,25 +450,8 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   const origin = source.origin;
   const listEndpoint = new URL("/api/sportsbook/v4/events/lists/by-queries", origin);
   const buildListUrl = (skip = 0) => {
-    const query = {
-      queries: [{
-        query: {
-          eventType: "UPCOMING",
-          categories: ["2"],
-          zones: {},
-          hasOdds: true,
-          startTime: {
-            gte: now.toISOString(),
-            lt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString()
-          }
-        },
-        view: { marketTypes: BETPAWA_MARKET_TYPES },
-        skip,
-        take: 50
-      }]
-    };
     const url = new URL(listEndpoint);
-    url.searchParams.set("q", JSON.stringify(query));
+    url.searchParams.set("q", JSON.stringify(buildBetPawaListQuery(now, skip)));
     return url;
   };
   const baseHeaders = {
