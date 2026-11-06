@@ -151,6 +151,8 @@ test("availability research gate requires fresh multi-source injury and lineup c
   assert.equal(isAvailabilityResearchSufficient({ ...report, sourceCount: 1 }, { fixtureStart: fixture.starts_at, now }), false);
   assert.equal(isAvailabilityResearchSufficient({ ...report, coverage: { ...report.coverage, injuryReportingFound: false } }, { fixtureStart: fixture.starts_at, now }), false);
   assert.equal(isAvailabilityResearchSufficient({ ...report, assessment: { ...report.assessment, confidence: 45 } }, { fixtureStart: fixture.starts_at, now }), false);
+  assert.equal(isAvailabilityResearchSufficient({ ...report, assessment: { confidence: { overall: "moderate" }, contradictions: [] } }, { fixtureStart: fixture.starts_at, now }), true);
+  assert.equal(isAvailabilityResearchSufficient({ ...report, assessment: { confidence: { overall: "low" }, contradictions: [] } }, { fixtureStart: fixture.starts_at, now }), false);
 });
 test("near-kickoff availability research must be refreshed within 20 minutes", () => {
   const report = { researchedAt: "2026-10-31T09:30:00.000Z", sourceCount: 3, independentDomains: 3,
