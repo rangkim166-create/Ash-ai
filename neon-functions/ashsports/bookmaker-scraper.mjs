@@ -705,12 +705,11 @@ async function fetchBetikaPublicOdds(now = new Date()) {
   }
   // Detail a balanced sample from each verified sport rather than letting
   // football consume the entire 48-event processing budget.
-  const events = Object.values(sportNames).flatMap((_, index) => {
-    const sportId = Object.keys(sportNames)[index];
-    return bySport.get(sportId)
+  const events = Object.keys(sportNames).flatMap(sportId =>
+    bySport.get(sportId)
       .sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""))
-      .slice(0, 16);
-  }).sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""));
+      .slice(0, 16)
+  ).sort((a,b) => Date.parse(parseBetikaStartTime(a.start_time) || "") - Date.parse(parseBetikaStartTime(b.start_time) || ""));
   const candidates = [];
   const failures = [];
   for (let offset = 0; offset < events.length; offset += 6) {
