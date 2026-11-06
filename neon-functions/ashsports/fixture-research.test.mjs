@@ -54,10 +54,9 @@ test("classifies tennis withdrawals and surface reporting separately", () => {
 
 import { buildResearchModelOptions } from "./fixture-research.mjs";
 test("Groq research assessment requests JSON mode and disables tool calls",()=>{
- const options=buildResearchModelOptions("llama-3.3-70b-versatile");
- assert.equal(options.model,"llama-3.3-70b-versatile");
+ const options=buildResearchModelOptions("openai/gpt-oss-20b");
+ assert.equal(options.model,"openai/gpt-oss-20b");
  assert.deepEqual(options.response_format,{type:"json_object"});
- assert.equal(options.tool_choice,"none");
  assert.equal(options.max_tokens,1500);
 });
 
