@@ -145,6 +145,10 @@ async function saveLiveResearchSnapshots(db,live){
  return {saved:rows.length};
 }
 
+export function buildGroqModelFallback(env=process.env){
+ return [...new Set([env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","openai/gpt-oss-20b"].filter(Boolean))];
+}
+
 export function createTelegramAssistant({db,read,telegram}){
  let connectedLogged=false;
  async function send(chatId,text){const bot=await read("telegram_bot");for(let i=0;i<text.length;i+=3900){const part=text.slice(i,i+3900);const r=await fetch(TG+"/bot"+bot.botToken+"/sendMessage",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({chat_id:chatId,text:part,disable_web_page_preview:true}),signal:timeout(12000)});const j=await r.json();if(!r.ok||!j.ok)throw Error("Telegram send failed: "+(j.description||r.status));}}
@@ -182,7 +186,7 @@ export function createTelegramAssistant({db,read,telegram}){
    return j.choices?.[0]?.message?.content||"";
   }
   return runGroqSerially(async()=>{
-   const models=[...new Set([process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b","qwen/qwen3.8-27b","openai/gpt-oss-20b"])];
+   const models=buildGroqModelFallback();
    const marker="CURRENT RESEARCH:",systemText=String(messages[0]?.content||"");
    const markerAt=systemText.indexOf(marker);
    const researchText=markerAt>=0?systemText.slice(markerAt+marker.length).trim():"";
