@@ -51,3 +51,14 @@ test("classifies tennis withdrawals and surface reporting separately", () => {
  const categories = classifyEvidenceCategory("Player withdrew with an ankle injury; hard court record and recent form");
  for (const category of ["injury_fitness","withdrawals_retirements","surface_conditions","form_statistics"]) assert.ok(categories.includes(category),category);
 });
+
+
+test("resolves Bing RSS click-through URLs to the real publisher domain", () => {
+ const target = "https://sports.yahoo.com/articles/everton-coventry-preview-123456.html";
+ const click = "https://www.bing.com/news/apiclick.aspx?ref=FexRss&url=" + encodeURIComponent(target) + "&c=tracking";
+ assert.equal(resolvePublisherUrl(click), target);
+ const items = parseRss("<rss><channel><item><title>Everton preview</title><link>" + click + "</link><description>Team news and match preview details</description><source url='https://sports.yahoo.com'>Yahoo Sports</source></item></channel></rss>");
+ assert.equal(items.length, 1);
+ assert.equal(new URL(items[0].url).hostname, "sports.yahoo.com");
+ assert.equal(items[0].domain, "sports.yahoo.com");
+});
