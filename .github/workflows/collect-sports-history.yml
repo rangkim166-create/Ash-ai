@@ -2,10 +2,6 @@ name: Collect sports history
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "sports_ai/**"
-      - ".github/workflows/collect-sports-history.yml"
   schedule:
     - cron: "20 4 * * *"
 
