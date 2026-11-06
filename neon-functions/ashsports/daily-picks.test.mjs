@@ -217,3 +217,16 @@ test("does not permanently lock a day after publishing NO BET", async () => {
   assert.equal(shouldSkipSentDailyPublication({ ...prior, picks_count: 2 }, "2026-10-31T12:00:00.000Z"), true);
   assert.equal(shouldSkipSentDailyPublication({ ...prior, status: "failed" }, "2026-10-31T12:00:00.000Z"), false);
 });
+
+
+test("matches surname-first tennis feed names to first-name-first Elo ratings", () => {
+  const fixture = { ...tennisFixture, home: "Cirstea, Sorana", away: "Shubladze, Alexandra" };
+  const picks = selectDailyPicks([fixture], sportOdds(fixture), [], {
+    now,
+    ratings: { tennis: { "sorana cirstea": 1950, "alexandra shubladze": 1750 } },
+    ratingMatchCounts: { tennis: 361571 }
+  });
+  assert.equal(picks.length, 1);
+  assert.equal(picks[0].selection, "Cirstea, Sorana");
+  assert.equal(picks[0].edge_type, "elo_rating");
+});
