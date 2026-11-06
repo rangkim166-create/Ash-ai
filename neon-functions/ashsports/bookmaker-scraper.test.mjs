@@ -343,24 +343,30 @@ test("extracts Betika football 1X2 prices and converts Uganda kickoff to UTC", (
   assert.equal(candidates[1].selection, "Draw");
   assert.equal(candidates[2].selection, "Chelsea");
 });
-test("extracts Betika two-way basketball match-winner prices", () => {
+test("extracts Betika basketball regulation 1X2 with a draw", () => {
   const base = {
     parent_match_id: 202, home_team: "Lakers", away_team: "Celtics",
-    start_time: "2026-11-05 18:00:00", sport_id: 30, competition_name: "NBA"
+    start_time: "2026-11-05 18:00:00", sport_id: 30, competition_name: "Basketball League"
   };
   const detail = {
     meta: { sport_id: 30, sport_name: "Basketball" },
-    data: [{ sub_type_id: 1, name: "Match Winner", odds: [
-      { display: "Home", odd_value: "1.80" },
-      { display: "Away", odd_value: "2.05" }
+    data: [{ sub_type_id: 1, name: "1X2", odds: [
+      { display: "1", odd_key: "Lakers", odd_value: "1.80" },
+      { display: "X", odd_key: "draw", odd_value: "12.00" },
+      { display: "2", odd_key: "Celtics", odd_value: "1.37" }
     ] }]
   };
   const candidates = extractBetikaEventCandidates(base, detail);
-  assert.equal(candidates.length, 2);
+  assert.equal(candidates.length, 3);
   assert.equal(candidates[0].sport, "basketball");
-  assert.equal(candidates[0].market, "Match Winner");
-  assert.equal(candidates[0].selection, "Lakers");
-  assert.equal(candidates[1].selection, "Celtics");
+  assert.equal(candidates[0].market, "Regulation Result");
+  assert.deepEqual(candidates.map(x => x.selection), ["Lakers", "Draw", "Celtics"]);
+  const draw = mapCandidateToFixture(candidates[1], {
+    id: "betika-basketball-regulation", sport: "basketball",
+    home: "Lakers", away: "Celtics"
+  });
+  assert.equal(draw.outcomeName, "Draw");
+  assert.equal(draw.decimalOdds, 12);
 });
 
 test("rejects Betika Zoom Soccer even when its sport ID resembles basketball", () => {
@@ -480,16 +486,16 @@ test("does not mislabel BetPawa basketball regulation draw as an overtime match 
 });
 
 
-test("extracts Betika two-way tennis match-winner prices from verified sport ID 1", () => {
+test("extracts Betika full-match tennis WINNER market from verified sport ID 28", () => {
   const base = {
     parent_match_id: 303, home_team: "Player A", away_team: "Player B",
     start_time: "2026-11-06 12:30:00", sport_id: 28, competition_name: "ATP Challenger"
   };
   const detail = {
     meta: { sport_id: 28, sport_name: "Tennis" },
-    data: [{ sub_type_id: 1, name: "Match Winner", odds: [
-      { display: "Home", odd_value: "1.72" },
-      { display: "Away", odd_value: "2.15" }
+    data: [{ sub_type_id: 186, name: "WINNER", odds: [
+      { display: "1", odd_key: "Player A", odd_value: "1.72" },
+      { display: "2", odd_key: "Player B", odd_value: "2.15" }
     ] }]
   };
   const candidates = extractBetikaEventCandidates(base, detail);
@@ -500,19 +506,20 @@ test("extracts Betika two-way tennis match-winner prices from verified sport ID 
   assert.equal(candidates[1].selection, "Player B");
 });
 
-test("Betika tennis and basketball extraction never fabricates a draw", () => {
-  for (const sportId of [28, 30]) {
-    const candidates = extractBetikaEventCandidates({
-      home_team: "Player A", away_team: "Player B",
-      start_time: "2026-11-06 12:30:00", sport_id: sportId
-    }, {
-      meta: { sport_id: sportId },
-      data: [{ sub_type_id: 1, name: "1X2", odds: [
-        { display: "1", odd_value: "1.72" },
-        { display: "X", odd_value: "4.00" },
-        { display: "2", odd_value: "2.15" }
-      ] }]
-    });
+test("Betika tennis does not import a fabricated draw from a three-way market", () => {
+  const candidates = extractBetikaEventCandidates({
+    home_team: "Player A", away_team: "Player B",
+    start_time: "2026-11-06 12:30:00", sport_id: 28
+  }, {
+    meta: { sport_id: 28, sport_name: "Tennis" },
+    data: [{ sub_type_id: 1, name: "1X2", odds: [
+      { display: "1", odd_value: "1.72" },
+      { display: "X", odd_value: "4.00" },
+      { display: "2", odd_value: "2.15" }
+    ] }]
+  });
+  assert.deepEqual(candidates, []);
+});
     assert.deepEqual(candidates, []);
   }
 });
