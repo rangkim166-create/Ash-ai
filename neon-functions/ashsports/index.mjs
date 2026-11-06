@@ -1,5 +1,5 @@
 import postgres from "postgres";
-import { formatDailyPicks, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
+import { formatDailyPicks, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
 import { enqueueFixtureResearch, processFixtureResearch, ensureFixtureResearchTables } from "./fixture-research.mjs";
@@ -344,8 +344,8 @@ async function runScheduledDailyPublisher(){
   sent_at timestamptz
  )`);
  await db.query("ALTER TABLE ash_daily_publications ADD COLUMN IF NOT EXISTS message_text text, ADD COLUMN IF NOT EXISTS picks_json jsonb NOT NULL DEFAULT '[]'::jsonb");
- const prior=await db.query("SELECT status,started_at FROM ash_daily_publications WHERE local_date=$1::date",[localDay]);
- if(prior.rowCount&&prior.rows[0].status==="sent")return{sent:false,skipped:true,reason:"already_sent_today",localDate:localDay};
+ const prior=await db.query("SELECT status,started_at,picks_count FROM ash_daily_publications WHERE local_date=$1::date",[localDay]);
+ if(prior.rowCount&&shouldSkipSentDailyPublication(prior.rows[0]))return{sent:false,skipped:true,reason:Number(prior.rows[0].picks_count||0)>0?"already_sent_today":"zero_pick_retry_cooldown",localDate:localDay};
  if(prior.rowCount&&prior.rows[0].status==="sending"&&Date.now()-new Date(prior.rows[0].started_at).getTime()<20*60*1000)return{sent:false,skipped:true,reason:"publish_already_running",localDate:localDay};
  await db.query("INSERT INTO ash_daily_publications(local_date,status,attempts,started_at) VALUES($1::date,'sending',1,now()) ON CONFLICT(local_date) DO UPDATE SET status='sending',attempts=ash_daily_publications.attempts+1,started_at=now(),error_summary=NULL",[localDay]);
  try{
