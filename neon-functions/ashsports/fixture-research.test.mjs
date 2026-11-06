@@ -90,3 +90,21 @@ test("uses the database JSON encoder for research arrays and objects",()=>{
 test("research AI rejects a Qwen environment override",()=>{
  assert.equal(buildResearchModelOptions("qwen/qwen3.8-27b").model,"openai/gpt-oss-20b");
 });
+
+import { buildResearchProviderRequest } from "./fixture-research.mjs";
+test("uses Groq GPT-OSS as the primary online research model",()=>{
+ const request=buildResearchProviderRequest("groq","test-groq-key","test prompt");
+ assert.equal(request.url,"https://api.groq.com/openai/v1/chat/completions");
+ assert.equal(request.body.model,"openai/gpt-oss-20b");
+ assert.equal(request.body.response_format.type,"json_object");
+});
+test("uses OpenRouter GPT-4o-mini only as online fallback",()=>{
+ const request=buildResearchProviderRequest("openrouter","test-openrouter-key","test prompt");
+ assert.equal(request.url,"https://openrouter.ai/api/v1/chat/completions");
+ assert.equal(request.body.model,"openai/gpt-4o-mini");
+ assert.equal(request.body.response_format.type,"json_object");
+});
+test("refuses unsupported or local AI providers",()=>{
+ assert.throws(()=>buildResearchProviderRequest("qwen","test-key","prompt"),/Unsupported online AI provider/);
+ assert.throws(()=>buildResearchProviderRequest("local","test-key","prompt"),/Unsupported online AI provider/);
+});
