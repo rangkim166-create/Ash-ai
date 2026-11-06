@@ -142,7 +142,9 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       const bookmakerCount = supported.length;
       const provisionalBest = supported.reduce((best, market) =>
         market.prices[side] > best.prices[side] ? market : best, supported[0]);
-      const requiredBooks = provisionalBest.prices[side] > 3.5 ? 5 : 4;
+      // Two independent local bookmaker feeds are currently available. Keep short-price
+      // selections eligible at two books, but require a third independent price for long odds.
+      const requiredBooks = provisionalBest.prices[side] > 3.5 ? 3 : 2;
       if (bookmakerCount < requiredBooks) continue;
 
       const marketProbabilities = supported.map(market => market.probabilities[side]);
