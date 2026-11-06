@@ -148,7 +148,8 @@ export function normalizeResearchConfidence(value){
  return 0;
 }
 export function buildResearchModelOptions(model=process.env.ASH_GROQ_RESEARCH_MODEL||"openai/gpt-oss-20b"){
- return {model,temperature:0.1,max_tokens:1500,response_format:{type:"json_object"}};
+ const safeModel=/qwen/i.test(String(model))?"openai/gpt-oss-20b":String(model);
+ return {model:safeModel,temperature:0.1,max_tokens:1500,response_format:{type:"json_object"}};
 }
 async function summarizeEvidence(fixture,pages,apiKey){
  if(!apiKey||!pages.length)return null;
