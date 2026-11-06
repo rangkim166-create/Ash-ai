@@ -6,6 +6,10 @@ function publisherTier(domain){const host=String(domain||"").toLowerCase().repla
 export function classifyEvidenceCategory(text){
  const s=String(text||"").toLowerCase(),out=[];
  if(/injur|injured|fitness|doubtful|ruled out|medical update|hamstring|ankle|knee|concussion/.test(s))out.push("injury_fitness");
+ if(/questionable|probable|available|unavailable|minutes restriction|game.?time decision|player status|inactive list/.test(s))out.push("player_availability");
+ if(/back.?to.?back|rest day|rested|workload|minutes limit|travel schedule|fatigue/.test(s))out.push("rest_fatigue");
+ if(/pace|offensive rating|defensive rating|rebounds|assists|turnovers|shooting percentage|team statistics|team stats/.test(s))out.push("team_statistics");
+ if(/starting lineup|starting five|starting five|roster update|active roster|rotation update|confirmed starters/.test(s))out.push("roster_lineups");
  if(/withdraw|withdrew|withdrawal|retired|retirement|walkover|pulled out|medical timeout/.test(s))out.push("withdrawals_retirements");
  if(/line.?up|starting xi|starting eleven|team sheet|confirmed xi|predicted xi|probable lineup|formation/.test(s))out.push("lineups");
  if(/suspend|suspension|red card ban|yellow card ban|disciplinary|banned/.test(s))out.push("suspensions");
@@ -24,6 +28,22 @@ export function buildFixtureQueries(fixture,now=new Date()){
  const recent=new Date(now.getTime()-2*86400000).toISOString().slice(0,10);
  const week=new Date(now.getTime()-7*86400000).toISOString().slice(0,10);
  const pair=h+" "+a,league=c?c:"";
+ if(sport==="basketball")return [
+  pair+" "+league+" basketball game preview team statistics pace offensive rating defensive rating recent form after:"+week,
+  h+" basketball injury report player availability questionable probable ruled out minutes restriction after:"+recent,
+  a+" basketball injury report player availability questionable probable ruled out minutes restriction after:"+recent,
+  h+" NBA latest roster update active roster rotation starters player status after:"+recent,
+  a+" NBA latest roster update active roster rotation starters player status after:"+recent,
+  pair+" basketball confirmed starting lineup starting five player availability after:"+recent,
+  pair+" basketball back to back schedule rest days travel fatigue workload after:"+week,
+  h+" basketball last five games team statistics offensive rating defensive rating pace after:"+week,
+  a+" basketball last five games team statistics offensive rating defensive rating pace after:"+week,
+  pair+" basketball head to head recent results rebounds assists turnovers shooting statistics after:"+week,
+  pair+" basketball coach press conference rotation minutes restriction injury update after:"+week,
+  pair+" basketball official team injury report game status update after:"+recent,
+  pair+" basketball late scratch inactive list game time decision latest news after:"+recent,
+  pair+" basketball matchday news preview statistics availability update after:"+recent
+ ].map(x=>x.replace(/\\s+/g," ").trim());
  if(sport==="tennis")return [
   pair+" "+league+" tennis match preview analysis form head to head after:"+week,
   h+" tennis latest news injury fitness withdrawal retirement medical update after:"+recent,
@@ -255,7 +275,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const domains=[...new Set(pages.map(p=>p.domain))];
   const fullPages=pages.filter(p=>p.contentLevel!=="rss_snippet");
   const fullArticleCount=fullPages.length;
-  const categoryCounts=Object.fromEntries(["injury_fitness","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
+  const categoryCounts=Object.fromEntries(["injury_fitness","player_availability","rest_fatigue","team_statistics","roster_lineups","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
   const assessment=await summarizeEvidence(f,pages,{groqKey,openrouterKey});
   const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),searchProviderCounts:Object.fromEntries(["google_news","bing_news","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
   const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
@@ -266,7 +286,8 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
    coverage=EXCLUDED.coverage,updated_at=now()`,
    [f.id,payload.length,domains.length,...buildResearchJsonParameters(db,payload,assessment,coverage)]);
   const tennis=f.sport==="tennis";
-  const sportCoverage=tennis?(categoryCounts.injury_fitness>0||categoryCounts.withdrawals_retirements>0)&&(categoryCounts.form_statistics>0||categoryCounts.preview_analysis>0):categoryCounts.injury_fitness>0&&categoryCounts.lineups>0;
+  const basketball=f.sport==="basketball";
+   const sportCoverage=tennis?(categoryCounts.injury_fitness>0||categoryCounts.withdrawals_retirements>0)&&(categoryCounts.form_statistics>0||categoryCounts.preview_analysis>0):basketball?(categoryCounts.injury_fitness>0||categoryCounts.player_availability>0)&&(categoryCounts.lineups>0||categoryCounts.roster_lineups>0)&&(categoryCounts.team_statistics>0||categoryCounts.form_statistics>0):categoryCounts.injury_fitness>0&&categoryCounts.lineups>0;
   const enoughEvidence=fullArticleCount>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0&&!assessment?.error&&sportCoverage&&normalizeResearchConfidence(assessment?.confidence)>=60&&!(Array.isArray(assessment?.contradictions)&&assessment.contradictions.length>0);
   if(!enoughEvidence){
    const reason="Insufficient verified coverage: require two full article pages, two independent domains, both participants, sport-appropriate availability and form coverage from full articles, and a usable non-conflicting AI assessment";
