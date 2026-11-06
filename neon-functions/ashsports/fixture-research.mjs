@@ -118,12 +118,22 @@ function normalizeTeamText(value){
   .replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
 }
 function mentionsParticipant(text,participant){
- const target=normalizeTeamText(participant);
+ const raw=String(participant||"").trim();
+ const target=normalizeTeamText(raw);
  if(target.length<3)return false;
  const haystack=normalizeTeamText(text);
- if(haystack.includes(target))return true;
+ const words=new Set(haystack.split(" ").filter(Boolean));
+ if(words.has(target))return true;
  const tokens=target.split(" ").filter(token=>token.length>=3);
- return tokens.length>=2&&tokens.every(token=>haystack.includes(token));
+ // Many international clubs are stored as an acronym plus one distinctive
+ // place/name (e.g. "JS Skikda", "KCCA FC", "Vipers SC"). The previous
+ // two-token-only rule rejected all of these, even when the full name was
+ // present in the headline. Accept one distinctive long token, or a short
+ // acronym explicitly present in the source name, using whole-word matches.
+ if(tokens.length===1)return tokens[0].length>=5&&words.has(tokens[0]);
+ if(tokens.length>=2)return tokens.every(token=>words.has(token));
+ const acronyms=raw.split(/[^A-Za-z0-9]+/).filter(token=>/^[A-Z0-9]{3,5}$/.test(token));
+ return acronyms.some(token=>words.has(token.toLowerCase()));
 }
 export function isFixtureRelevantResult(item,fixture){
  const text=String(item?.title||"")+" "+String(item?.description||"");
