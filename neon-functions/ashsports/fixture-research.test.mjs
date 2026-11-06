@@ -7,7 +7,7 @@ test("generic headlines remain general news",()=>assert.deepEqual(classifyEviden
 
 test("searches latest updates on a short freshness window as well as weekly context",()=>{const q=buildFixtureQueries({home:"Vipers SC",away:"KCCA",competition:"Uganda Premier League"},new Date("2026-11-04T12:00:00Z"));const s=q.join(" ");assert.ok(s.includes("after:2026-11-02"));assert.ok(s.includes("after:2026-10-28"));assert.ok(s.includes('"Vipers SC"'));assert.ok(s.includes('"KCCA"'));});
 
-import { parseRss, isFixtureRelevantResult } from "./fixture-research.mjs";
+import { parseRss, isFixtureRelevantResult, resolvePublisherUrl } from "./fixture-research.mjs";
 
 test("retains RSS descriptions and source metadata for blocked article fallbacks", () => {
   const xml = `<?xml version="1.0"?><rss><channel><item>
@@ -50,4 +50,15 @@ test("tennis research searches player-specific injury, withdrawal, form and tour
 test("classifies tennis withdrawals and surface reporting separately", () => {
  const categories = classifyEvidenceCategory("Player withdrew with an ankle injury; hard court record and recent form");
  for (const category of ["injury_fitness","withdrawals_retirements","surface_conditions","form_statistics"]) assert.ok(categories.includes(category),category);
+});
+
+
+test("resolves Bing RSS click-through URLs to the real publisher domain", () => {
+ const target = "https://sports.yahoo.com/articles/everton-coventry-preview-123456.html";
+ const click = "https://www.bing.com/news/apiclick.aspx?ref=FexRss&url=" + encodeURIComponent(target) + "&c=tracking";
+ assert.equal(resolvePublisherUrl(click), target);
+ const items = parseRss("<rss><channel><item><title>Everton preview</title><link>" + click + "</link><description>Team news and match preview details</description><source url='https://sports.yahoo.com'>Yahoo Sports</source></item></channel></rss>");
+ assert.equal(items.length, 1);
+ assert.equal(new URL(items[0].url).hostname, "sports.yahoo.com");
+ assert.equal(items[0].domain, "sports.yahoo.com");
 });
