@@ -137,10 +137,10 @@ export function normalizeResearchConfidence(value){
  const number=numeric(label);
  if(number!==null)return number;
  const text=String(label||"").toLowerCase();
- if(/very\\s*high|excellent/.test(text))return 90;
- if(/\\bhigh\\b/.test(text))return 80;
- if(/moderate|medium/.test(text))return 65;
- if(/\\blow\\b/.test(text))return 35;
+ if(text.includes("very high")||text.includes("excellent"))return 90;
+ if(text.includes("high"))return 80;
+ if(text.includes("moderate")||text.includes("medium"))return 65;
+ if(text.includes("low"))return 35;
  return 0;
 }
 export function buildResearchModelOptions(model=process.env.ASH_GROQ_RESEARCH_MODEL||"llama-3.3-70b-versatile"){
