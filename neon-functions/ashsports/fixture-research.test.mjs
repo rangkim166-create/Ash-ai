@@ -7,7 +7,7 @@ test("generic headlines remain general news",()=>assert.deepEqual(classifyEviden
 
 test("searches latest updates on a short freshness window as well as weekly context",()=>{const q=buildFixtureQueries({home:"Vipers SC",away:"KCCA",competition:"Uganda Premier League"},new Date("2026-11-04T12:00:00Z"));const s=q.join(" ");assert.ok(s.includes("after:2026-11-02"));assert.ok(s.includes("after:2026-10-28"));assert.ok(s.includes('Vipers SC'));assert.ok(s.includes('KCCA'));});
 
-import { parseRss, isFixtureRelevantResult } from "./fixture-research.mjs";
+import { parseRss, isFixtureRelevantResult, hasParticipantCoverage } from "./fixture-research.mjs";
 
 test("retains RSS descriptions and source metadata for blocked article fallbacks", () => {
   const xml = `<?xml version="1.0"?><rss><channel><item>
@@ -63,7 +63,8 @@ test("Groq research assessment requests JSON mode and disables tool calls",()=>{
 import { buildNewsSearchProviders } from "./fixture-research.mjs";
 test("uses global English news editions for international fixture coverage",()=>{
  const providers=buildNewsSearchProviders("NK Osijek U19 HNK Rijeka U19 team news");
- assert.equal(providers.length,2);
+ assert.equal(providers.length,3);
+ assert.match(providers[1].url,/hl=en-GB&gl=GB&ceid=GB:en/);
  assert.match(providers[0].url,/hl=en-US&gl=US&ceid=US:en/);
  assert.match(providers[0].url,/NK%20Osijek%20U19/);
  assert.match(providers[1].url,/format=rss/);
@@ -119,4 +120,16 @@ test("basketball research covers player availability, roster, fatigue and team s
 test("basketball news categories distinguish availability, rest and team metrics",()=>{
  const categories=classifyEvidenceCategory("Player questionable with an ankle injury, minutes restriction after a back-to-back; team offensive rating and defensive rating updated");
  for(const category of ["injury_fitness","player_availability","rest_fatigue","team_statistics"])assert.ok(categories.includes(category),category);
+});
+
+test("matches international club-name variants without accepting unrelated fixtures",()=>{
+ const fixture={home:"Vipers SC",away:"KCCA FC"};
+ assert.equal(isFixtureRelevantResult({title:"Vipers team news ahead of Kampala derby"},fixture),true);
+ assert.equal(isFixtureRelevantResult({title:"KCCA injury update"},fixture),true);
+ assert.equal(isFixtureRelevantResult({title:"Express FC vs URA preview"},fixture),false);
+});
+test("participant coverage requires both teams to be evidenced independently",()=>{
+ const fixture={home:"Al-Kholood",away:"Al-Khaleej"};
+ assert.deepEqual(hasParticipantCoverage({title:"Al Kholood squad update",excerpt:"Team news ahead of kickoff"},fixture),{home:true,away:false});
+ assert.deepEqual(hasParticipantCoverage({title:"Al-Khaleej vs Al-Kholood preview"},fixture),{home:true,away:true});
 });
