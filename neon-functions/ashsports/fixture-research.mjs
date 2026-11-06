@@ -158,7 +158,9 @@ async function summarizeEvidence(fixture,pages,apiKey){
   const r=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+apiKey},body:JSON.stringify({...buildResearchModelOptions(),messages:[{role:"system",content:"You are Ash, a cautious sports research analyst. Return one valid JSON object only. Do not use tools."},{role:"user",content:prompt}]}),signal:timeout(40000)});
   if(!r.ok)throw Error("Groq HTTP "+r.status);
   const body=await r.json(),text=body.choices?.[0]?.message?.content||"",json=text.slice(text.indexOf("{"),text.lastIndexOf("}")+1);
-  return JSON.parse(json);
+  const assessment=JSON.parse(json);
+  if(assessment&&typeof assessment==="object"&&!Array.isArray(assessment))assessment.confidence=normalizeResearchConfidence(assessment.confidence);
+  return assessment;
  }catch(e){return {error:String(e.message||e).slice(0,160),status:"ai_summary_unavailable"};}
 }
 export async function ensureFixtureResearchTables(db){
