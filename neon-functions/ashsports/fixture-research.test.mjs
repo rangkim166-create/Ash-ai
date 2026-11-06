@@ -51,3 +51,12 @@ test("classifies tennis withdrawals and surface reporting separately", () => {
  const categories = classifyEvidenceCategory("Player withdrew with an ankle injury; hard court record and recent form");
  for (const category of ["injury_fitness","withdrawals_retirements","surface_conditions","form_statistics"]) assert.ok(categories.includes(category),category);
 });
+
+import { buildResearchModelOptions } from "./fixture-research.mjs";
+test("Groq research assessment requests JSON mode and disables tool calls",()=>{
+ const options=buildResearchModelOptions("llama-3.3-70b-versatile");
+ assert.equal(options.model,"llama-3.3-70b-versatile");
+ assert.deepEqual(options.response_format,{type:"json_object"});
+ assert.equal(options.tool_choice,"none");
+ assert.equal(options.max_tokens,1500);
+});
