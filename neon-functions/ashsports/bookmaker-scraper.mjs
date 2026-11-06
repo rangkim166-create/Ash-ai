@@ -417,7 +417,9 @@ export function extractBetPawaEventCandidates(game) {
   if (!homeTeam || !awayTeam || !Number.isFinite(startsAtDate.getTime())) return [];
   const categoryId = String(game?.category?.id ?? game?.categoryId ?? game?.category_id ?? "");
   const categoryName = String(game?.category?.name || game?.sport?.name || game?.sportName || "").toLowerCase();
-  const sport = categoryId === "2" || /football|soccer/.test(categoryName) ? "football"
+  const legacyFootballMarket = !categoryId && !categoryName && (Array.isArray(game?.markets) ? game.markets : [])
+    .some(market => String(market?.marketType?.id ?? market?.marketTypeId ?? "") === "3743");
+  const sport = categoryId === "2" || /football|soccer/.test(categoryName) || legacyFootballMarket ? "football"
     : categoryId === "3" || /basketball/.test(categoryName) ? "basketball"
     : categoryId === "452" || /tennis/.test(categoryName) ? "tennis" : null;
   if (!sport) return [];
