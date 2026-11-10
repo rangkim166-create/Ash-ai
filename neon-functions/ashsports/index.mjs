@@ -12,7 +12,7 @@ const db={query:async(text,values=[])=>{const rows=await sql.unsafe(text,values)
 const runBookmakerScrapersOnce = createSingleFlight((options={}) => runBookmakerScrapers(db, options));
 const masterKey=Buffer.from(process.env.ASH_CREDENTIALS_KEY||"","base64");
 const appToken=process.env.ASH_APP_TOKEN||"";
-const cors={"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"authorization,content-type","content-type":"application/json"};
+const cors={"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"authorization,content-type,x-ash-device-id","content-type":"application/json"};
 const reply=(v,s=200)=>new Response(JSON.stringify(v),{status:s,headers:cors});
 const RATING_SOURCE="https://raw.githubusercontent.com/rangkim166-create/Ash-ai/main/data/history/ratings.json";
 const normalizeTeamName=(value)=>String(value??"").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLocaleLowerCase("en-US").replace(/[^a-z0-9]+/g," ").trim();
