@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatDailyPicks, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
+import { formatDailyPicks, formatDailyScreeningSummary, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
 
 const now = new Date("2026-10-31T10:00:00.000Z");
 const fixture = {
