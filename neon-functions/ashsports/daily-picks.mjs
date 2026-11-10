@@ -252,6 +252,15 @@ export function isAvailabilityResearchSufficient(report, { fixtureStart, sport =
     !(Array.isArray(assessment.contradictions) && assessment.contradictions.length > 0);
 }
 
+export function formatDailyScreeningSummary(stats={}) {
+ const candidates=Math.max(0,Number(stats.candidateCount)||0);
+ const availability=Math.max(0,Number(stats.availabilityBlocked)||0);
+ const expert=Math.max(0,Number(stats.expertBlocked)||0);
+ const qualified=Math.max(0,Number(stats.qualifiedCount)||0);
+ if(candidates===0)return "Screening: no candidates passed the odds/form market screen; no pick was forced.";
+ return "Screening: "+candidates+" candidate(s) passed odds/form checks • "+availability+" held for missing/stale availability evidence • "+expert+" held for insufficient independent expert-source support • "+qualified+" fully qualified.";
+}
+
 export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
   const header = "ASH • ODDS OF THE DAY — " + day;
   if (!picks?.length) {
