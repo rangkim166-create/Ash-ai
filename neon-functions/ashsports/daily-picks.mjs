@@ -296,11 +296,13 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
     }
     const web = pick.web_research;
     if (web?.analysis) {
-      lines.push("WORLD TIPSTER / EXPERT REVIEW: " + web.analysis.decision + " • confidence " + web.analysis.confidence + "/100");
-      lines.push("Consensus: " + web.analysis.tipsterConsensus);
+      const supportCount=Array.isArray(web.analysis.supportingSources)?web.analysis.supportingSources.length:0;
+      const contraryCount=Array.isArray(web.analysis.contrarySources)?web.analysis.contrarySources.length:0;
+      lines.push("INDEPENDENT EXPERT-SOURCE CHECK: " + web.analysis.decision + " • explicit support sources " + supportCount + " • contrary sources " + contraryCount);
+      lines.push("Source consensus: " + web.analysis.tipsterConsensus);
       lines.push("Contrary views: " + web.analysis.contraryViews);
       lines.push("Team news: " + web.analysis.teamNews);
-      lines.push("Ash assessment: " + web.analysis.reason);
+      lines.push("Ash evidence rule: " + web.analysis.reason);
     }
     lines.push("Independent sources: " + (web?.quality?.independentDomains || 0) +
       " domains • home coverage " + (web?.quality?.homeCoverage ? "yes" : "no") +
