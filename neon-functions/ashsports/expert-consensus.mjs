@@ -1,7 +1,23 @@
 const normalize = value => String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
-const signalNear = (text,name,pattern) => { const body=normalize(text),needle=normalize(name); if(!needle)return false; let at=body.indexOf(needle); while(at>=0){const window=body.slice(Math.max(0,at-90),Math.min(body.length,at+needle.length+90));if(pattern.test(window))return true;at=body.indexOf(needle,at+needle.length);} return false; };
-const positive = /\b(?:predict(?:s|ed|ion)?|tips?|picks?|backs?|favo[u]?rite|to win|will win|wins|victory|beats?|edge|advantage)\b/i;
-const negative = /\b(?:will lose|to lose|unlikely to win|not to win|avoid|against|will be beaten|defeat|loss|no value|do not back|don\x27t back)\b/i;
+const participantHasSignal = (text,name,kind) => {
+ const body=normalize(text),needle=normalize(name);
+ if(!needle)return false;
+ let at=body.indexOf(needle);
+ while(at>=0){
+  const before=body.slice(Math.max(0,at-65),at).trim();
+  const after=body.slice(at+needle.length,at+needle.length+65).trim();
+  if(kind==="support"){
+   if(/\\b(?:back(?:s|ed)?|favour(?:s|ed)?|favor(?:s|ed)?|tip(?:s|ped)?|pick(?:s|ed)?|predict(?:s|ed)?|winner is|win for)\\s*$/.test(before))return true;
+   if(/^(?:(?:is|are|to be)\\s+)?(?:the\\s+)?(?:favo[u]?rite|pick|tip|winner|to win|will win|wins|victory|to beat|will beat|beats|backed to win)\\b/.test(after))return true;
+  }else{
+   if(/\\b(?:unlikely to win|not to win|will lose|to lose|avoid|will be beaten|defeat|loss|no value|do not back|don t back)\\s*$/.test(before))return true;
+   if(/^(?:(?:is|are)\\s+)?(?:unlikely to win|not to win|to lose|will lose|will be beaten|to be beaten)\\b/.test(after))return true;
+  }
+  at=body.indexOf(needle,at+needle.length);
+ }
+ return false;
+};
+
 
 export function assessExpertConsensus(pick, pages=[]) {
  const selected=String(pick?.selection||"").trim(),home=String(pick?.home_team||"").trim(),away=String(pick?.away_team||"").trim();
