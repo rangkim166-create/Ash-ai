@@ -91,3 +91,14 @@ The scraper is a conservative generic first stage, not a guaranteed adapter for 
 ## Expanded fixture intelligence research
 
 Ash searches public reporting for match previews, home/away injuries and fitness, doubtful or ruled-out players, confirmed or predicted lineups, suspensions, manager/coach press conferences, training and squad updates, weather/venue conditions, form and head-to-head. Sources are saved with URL, publisher, publication date and category tags. Coverage tags indicate related reporting was found, not that a claim is confirmed. Research refreshes every 15 minutes. Public coverage is not exhaustive; paywalls, publisher restrictions and unindexed pages remain unavailable. Unknown player availability and lineups must stay unknown.
+
+
+## User scouting signals (new)
+
+Authenticated endpoint `POST /v1/scout/signals` accepts:
+```json
+{"sport":"football","team":"Chelsea","opinion":"not_win","reason":"I expect them not to win"}
+```
+Supported opinions are `win`, `lose`, `not_win`, `draw`, `upset`, and `avoid`. A matching upcoming fixture is linked immediately and re-queued for research. If no fixture is currently indexed, the team signal is retained and attached when a matching upcoming fixture is later discovered. Use `GET /v1/scout/signals` to review saved signals.
+
+A scouting signal is a research instruction, not a prediction override. It adds targeted searches for contrary views, draw/upset risk, form, injuries, lineups, suspensions and tactical context. It cannot force a pick and does not bypass current odds, evidence, freshness or value checks. This makes the user's football knowledge visible to the research process instead of silently ignoring it.
