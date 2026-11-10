@@ -162,8 +162,8 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       if (marketDisagreement > 0.08) continue;
 
       const formAdjustment = hasRecentForm ? clamp(formEdge * 0.12, -0.06, 0.06) : 0;
-      const eloAdjustment = hasRatings ? clamp((eloProbability - 0.5) * 0.20, -0.07, 0.07) : 0;
-      const adjustment = hasRecentForm && hasRatings
+      const eloAdjustment = hasRatings && side !== "draw" ? clamp((eloProbability - 0.5) * 0.20, -0.07, 0.07) : 0;
+      const adjustment = side === "draw" ? formAdjustment : hasRecentForm && hasRatings
         ? formAdjustment * 0.55 + eloAdjustment * 0.45
         : hasRecentForm ? formAdjustment : eloAdjustment;
       const estimatedProbability = clamp(marketProbability + adjustment, 0.02, 0.95);
@@ -192,7 +192,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       ];
       if (side === "draw" && hasRecentForm) reasonParts.push("draw rates " + (homeForm.draws / homeForm.played * 100).toFixed(0) + "% home side / " + (awayForm.draws / awayForm.played * 100).toFixed(0) + "% away side");
       else if (hasRecentForm) reasonParts.push("recent form " + selectedForm.wins + "W-" + selectedForm.draws + "D-" + selectedForm.losses + "L vs " + opponentForm.wins + "W-" + opponentForm.draws + "D-" + opponentForm.losses + "L");
-      if (hasRatings) reasonParts.push("Elo difference " + Math.round(ratingDelta) + " points from " + historyCount.toLocaleString("en-US") + " archived matches");
+      if (hasRatings && side !== "draw") reasonParts.push("Elo difference " + Math.round(ratingDelta) + " points from " + historyCount.toLocaleString("en-US") + " archived matches");
       reasonParts.push("screening estimate only; lineups, injuries and late tactical changes may be unknown");
 
       ranked.push({
@@ -212,7 +212,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
         home_form_count: homeForm.played, away_form_count: awayForm.played,
         edge_type: edgeType,
         ...(hasRecentForm ? { form_edge_pct: Number((formEdge * 100).toFixed(1)) } : {}),
-        ...(hasRatings ? {
+        ...(hasRatings && side !== "draw" ? {
           home_rating: Number(homeRating.toFixed(1)), away_rating: Number(awayRating.toFixed(1)),
           rating_edge_points: Math.round(ratingDelta), historical_match_count: historyCount
         } : {}),
@@ -276,7 +276,7 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
         "Archive baseline: " + Number(pick.historical_match_count || 0).toLocaleString("en-US") + " " + pick.sport + " matches"
       );
     }
-    if (pick.edge_type === "recent_form" || pick.edge_type === "hybrid_elo_form" || pick.edge_type === "draw_form") {
+    if (pick.edge_type === "recent_form" || pick.edge_type === "hybrid_elo_form") {
       lines.push("Recent form: home " + pick.home_form + " • away " + pick.away_form + " • form edge " + pick.form_edge_pct + "%");
     }
     lines.push("Kick-off (Kampala): " + kickoff);
