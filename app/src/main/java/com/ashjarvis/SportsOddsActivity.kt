@@ -12,6 +12,8 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
+import android.widget.Spinner
+import android.widget.ArrayAdapter
 import android.widget.TextView
 import android.widget.Toast
 import android.text.InputType
@@ -81,6 +83,7 @@ class SportsOddsActivity : Activity() {
         controls.addView(button("PARKED") { currentTab = "parked"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("HISTORY") { currentTab = "history"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("RESULTS") { currentTab = "results"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
+        controls.addView(button("SCOUT") { currentTab = "scout"; render() }, LinearLayout.LayoutParams(0, -2, 1f))
         controls.addView(button("SETUP") { showSetup() }, LinearLayout.LayoutParams(0, -2, 1f))
         root.addView(controls)
         val scroll = ScrollView(this)
@@ -94,6 +97,7 @@ class SportsOddsActivity : Activity() {
             "parked" -> showParked()
             "history" -> showHistory()
             "results" -> showResults()
+            "scout" -> showScout()
             else -> showToday()
         }
     }
@@ -234,7 +238,143 @@ class SportsOddsActivity : Activity() {
         body.addView(actions, 0)
     }
 
-            private fun showParked() {
+            private fun showScout() {
+        card("YOUR MATCH SCOUTING SIGNALS",
+            "Tell Ash what you think about a team or player. Your view becomes a research lead: Ash checks form, availability, lineups, tactics and opposing evidence. It never forces a bet.") {}
+        body.addView(button("ADD MY MATCH VIEW") { showScoutDialog() })
+        body.addView(button("REFRESH MY SIGNALS") { render() })
+        status.text = "Your scouting notes are saved to this device's private feed"
+        loadScoutSignals()
+    }
+
+    private fun showScoutDialog() {
+        val form = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(22, 12, 22, 4)
+        }
+        form.addView(text("SPORT", 12f, muted, true))
+        val sports = listOf("Football", "Basketball", "Tennis")
+        val sportSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@SportsOddsActivity, android.R.layout.simple_spinner_dropdown_item, sports)
+        }
+        form.addView(sportSpinner)
+        form.addView(text("TEAM OR PLAYER", 12f, muted, true).apply { setPadding(0, 12, 0, 2) })
+        val teamInput = EditText(this).apply {
+            hint = "e.g. Chelsea or Jannik Sinner"
+            singleLine = true
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        }
+        form.addView(teamInput)
+        form.addView(text("MY VIEW", 12f, muted, true).apply { setPadding(0, 12, 0, 2) })
+        val opinions = listOf("I think they win", "I think they lose", "I think they won't win", "I expect a draw", "Possible upset", "Avoid this match")
+        val opinionValues = listOf("win", "lose", "not_win", "draw", "upset", "avoid")
+        val opinionSpinner = Spinner(this).apply {
+            adapter = ArrayAdapter(this@SportsOddsActivity, android.R.layout.simple_spinner_dropdown_item, opinions)
+        }
+        form.addView(opinionSpinner)
+        form.addView(text("WHY? (OPTIONAL)", 12f, muted, true).apply { setPadding(0, 12, 0, 2) })
+        val reasonInput = EditText(this).apply {
+            hint = "Your reasoning, team news or what you noticed"
+            minLines = 2
+            maxLines = 4
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        }
+        form.addView(reasonInput)
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Add a scouting signal")
+            .setView(form)
+            .setNegativeButton("CANCEL", null)
+            .setPositiveButton("SEND TO ASH", null)
+            .create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val team = teamInput.text.toString().trim()
+                if (team.length < 2) {
+                    teamInput.error = "Enter a team or player"
+                    return@setOnClickListener
+                }
+                val sport = listOf("football", "basketball", "tennis")[sportSpinner.selectedItemPosition]
+                val opinion = opinionValues[opinionSpinner.selectedItemPosition]
+                val reason = reasonInput.text.toString()
+                dialog.dismiss()
+                saveScoutSignal(sport, team, opinion, reason)
+            }
+        }
+        dialog.show()
+    }
+
+    private fun saveScoutSignal(sport: String, team: String, opinion: String, reason: String) {
+        status.text = "Sending your view to Ash for independent research…"
+        scope.launch {
+            try {
+                val response = withContext(Dispatchers.IO) {
+                    ScoutSignalsClient.submitSignal(this@SportsOddsActivity, sport, team, opinion, reason)
+                }
+                val saved = response.optInt("saved", 0)
+                val matched = response.optJSONArray("matchedFixtures")?.length() ?: 0
+                AlertDialog.Builder(this@SportsOddsActivity)
+                    .setTitle("Scouting signal saved")
+                    .setMessage(if (matched > 0)
+                        "Ash saved your view and linked it to $matched upcoming fixture(s). It will investigate both supporting and opposing evidence."
+                    else "Ash saved your view. No matching upcoming fixture is indexed yet; it will be attached when a matching fixture is discovered.")
+                    .setPositiveButton("OK", null).show()
+                status.text = "Saved $saved scouting signal(s) • research queued where a fixture matched"
+                render()
+            } catch (e: Exception) {
+                status.text = "Could not save scouting signal"
+                AlertDialog.Builder(this@SportsOddsActivity)
+                    .setTitle("Scouting signal unavailable")
+                    .setMessage((e.message ?: "Network request failed").take(350))
+                    .setPositiveButton("RETRY") { _, _ -> saveScoutSignal(sport, team, opinion, reason) }
+                    .setNegativeButton("OK", null).show()
+            }
+        }
+    }
+
+    private fun loadScoutSignals() {
+        scope.launch {
+            try {
+                val signals = withContext(Dispatchers.IO) {
+                    ScoutSignalsClient.listSignals(this@SportsOddsActivity)
+                }
+                if (currentTab != "scout") return@launch
+                if (signals.length() == 0) {
+                    body.addView(text("No scouting signals yet. Add your first team or player view above.", 13f, muted)
+                        .apply { setPadding(12, 14, 12, 14) })
+                } else {
+                    for (i in 0 until signals.length()) {
+                        val item = signals.optJSONObject(i) ?: continue
+                        val fixture = item.optString("fixture_id")
+                        val linked = fixture.isNotBlank() && fixture != "null"
+                        val details = buildString {
+                            append(item.optString("sport").uppercase()).append(" • ")
+                                .append(item.optString("opinion").replace("_", " ").uppercase()).append("\n")
+                            append(if (linked) item.optString("home").plus(" vs ").plus(item.optString("away"))
+                                else "Waiting for a matching fixture").append("\n")
+                            if (item.optString("competition").isNotBlank()) append(item.optString("competition")).append("\n")
+                            if (item.optString("reason").isNotBlank()) append("Your note: ").append(item.optString("reason")).append("\n")
+                            append(if (linked) "Research link: attached" else "Research link: pending fixture discovery")
+                        }
+                        card(item.optString("team"), details) {
+                            AlertDialog.Builder(this@SportsOddsActivity)
+                                .setTitle("Your scouting signal")
+                                .setMessage(details)
+                                .setPositiveButton("OK", null).show()
+                        }
+                    }
+                }
+                status.text = "Your saved scouting signals • \${signals.length()} total"
+            } catch (e: Exception) {
+                if (currentTab == "scout") {
+                    body.addView(text("Could not load your scouting signals: \${(e.message ?: "network error").take(150)}", 12f, muted)
+                        .apply { setPadding(12, 14, 12, 14) })
+                    status.text = "Scout feed unavailable • check connection"
+                }
+            }
+        }
+    }
+
+    private fun showParked() {
         val history = OddsEngine.history(this)
         val dailyPicks = OddsEngine.savedDailyPicks(this)
         val approvedIds = (0 until dailyPicks.length()).mapNotNull { dailyPicks.optJSONObject(it)?.optString("id") }.toSet()
