@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - ash-neon-backend
+      - ash-research-discovery-v2
   pull_request:
     branches:
       - ash-neon-backend
