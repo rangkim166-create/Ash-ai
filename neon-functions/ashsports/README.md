@@ -111,6 +111,8 @@ Before scheduled research and daily publishing, Ash now queries ESPN's public sc
 
 ## Android scouting signals
 
+The Android SCOUT screen requires the deployed Neon Function base URL to be entered once in the app (HTTPS only). The source deliberately does not guess a Render/Neon hostname. Paste the service base URL without a route suffix; the app appends `/v1/public/scout/signals`. The backend must be deployed before the screen can save or load signals.
+
 The Android app uses the public, device-scoped endpoint:
 
 - `GET /v1/public/scout/signals`
