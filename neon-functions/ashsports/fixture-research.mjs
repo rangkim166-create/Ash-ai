@@ -79,6 +79,26 @@ export function buildFixtureQueries(fixture,now=new Date()){
  ].map(x=>x.replace(/\s+/g," ").trim());
 }
 
+export function buildFixtureFallbackQueries(fixture){
+ const home=String(fixture?.home||"").trim(),away=String(fixture?.away||"").trim();
+ const competition=String(fixture?.competition||"").trim(),sport=String(fixture?.sport||"football").toLowerCase();
+ if(sport==="tennis")return [
+  '"'+home+'" tennis injury fitness withdrawal retirement latest',
+  '"'+away+'" tennis injury fitness withdrawal retirement latest',
+  '"'+home+'" "'+away+'" '+competition+' tennis match news form surface'
+ ].map(value=>value.replace(/\\s+/g," ").trim());
+ if(sport==="basketball")return [
+  '"'+home+'" basketball injury report player availability latest',
+  '"'+away+'" basketball injury report player availability latest',
+  '"'+home+'" "'+away+'" '+competition+' basketball match news roster form'
+ ].map(value=>value.replace(/\\s+/g," ").trim());
+ return [
+  '"'+home+'" "'+away+'" '+competition+' football match news latest',
+  '"'+home+'" football team news injury availability latest',
+  '"'+away+'" football team news injury availability latest'
+ ].map(value=>value.replace(/\\s+/g," ").trim());
+}
+
 const decodeEntities = value => String(value || "")
  .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
  .replace(/&nbsp;|&#160;/gi, " ").replace(/&amp;/gi, "&").replace(/&quot;|&#34;/gi, '"')
@@ -406,6 +426,19 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
      if(result.value.diagnostics?.length){searchProviderFailures.push(...result.value.diagnostics);errors.push("news_provider_failures: "+JSON.stringify(result.value.diagnostics.slice(0,6)).slice(0,700));}
     }else errors.push(String(result.reason?.message||result.reason).slice(0,240));
    }
+  // Retry with short participant-first searches when the main query set finds too little match-specific reporting.
+  const preliminaryRelevant=found.filter(item=>(item.ageHours==null||item.ageHours<=24*7)&&isFixtureRelevantResult(item,f));
+  const preliminaryHome=preliminaryRelevant.some(item=>hasParticipantCoverage(item,f).home);
+  const preliminaryAway=preliminaryRelevant.some(item=>hasParticipantCoverage(item,f).away);
+  if(preliminaryRelevant.length<2||!preliminaryHome||!preliminaryAway){
+   const fallbackResults=await Promise.allSettled(buildFixtureFallbackQueries(f).map(query=>search(query)));
+   for(const result of fallbackResults){
+    if(result.status==="fulfilled"){
+     found.push(...result.value.items);
+     if(result.value.diagnostics?.length){searchProviderFailures.push(...result.value.diagnostics);errors.push("fallback_news_provider_failures: "+JSON.stringify(result.value.diagnostics.slice(0,6)).slice(0,700));}
+    }else errors.push("fallback_search: "+String(result.reason?.message||result.reason).slice(0,240));
+   }
+  }
   const providerFailures=collectResearchProviderFailures(searchProviderFailures,curatedFeedFailures);
   const rawSearchResultCount=found.length;
   const freshFound=found.filter(x=>x.ageHours==null||x.ageHours<=24*7);
