@@ -261,7 +261,7 @@ class SportsOddsActivity : Activity() {
         form.addView(text("TEAM OR PLAYER", 12f, muted, true).apply { setPadding(0, 12, 0, 2) })
         val teamInput = EditText(this).apply {
             hint = "e.g. Chelsea or Jannik Sinner"
-            singleLine = true
+            isSingleLine = true
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
         }
         form.addView(teamInput)
