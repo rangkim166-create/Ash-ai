@@ -11,7 +11,7 @@ test("normalizes only identifiable upcoming real events",()=>{
  const rows=normalizeEspnEvents({events:[
   {id:"abc",date:"2026-11-11T18:00:00Z",competitions:[{competitors:[
    {homeAway:"home",team:{displayName:"Chelsea"}},{homeAway:"away",team:{displayName:"Arsenal"}}
-  ],status:{type:{state:"pre"}}]},
+  ],status:{type:{state:"pre"}}}]},
   {id:"bad",date:"not-a-date",competitions:[{competitors:[]}]}
  ]},{sport:"football",league:"eng.1",competition:"Premier League",now});
  assert.equal(rows.length,1);
