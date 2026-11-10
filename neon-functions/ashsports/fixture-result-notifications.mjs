@@ -77,8 +77,16 @@ async function getJson(url, fetchImpl) {
     headers: { accept: "application/json", "user-agent": "AshSportsFixtureResults/1.0" },
     signal: AbortSignal.timeout(12000)
   });
-  if (!response.ok) throw new Error("ESPN HTTP " + response.status);
-  return response.json();
+  const body = await response.text();
+  if (!response.ok) {
+    const detail = body.replace(/\\s+/g, " ").slice(0, 180);
+    throw new Error("ESPN HTTP " + response.status + " " + detail);
+  }
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error("ESPN returned invalid JSON: " + body.replace(/\\s+/g, " ").slice(0, 180));
+  }
 }
 async function sendOutbox(db, telegram, limit=30) {
   const rows = await db.query(`SELECT id,match_id,kind,payload FROM ash_fixture_telegram_notifications
