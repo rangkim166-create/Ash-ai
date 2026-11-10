@@ -82,7 +82,7 @@ async function getJson(url, fetchImpl) {
 }
 async function sendOutbox(db, telegram, limit=30) {
   const rows = await db.query(`SELECT id,match_id,kind,payload FROM ash_fixture_telegram_notifications
-    WHERE status IN ('pending','failed') AND (updated_at IS NULL OR updated_at < now()-interval '2 minutes')
+    WHERE status IN ('pending','failed','sending') AND (updated_at IS NULL OR updated_at < now()-interval '2 minutes')
     ORDER BY created_at ASC LIMIT $1`, [limit]);
   let sent=0, failed=0;
   for (const row of rows.rows) {
@@ -141,7 +141,7 @@ export async function runFixtureResultNotifications(db, telegram, {now=new Date(
     const isFinal=event.status==="completed";
     const kind=isFinal?"final":"live";
     const fingerprint=isFinal?"final:"+event.homeScore+":"+event.awayScore:
-      "live:"+event.homeScore+":"+event.awayScore+":"+event.period+":"+event.clock;
+      "live:"+event.homeScore+":"+event.awayScore;
     const label=isFinal?"FINAL RESULT":"LIVE SCORE";
     const payload="ASH • "+label+"\n"+fixture.home_or_player_one+" "+event.homeScore+" - "+event.awayScore+" "+fixture.away_or_player_two+
       "\n"+fixture.competition+" • "+String(fixture.sport).toUpperCase()+
