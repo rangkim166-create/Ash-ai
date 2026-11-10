@@ -111,11 +111,11 @@ Before scheduled research and daily publishing, Ash queries ESPN's public scoreb
 
 ## Android scouting signals
 
-The Android SCOUT screen requires the deployed Neon Function base URL to be entered once in the app (HTTPS only). The source deliberately does not guess a Render/Neon hostname. Paste the service base URL without a route suffix; the app appends `/v1/public/scout/signals`. The backend must be deployed before the screen can save or load signals.
+The production Android SCOUT client uses the verified Render service base URL `https://ash-sports-api.onrender.com` by default. The Render web service `ash-sports-api` tracks the `ash-neon-backend` branch and runs `render-server.mjs`, which imports this same `index.mjs` handler. A custom HTTPS base URL can still be entered in the app if the service address changes. The app appends `/v1/public/scout/signals`; do not include a route suffix.
 
-The Android app uses the public, device-scoped endpoint:
+The same endpoint can also be hosted as an optional Neon Function, but that is not required for the Render deployment:
 
 - `GET /v1/public/scout/signals`
 - `POST /v1/public/scout/signals`
 
-Requests send an app-generated random `X-Ash-Device-Id`. The server stores only a SHA-256 digest as the owner key and returns only signals belonging to that device. No server admin token is embedded in the APK. Each device is limited to 30 saved signal rows per 24 hours. Supported sports are football, basketball and tennis; supported views are win, lose, not-win, draw, upset and avoid. Signals add research queries and never force a pick or bypass odds/evidence checks.
+Requests send an app-generated random `X-Ash-Device-Id`. The server stores only a SHA-256 digest as the owner key and returns only signals belonging to that device ID. This is device-scoped access, not account authentication; keep the app installation/device secure. No server admin token is embedded in the APK. Each device is limited to 30 saved signal rows per 24 hours. The client allows up to 65 seconds for a request to accommodate Render free-instance cold starts. Supported sports are football, basketball and tennis; supported views are win, lose, not-win, draw, upset and avoid. Signals add research queries and never force a pick or bypass odds/evidence checks.
