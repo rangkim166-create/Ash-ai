@@ -162,7 +162,7 @@ export function buildNewsSearchProviders(query){
  // Let the downstream freshness filter enforce the seven-day window. Search
  // engines frequently return empty feeds for long queries containing multiple
  // after: operators, even when matching reporting exists.
- const normalized=String(query||"").replace(/\\bafter:\\d{4}-\\d{2}-\\d{2}\\b/gi,"").replace(/\\s+/g," ").trim();
+ const normalized=String(query||"").replace(/\bafter:\d{4}-\d{2}-\d{2}\b/gi,"").replace(/\s+/g," ").trim();
  const words=normalized.split(" ").filter(Boolean);
  const compact=words.length>9?words.slice(0,9).join(" "):normalized;
  const encoded=encodeURIComponent(compact);
