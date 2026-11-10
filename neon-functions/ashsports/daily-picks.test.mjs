@@ -242,3 +242,14 @@ test("matches surname-first tennis feed names to first-name-first Elo ratings", 
   assert.equal(picks[0].selection, "Cirstea, Sorana");
   assert.equal(picks[0].edge_type, "elo_rating");
 });
+
+test("daily screening summary explains why candidates were held",()=>{
+ const summary=formatDailyScreeningSummary({candidateCount:3,availabilityBlocked:1,expertBlocked:2,qualifiedCount:0});
+ assert.match(summary,/3 candidate/);
+ assert.match(summary,/1 held for missing\/stale availability evidence/);
+ assert.match(summary,/2 held for insufficient independent expert-source support/);
+ assert.match(summary,/0 fully qualified/);
+});
+test("daily screening summary is honest when no candidates pass odds and form",()=>{
+ assert.equal(formatDailyScreeningSummary({candidateCount:0,availabilityBlocked:0,expertBlocked:0,qualifiedCount:0}),"Screening: no candidates passed the odds/form market screen; no pick was forced.");
+});
