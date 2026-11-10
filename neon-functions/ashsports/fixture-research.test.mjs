@@ -69,6 +69,9 @@ test("uses global English news editions for international fixture coverage",()=>
  assert.match(providers[0].url,/NK%20Osijek%20U19/);
  assert.match(providers[2].url,/format=rss/);
  assert.equal(providers[2].name,"bing_news");
+ const broad=buildNewsSearchProviders("NK Osijek HNK Rijeka team news after:2026-11-02");
+ assert.ok(broad.every(provider=>!decodeURIComponent(provider.url).includes("after:")));
+ assert.ok(decodeURIComponent(broad[0].url).includes("NK Osijek HNK Rijeka"));
 });
 
 import { normalizeResearchConfidence, collectNewsProviderFailures, collectResearchProviderFailures } from "./fixture-research.mjs";
