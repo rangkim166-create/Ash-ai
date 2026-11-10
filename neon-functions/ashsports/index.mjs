@@ -1,3 +1,4 @@
+import { validateScoutSignal } from "./scout-signals.mjs";
 import postgres from "postgres";
 import { formatDailyPicks, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
@@ -539,6 +540,48 @@ return reply({team_a:a,team_b:b,meetings:rows.rows});
 }catch(e){console.error("[ash-sports-public]",e);return reply({error:"public_feed_unavailable"},500);}
 }
 const auth=(req.headers.get("authorization")||"").replace(/^Bearer\s+/i,"");if(!appToken||auth.length!==appToken.length||!timingSafeEqual(Buffer.from(auth),Buffer.from(appToken)))return reply({error:"unauthorized"},401);
+if(p==="/v1/scout/signals"&&req.method==="GET"){
+ await db.query(`CREATE TABLE IF NOT EXISTS ash_user_scout_signals(
+  id bigserial PRIMARY KEY,match_id text REFERENCES sports_matches(id) ON DELETE SET NULL,
+  sport text NOT NULL,team text NOT NULL,normalized_team text NOT NULL,opinion text NOT NULL,
+  reason text NOT NULL DEFAULT '',status text NOT NULL DEFAULT 'active',
+  created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now()
+ )`);
+ const rows=await db.query(`SELECT s.id,s.sport,s.team,s.opinion,s.reason,s.status,s.created_at,
+  m.id AS fixture_id,m.competition,m.home_or_player_one AS home,m.away_or_player_two AS away,m.starts_at
+  FROM ash_user_scout_signals s LEFT JOIN sports_matches m ON m.id=s.match_id
+  ORDER BY s.created_at DESC LIMIT 50`);
+ return reply({signals:rows.rows});
+}
+if(p==="/v1/scout/signals"&&req.method==="POST"){
+ const body=await req.json().catch(()=>({}));
+ let signal;
+ try{signal=validateScoutSignal(body);}catch(error){return reply({error:String(error.message||error)},400);}
+ await db.query(`CREATE TABLE IF NOT EXISTS ash_user_scout_signals(
+  id bigserial PRIMARY KEY,match_id text REFERENCES sports_matches(id) ON DELETE SET NULL,
+  sport text NOT NULL,team text NOT NULL,normalized_team text NOT NULL,opinion text NOT NULL,
+  reason text NOT NULL DEFAULT '',status text NOT NULL DEFAULT 'active',
+  created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now()
+ )`);
+ await db.query("CREATE INDEX IF NOT EXISTS ash_user_scout_signals_match_idx ON ash_user_scout_signals(match_id,status,created_at DESC)");
+ let fixtures;
+ if(body.match_id){
+  fixtures=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE id=$1 AND sport=$2 AND starts_at>now()-interval '12 hours' AND starts_at<now()+interval '14 days' AND status NOT IN ('completed','cancelled','postponed')",[String(body.match_id),signal.sport]);
+ }else{
+  fixtures=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE sport=$1 AND starts_at>now()-interval '12 hours' AND starts_at<now()+interval '14 days' AND status NOT IN ('completed','cancelled','postponed') AND (LOWER(home_or_player_one) LIKE LOWER($2) OR LOWER(away_or_player_two) LIKE LOWER($2)) ORDER BY starts_at ASC LIMIT 10",[signal.sport,"%"+signal.team+"%"]);
+ }
+ const targets=fixtures.rows.length?fixtures.rows:[null],saved=[];
+ for(const fixture of targets){
+  const result=await db.query("INSERT INTO ash_user_scout_signals(match_id,sport,team,normalized_team,opinion,reason) VALUES($1,$2,$3,$4,$5,$6) RETURNING id,match_id,sport,team,opinion,reason,created_at",
+   [fixture?.id||null,signal.sport,signal.team,signal.normalizedTeam,signal.opinion,signal.reason]);
+  saved.push(result.rows[0]);
+  if(fixture){
+   await ensureFixtureResearchTables(db);
+   await db.query("INSERT INTO ash_fixture_research_queue(match_id,status,due_at) VALUES($1,'pending',now()) ON CONFLICT(match_id) DO UPDATE SET status='pending',due_at=now(),updated_at=now(),last_error=NULL",[fixture.id]);
+  }
+ }
+ return reply({saved:saved.length,matchedFixtures:fixtures.rows,signals:saved,note:fixtures.rows.length?"Signal attached to upcoming fixture research. It informs searches but does not force a pick.":"Signal saved for the team. It will attach when an upcoming fixture is discovered."},201);
+}
 if(p==="/v1/scraper/status"&&req.method==="GET")return reply(await getScraperStatus(db));
 if(p==="/v1/scraper/sources"&&req.method==="POST"){
  const body=await req.json().catch(()=>({}));
