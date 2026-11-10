@@ -20,9 +20,9 @@ function withinWindow(startsAt,now) {
 function eventStatus(status) {
   const state=String(status?.state||"").toLowerCase();
   const detail=String(status?.description||status?.detail||status?.name||"").toLowerCase();
-  if(state==="post"||/final|retired|walkover/.test(detail))return "completed";
   if(/cancel/.test(detail))return "cancelled";
   if(/postpon/.test(detail))return "postponed";
+  if(state==="post"||/final|retired|walkover/.test(detail))return "completed";
   if(state==="in")return "in_progress";
   return "scheduled";
 }
@@ -59,7 +59,7 @@ export function normalizeEspnTennisEvents(payload,{tour,now=new Date()}={}) {
         const ordered=[...competitors].sort((a,b)=>(Number(a?.order)||99)-(Number(b?.order)||99));
         const playerOne=ordered[0]?.athlete?.displayName||ordered[0]?.athlete?.fullName;
         const playerTwo=ordered[1]?.athlete?.displayName||ordered[1]?.athlete?.fullName;
-        const startsAt=Date.parse(match?.date||match?.startDate||tournament?.date||"");
+        const startsAt=Date.parse(match?.date||match?.startDate||"");
         if(!match?.id||!playerOne||!playerTwo||playerOne===playerTwo||!withinWindow(startsAt,now))continue;
         const round=String(match?.round?.displayName||"").trim();
         const tournamentName=String(tournament?.name||tour||"Tennis");
