@@ -57,6 +57,7 @@ test("rejects tennis matches without two players, valid times or stable ids",()=
  const rows=normalizeEspnTennisEvents({events:[{name:"Open",groupings:[{grouping:{displayName:"Women's Singles"},competitions:[
   {id:"missing-player",date:"2026-11-11T10:00:00Z",competitors:[{athlete:{displayName:"Only One"}}]},
   {id:"bad-time",date:"bad",competitors:[{order:1,athlete:{displayName:"A"}},{order:2,athlete:{displayName:"B"}}]},
+  {id:"missing-time",competitors:[{order:1,athlete:{displayName:"A"}},{order:2,athlete:{displayName:"B"}}]},
   {date:"2026-11-11T10:00:00Z",competitors:[{order:1,athlete:{displayName:"A"}},{order:2,athlete:{displayName:"B"}}]}
  ]}]}]},{tour:"WTA",now});
  assert.equal(rows.length,0);
