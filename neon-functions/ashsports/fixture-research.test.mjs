@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {buildFixtureQueries,classifyEvidenceCategory} from "./fixture-research.mjs";
+import {buildFixtureQueries,classifyEvidenceCategory,buildRuleBasedAssessment} from "./fixture-research.mjs";
 test("searches injury, lineup, suspension, manager, weather and form topics",()=>{const q=buildFixtureQueries({home:"Arsenal",away:"Chelsea",competition:"Premier League"},new Date("2026-11-04T12:00:00Z"));assert.equal(q.length,14);const s=q.join(" ").toLowerCase();for(const x of ["injury","starting xi","suspensions","press conference","weather forecast","head to head","breaking news","african football","official club"])assert.ok(s.includes(x),x);assert.ok(s.includes("after:2026-10-28"));});
 test("tags multiple news coverage categories",()=>{const c=classifyEvidenceCategory("Manager press conference: striker injury doubt, probable starting XI and suspension update");for(const x of ["injury_fitness","lineups","suspensions","manager_training"])assert.ok(c.includes(x),x);});
 test("generic headlines remain general news",()=>assert.deepEqual(classifyEvidenceCategory("A look ahead to the weekend"),["general_news"]));
@@ -50,68 +50,6 @@ test("tennis research searches player-specific injury, withdrawal, form and tour
 test("classifies tennis withdrawals and surface reporting separately", () => {
  const categories = classifyEvidenceCategory("Player withdrew with an ankle injury; hard court record and recent form");
  for (const category of ["injury_fitness","withdrawals_retirements","surface_conditions","form_statistics"]) assert.ok(categories.includes(category),category);
-});
-
-import { buildResearchModelOptions } from "./fixture-research.mjs";
-test("Groq research assessment requests JSON mode and disables tool calls",()=>{
- const options=buildResearchModelOptions("openai/gpt-oss-20b");
- assert.equal(options.model,"openai/gpt-oss-20b");
- assert.deepEqual(options.response_format,{type:"json_object"});
- assert.equal(options.max_tokens,1500);
-});
-
-import { buildNewsSearchProviders, buildCuratedSportsFeeds } from "./fixture-research.mjs";
-test("uses global English news editions for international fixture coverage",()=>{
- const providers=buildNewsSearchProviders("NK Osijek U19 HNK Rijeka U19 team news");
- assert.equal(providers.length,3);
- assert.match(providers[1].url,/hl=en-GB&gl=GB&ceid=GB:en/);
- assert.match(providers[0].url,/hl=en-US&gl=US&ceid=US:en/);
- assert.match(providers[0].url,/NK%20Osijek%20U19/);
- assert.match(providers[2].url,/format=rss/);
- assert.equal(providers[2].name,"bing_news");
- const broad=buildNewsSearchProviders("NK Osijek HNK Rijeka team news after:2026-11-02");
- assert.ok(broad.every(provider=>!decodeURIComponent(provider.url).includes("after:")));
- assert.ok(decodeURIComponent(broad[0].url).includes("NK Osijek HNK Rijeka"));
-});
-
-import { normalizeResearchConfidence, collectNewsProviderFailures, collectResearchProviderFailures } from "./fixture-research.mjs";
-test("normalizes numeric and labelled AI confidence consistently",()=>{
- assert.equal(normalizeResearchConfidence(82),82);
- assert.equal(normalizeResearchConfidence("73"),73);
- assert.equal(normalizeResearchConfidence({overall:"moderate",details:{injury:"low"}}),65);
- assert.equal(normalizeResearchConfidence({overall:"high"}),80);
- assert.equal(normalizeResearchConfidence({overall:"low"}),35);
- assert.equal(normalizeResearchConfidence({}),0);
-});
-import { buildResearchJsonParameters } from "./fixture-research.mjs";
-test("uses the database JSON encoder for research arrays and objects",()=>{
- const db={json:value=>({jsonValue:value})};
- const sources=[{title:"Official team update"}],assessment={confidence:{overall:"moderate"}},coverage={rawSearchResults:3};
- assert.deepEqual(buildResearchJsonParameters(db,sources,assessment,coverage),[
-  {jsonValue:sources},{jsonValue:assessment},{jsonValue:coverage}
- ]);
-});
-
-test("research AI rejects a Qwen environment override",()=>{
- assert.equal(buildResearchModelOptions("qwen/qwen3.8-27b").model,"openai/gpt-oss-20b");
-});
-
-import { buildResearchProviderRequest } from "./fixture-research.mjs";
-test("uses Groq GPT-OSS as the primary online research model",()=>{
- const request=buildResearchProviderRequest("groq","test-groq-key","test prompt");
- assert.equal(request.url,"https://api.groq.com/openai/v1/chat/completions");
- assert.equal(request.body.model,"openai/gpt-oss-20b");
- assert.equal(request.body.response_format.type,"json_object");
-});
-test("uses OpenRouter GPT-4o-mini only as online fallback",()=>{
- const request=buildResearchProviderRequest("openrouter","test-openrouter-key","test prompt");
- assert.equal(request.url,"https://openrouter.ai/api/v1/chat/completions");
- assert.equal(request.body.model,"openai/gpt-4o-mini");
- assert.equal(request.body.response_format.type,"json_object");
-});
-test("refuses unsupported or local AI providers",()=>{
- assert.throws(()=>buildResearchProviderRequest("qwen","test-key","prompt"),/Unsupported online AI provider/);
- assert.throws(()=>buildResearchProviderRequest("local","test-key","prompt"),/Unsupported online AI provider/);
 });
 
 test("basketball research covers player availability, roster, fatigue and team statistics",()=>{
@@ -229,4 +167,38 @@ test("builds compact participant-first fallback searches for every real sport",(
  assert.ok(tennis.some(query=>query.includes("withdrawal retirement")));
  assert.ok(basketball.every(query=>query.includes("basketball")));
  assert.ok(basketball.some(query=>query.includes("injury report")));
+});
+
+test("builds a transparent football evidence assessment without an AI provider",()=>{
+ const fixture={sport:"football",home:"Arsenal",away:"Chelsea"};
+ const pages=[
+  {title:"Arsenal injury update",domain:"bbc.com",sourceTier:"established_media",publishedAt:"2026-11-10T10:00:00Z",contentLevel:"full_article",categories:["injury_fitness"],excerpt:"Arsenal report an injury concern before the match."},
+  {title:"Chelsea confirmed lineup news",domain:"premierleague.com",sourceTier:"official_league_or_federation",publishedAt:"2026-11-10T11:00:00Z",contentLevel:"full_article",categories:["lineups","official_update"],excerpt:"Chelsea squad and lineup update ahead of Arsenal match."}
+ ];
+ const assessment=buildRuleBasedAssessment(fixture,pages);
+ assert.equal(assessment.method,"deterministic_evidence_rules");
+ assert.equal(assessment.confidenceType,"evidence_coverage_score_not_win_probability");
+ assert.equal(assessment.confidence,70);
+ assert.equal(assessment.injuryUpdates.length,1);
+ assert.equal(assessment.lineupUpdates.length,1);
+ assert.equal(assessment.evidenceCoverage.home,true);
+ assert.equal(assessment.evidenceCoverage.away,true);
+ assert.match(assessment.note,/not a probability of winning/);
+});
+test("tennis evidence rules require fitness or withdrawal plus form context",()=>{
+ const assessment=buildRuleBasedAssessment({sport:"tennis",home:"Player One",away:"Player Two"},[
+  {title:"Player One fitness update",domain:"atptour.com",sourceTier:"official_league_or_federation",contentLevel:"full_article",categories:["injury_fitness"],excerpt:"Player One passed a fitness test."},
+  {title:"Player Two recent form",domain:"bbc.com",sourceTier:"established_media",contentLevel:"full_article",categories:["form_statistics"],excerpt:"Player Two has strong recent form."}
+ ]);
+ assert.equal(assessment.evidenceCoverage.sportRequirementsMet,true);
+ assert.equal(assessment.surfaceAndCourtContext.length,0);
+ assert.equal(assessment.formAndStatistics.length,1);
+});
+test("basketball evidence assessment reports missing categories instead of inventing them",()=>{
+ const assessment=buildRuleBasedAssessment({sport:"basketball",home:"Boston Celtics",away:"LA Lakers"},[
+  {title:"Boston Celtics injury report",domain:"nba.com",sourceTier:"official_league_or_federation",contentLevel:"full_article",categories:["injury_fitness"],excerpt:"Boston Celtics list one player as questionable."}
+ ]);
+ assert.equal(assessment.evidenceCoverage.sportRequirementsMet,false);
+ assert.ok(assessment.unknowns.some(item=>item.includes("sport-specific evidence")));
+ assert.equal(assessment.lineupUpdates.length,0);
 });
