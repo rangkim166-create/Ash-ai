@@ -20,7 +20,7 @@ export function buildScoutResearchQueries(signal, opponent = "", competition = "
   const team = String(signal.team || "").trim();
   const other = String(opponent || "").trim();
   const league = String(competition || "").trim();
-  const reason = String(signal.reason || "").replace(/\\s+/g, " ").trim().slice(0, 160);
+  const reason = String(signal.reason || "").replace(/\s+/g, " ").trim().slice(0, 160);
   const sport = String(signal.sport || "football").toLowerCase();
   const view = signal.opinion === "win" ? "win prediction"
     : signal.opinion === "lose" || signal.opinion === "not_win" ? "failure to win upset draw loss"
