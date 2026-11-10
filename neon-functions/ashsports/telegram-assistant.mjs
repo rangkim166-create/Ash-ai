@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { assessExpertConsensus } from "./expert-consensus.mjs";
 const TG="https://api.telegram.org";
 const timeout=(ms)=>AbortSignal.timeout(ms);
 const clean=(s,n=1200)=>String(s||"").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/&amp;/g,"&").replace(/&#39;/g,"'").replace(/&quot;/g,'"').replace(/\s+/g," ").trim().slice(0,n);
@@ -374,26 +375,18 @@ export function createTelegramAssistant({db,read,telegram}){
    const expertDomains=[...new Set(matchPages.map(p=>p.domain).filter(x=>x&&x!=="unknown"))];
    reports.push({matchId:pick.id,home,away,competition,retrievedAt:new Date().toISOString(),searchCounts:{match:matchItems.length,home:homeItems.length,away:awayItems.length},domains,expertDomains,homePages,awayPages,matchPages,pages:freshPages,errors,quality:{homeCoverage:homePages.length>0,awayCoverage:awayPages.length>0,expertCoverage:expertDomains.length>=2,independentDomains:domains.length,independentExpertDomains:expertDomains.length}});
   }
-  // One batch synthesis request per daily publication, never one AI call per team.
-  const groqKey=await read("groq");
-  if(groqKey&&reports.some(report=>report.pages.length>0)){
-   try{
-    const evidence=reports.map(r=>({matchId:r.matchId,fixture:r.home+" vs "+r.away,competition:r.competition,coverage:r.quality,sources:r.pages.map(p=>({title:p.title,domain:p.domain,published:p.date,excerpt:p.excerpt.slice(0,650)}))}));
-    const prompt="You are Ash's evidence auditor. Assess each candidate using ONLY supplied source excerpts. Do not invent tipster opinions, injuries, lineups or facts. Distinguish explicit predictions from news. Compare independent public tipster/pundit views, identify consensus and disagreement, and say when coverage is weak. Return ONLY JSON: {matches:[{matchId,decision:'SUPPORT'|'CONFLICT'|'INSUFFICIENT',confidence:0-100,tipsterConsensus,contraryViews,teamNews,reason}]} . SUPPORT only when at least two independent, recent expert/tipster/pundit sources explicitly support the exact proposed selection and there is no material unresolved contradiction. Team-news reporting alone is not expert support. CONFLICT when credible reporting points against it. Otherwise INSUFFICIENT. Never use bookmaker favourite status, odds movement, generic previews, or AI-generated claims as expert consensus. Candidate picks: "+JSON.stringify(candidates.map(p=>({id:p.id,fixture:p.home_team+" vs "+p.away_team,proposedSelection:p.selection,competition:p.competition})))+" Evidence: "+JSON.stringify(evidence).slice(0,11500);
-    const response=await fetch("https://api.groq.com/openai/v1/chat/completions",{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer "+groqKey},body:JSON.stringify({model:process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b",messages:[{role:"system",content:"Be conservative, source-grounded and concise. Output valid JSON only."},{role:"user",content:prompt}],temperature:0.1,max_tokens:900}),signal:timeout(45000)});
-    if(!response.ok)throw Error("Groq research synthesis HTTP "+response.status);
-    const body=await response.json(),content=body.choices?.[0]?.message?.content||"";
-    const jsonText=content.slice(content.indexOf("{"),content.lastIndexOf("}")+1);
-    const parsed=JSON.parse(jsonText);
-    const analyses=Array.isArray(parsed.matches)?parsed.matches:[];
-    const byId=new Map(analyses.map(x=>[String(x.matchId),x]));
-    for(const report of reports){
-     const analysis=byId.get(String(report.matchId));
-     if(analysis)report.analysis={decision:["SUPPORT","CONFLICT","INSUFFICIENT"].includes(analysis.decision)?analysis.decision:"INSUFFICIENT",confidence:Math.max(0,Math.min(100,Number(analysis.confidence)||0)),tipsterConsensus:String(analysis.tipsterConsensus||"Not established").slice(0,500),contraryViews:String(analysis.contraryViews||"Not established").slice(0,400),teamNews:String(analysis.teamNews||"Not verified").slice(0,400),reason:String(analysis.reason||"Insufficient source-grounded analysis").slice(0,500)};
-    }
-    console.log("[ash-daily-research-synthesis]",JSON.stringify({matches:reports.length,analysed:analyses.length,model:process.env.ASH_GROQ_MODEL||"openai/gpt-oss-120b"}));
-   }catch(error){console.error("[ash-daily-research-synthesis]",String(error?.message||error).slice(0,180));}
-  }else console.warn("[ash-daily-research-synthesis] skipped: Groq key missing or no candidates");
+  // Daily expert-source consensus is deterministic and API-free. It never invents opinions.
+  for(const report of reports){
+   const pick=candidates.find(candidate=>String(candidate.id)===String(report.matchId));
+   report.analysis=assessExpertConsensus(pick,report.matchPages||[]);
+  }
+  console.log("[ash-daily-research-consensus]",JSON.stringify({
+   matches:reports.length,
+   supported:reports.filter(report=>report.analysis?.decision==="SUPPORT").length,
+   conflicted:reports.filter(report=>report.analysis?.decision==="CONFLICT").length,
+   insufficient:reports.filter(report=>report.analysis?.decision==="INSUFFICIENT").length,
+   method:"deterministic_source_text_rules"
+  }));
   return reports;
  }
  function secretToken(bot){return createHash("sha256").update(bot.botToken+"|ash-telegram-webhook-v1").digest("hex");}
