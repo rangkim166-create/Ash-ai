@@ -44,7 +44,7 @@ export function buildFixtureQueries(fixture,now=new Date()){
   pair+" basketball official team injury report game status update after:"+recent,
   pair+" basketball late scratch inactive list game time decision latest news after:"+recent,
   pair+" basketball matchday news preview statistics availability update after:"+recent
- ].map(x=>x.replace(/\\s+/g," ").trim());
+ ].map(x=>x.replace(/\s+/g," ").trim());
  if(sport==="tennis")return [
   pair+" "+league+" tennis match preview analysis form head to head after:"+week,
   h+" tennis latest news injury fitness withdrawal retirement medical update after:"+recent,
@@ -86,17 +86,17 @@ export function buildFixtureFallbackQueries(fixture){
   '"'+home+'" tennis injury fitness withdrawal retirement latest',
   '"'+away+'" tennis injury fitness withdrawal retirement latest',
   '"'+home+'" "'+away+'" '+competition+' tennis match news form surface'
- ].map(value=>value.replace(/\\s+/g," ").trim());
+ ].map(value=>value.replace(/\s+/g," ").trim());
  if(sport==="basketball")return [
   '"'+home+'" basketball injury report player availability latest',
   '"'+away+'" basketball injury report player availability latest',
   '"'+home+'" "'+away+'" '+competition+' basketball match news roster form'
- ].map(value=>value.replace(/\\s+/g," ").trim());
+ ].map(value=>value.replace(/\s+/g," ").trim());
  return [
   '"'+home+'" "'+away+'" '+competition+' football match news latest',
   '"'+home+'" football team news injury availability latest',
   '"'+away+'" football team news injury availability latest'
- ].map(value=>value.replace(/\\s+/g," ").trim());
+ ].map(value=>value.replace(/\s+/g," ").trim());
 }
 
 const decodeEntities = value => String(value || "")
@@ -448,33 +448,3 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const pageResults=await Promise.allSettled(unique.slice(0,12).map(item=>readArticle(item)));
   const pages=pageResults.filter(result=>result.status==='fulfilled'&&result.value).map(result=>result.value);
   const participantCoverage=pages.map(page=>hasParticipantCoverage(page,f));
-  const homePages=pages.filter((page,index)=>participantCoverage[index].home);
-  const awayPages=pages.filter((page,index)=>participantCoverage[index].away);
-  const domains=[...new Set(pages.map(p=>p.domain))];
-  const fullPages=pages.filter(p=>p.contentLevel!=="rss_snippet");
-  const fullArticleCount=fullPages.length;
-  const categoryCounts=Object.fromEntries(["injury_fitness","player_availability","rest_fatigue","team_statistics","roster_lineups","withdrawals_retirements","lineups","suspensions","manager_training","weather_venue","surface_conditions","preview_analysis","form_statistics","official_update"].map(c=>[c,fullPages.filter(p=>(p.categories||[]).includes(c)).length]));
-  const assessment=await summarizeEvidence(f,pages,{groqKey,openrouterKey});
-  const coverage={home:homePages.length>0,away:awayPages.length>0,independentDomains:domains.length,matchSources:pages.length,fullArticleCount,rssSnippetCount:pages.length-fullArticleCount,sourceSearchResults:unique.length,rawSearchResults:rawSearchResultCount,freshSearchResults:freshFound.length,relevantSearchResults:relevantFound.length,rawProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,found.filter(item=>(item.searchProvider||"unknown")===provider).length])),categoryCounts,officialSources:pages.filter(p=>p.sourceTier==="official_league_or_federation").length,injuryReportingFound:categoryCounts.injury_fitness>0,withdrawalReportingFound:categoryCounts.withdrawals_retirements>0,lineupReportingFound:categoryCounts.lineups>0,surfaceReportingFound:categoryCounts.surface_conditions>0,suspensionReportingFound:categoryCounts.suspensions>0,managerOrTrainingReportingFound:categoryCounts.manager_training>0,weatherReportingFound:categoryCounts.weather_venue>0,assessmentAvailable:!assessment?.error&&!!assessment,assessmentConfidence:normalizeResearchConfidence(assessment?.confidence),providerFailures,failedProviderCount:providerFailures.length,searchProviderCounts:Object.fromEntries(["google_news_us","google_news_uk","bing_news","bbc_sport","bbc_football","sky_football","sky_tennis","athletic_football","athletic_nba","cbs_nba","unknown"].map(provider=>[provider,pages.filter(page=>(page.searchProvider||"unknown")===provider).length])),errors,note:"Coverage means related reporting was found, not that a claim is confirmed."};
-  const payload=pages.map(({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider})=>({title,url,date,publishedAt,ageHours,domain,sourceTier,categories,excerpt,searchProvider:searchProvider||"unknown"}));
-  await db.query(`INSERT INTO ash_fixture_research(match_id,researched_at,source_count,independent_domains,sources,assessment,coverage)
-   VALUES($1,now(),$2,$3,$4::jsonb,$5::jsonb,$6::jsonb)
-   ON CONFLICT(match_id) DO UPDATE SET researched_at=now(),source_count=EXCLUDED.source_count,
-   independent_domains=EXCLUDED.independent_domains,sources=EXCLUDED.sources,assessment=EXCLUDED.assessment,
-   coverage=EXCLUDED.coverage,updated_at=now()`,
-   [f.id,payload.length,domains.length,...buildResearchJsonParameters(db,payload,assessment,coverage)]);
-  const tennis=f.sport==="tennis";
-  const basketball=f.sport==="basketball";
-   const sportCoverage=tennis?(categoryCounts.injury_fitness>0||categoryCounts.withdrawals_retirements>0)&&(categoryCounts.form_statistics>0||categoryCounts.preview_analysis>0):basketball?(categoryCounts.injury_fitness>0||categoryCounts.player_availability>0)&&(categoryCounts.lineups>0||categoryCounts.roster_lineups>0)&&(categoryCounts.team_statistics>0||categoryCounts.form_statistics>0):categoryCounts.injury_fitness>0&&categoryCounts.lineups>0;
-  const enoughEvidence=fullArticleCount>=2&&domains.length>=2&&homePages.length>0&&awayPages.length>0&&!assessment?.error&&sportCoverage&&normalizeResearchConfidence(assessment?.confidence)>=60&&!(Array.isArray(assessment?.contradictions)&&assessment.contradictions.length>0);
-  if(!enoughEvidence){
-   const reason="Insufficient verified coverage: require two full article pages, two independent domains, both participants, sport-appropriate availability and form coverage from full articles, and a usable non-conflicting AI assessment";
-   await db.query("UPDATE ash_fixture_research_queue SET status='failed',due_at=now()+interval '6 hours',updated_at=now(),last_error=$2 WHERE match_id=$1",[f.id,reason]);
-   reports.push({matchId:f.id,sources:payload.length,domains:domains.length,coverage,status:"insufficient_evidence",assessmentStatus:assessment?.error?"unavailable":"saved"});
-   continue;
-  }
-  await db.query("UPDATE ash_fixture_research_queue SET status='completed',completed_at=now(),updated_at=now(),last_error=NULL WHERE match_id=$1",[f.id]);
-  reports.push({matchId:f.id,sources:payload.length,domains:domains.length,coverage,status:"researched",assessmentStatus:assessment?.error?"unavailable":"saved"});
- }
- return {claimed:claimed.rowCount,processed:reports.length,completed:reports.filter(report=>report.status==='researched').length,insufficientEvidence:reports.filter(report=>report.status==='insufficient_evidence').length,reports};
-}
