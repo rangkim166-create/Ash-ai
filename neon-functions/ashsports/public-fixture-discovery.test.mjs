@@ -6,8 +6,8 @@ import {
 
 test("builds ESPN scoreboard URLs for exactly one calendar day",()=>{
  const day="20261110";
- assert.match(buildEspnScoreboardUrl("soccer","eng.1",day),/soccer\\/eng\\.1\\/scoreboard\\?dates=20261110$/);
- assert.match(buildEspnTennisScoreboardUrl("atp",day),/tennis\\/atp\\/scoreboard\\?dates=20261110$/);
+ assert.equal(buildEspnScoreboardUrl("soccer","eng.1",day),"https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard?dates=20261110");
+ assert.equal(buildEspnTennisScoreboardUrl("atp",day),"https://site.api.espn.com/apis/site/v2/sports/tennis/atp/scoreboard?dates=20261110");
  assert.throws(()=>buildEspnScoreboardUrl("soccer","eng.1","20261110-20261117"),/YYYYMMDD/);
 });
 test("normalizes only identifiable upcoming real football/basketball events",()=>{
@@ -49,7 +49,7 @@ test("discovery requests one day per scoreboard, deduplicates events and upserts
  const now=new Date("2026-11-10T00:00:00Z"),urls=[],saved=[];
  const fetchImpl=async url=>{
   urls.push(url);
-  assert.match(url,/\\?dates=\\d{8}$/,"no multi-day ESPN ranges");
+  assert.match(new URL(url).searchParams.get("dates"),/^\\d{8}$/,"no multi-day ESPN ranges");
   const date=new URL(url).searchParams.get("dates");
   return {ok:true,status:200,text:async()=>JSON.stringify({events:date==="20261111"?[
    {id:"same-event",date:"2026-11-11T18:00:00Z",competitions:[{competitors:[
