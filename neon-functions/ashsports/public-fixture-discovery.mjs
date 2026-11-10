@@ -8,11 +8,23 @@ const LEAGUES = [
 ];
 const TENNIS_TOURS = [["atp","ATP"],["wta","WTA"]];
 const ymd = date => date.toISOString().slice(0,10).replace(/-/g,"");
-export function buildEspnScoreboardUrl(sport,league,from,to) {
-  return "https://site.api.espn.com/apis/site/v2/sports/"+encodeURIComponent(sport)+"/"+encodeURIComponent(league)+"/scoreboard?dates="+ymd(from)+"-"+ymd(to);
+function calendarDates(from,to) {
+  const dates=[];
+  for(let day=new Date(Date.UTC(from.getUTCFullYear(),from.getUTCMonth(),from.getUTCDate()));
+      day<=to;day=new Date(day.getTime()+86400000)) dates.push(ymd(day));
+  return dates;
 }
-export function buildEspnTennisScoreboardUrl(tour,from,to) {
-  return "https://site.api.espn.com/apis/site/v2/sports/tennis/"+encodeURIComponent(tour)+"/scoreboard?dates="+ymd(from)+"-"+ymd(to);
+// ESPN's Site API rejects multi-day date ranges on several scoreboards.
+// Keep the date parameter to one UTC calendar day per request.
+export function buildEspnScoreboardUrl(sport,league,date) {
+  const day=date instanceof Date?ymd(date):String(date).replace(/-/g,"");
+  if(!/^\\d{8}$/.test(day)) throw new Error("ESPN scoreboard date must be YYYYMMDD");
+  return "https://site.api.espn.com/apis/site/v2/sports/"+encodeURIComponent(sport)+"/"+encodeURIComponent(league)+"/scoreboard?dates="+day;
+}
+export function buildEspnTennisScoreboardUrl(tour,date) {
+  const day=date instanceof Date?ymd(date):String(date).replace(/-/g,"");
+  if(!/^\\d{8}$/.test(day)) throw new Error("ESPN tennis scoreboard date must be YYYYMMDD");
+  return "https://site.api.espn.com/apis/site/v2/sports/tennis/"+encodeURIComponent(tour)+"/scoreboard?dates="+day;
 }
 function withinWindow(startsAt,now) {
   return Number.isFinite(startsAt)&&startsAt>=now.getTime()-12*60*60*1000&&startsAt<=now.getTime()+14*86400000;
@@ -36,11 +48,9 @@ export function normalizeEspnEvents(payload,{sport,league,competition,now=new Da
     const away=competitors.find(x=>x.homeAway==="away")||competitors[1];
     const startsAt=Date.parse(event.date||comp?.date||"");
     if(!event.id||!home?.team?.displayName||!away?.team?.displayName||!withinWindow(startsAt,now))continue;
-    rows.push({
-      id:"espn:"+league+":"+event.id,sport,competition:competition||event?.season?.name||league,
+    rows.push({id:"espn:"+league+":"+event.id,sport,competition:competition||event?.season?.name||league,
       home:home.team.displayName,away:away.team.displayName,startsAt:new Date(startsAt).toISOString(),
-      status:eventStatus(comp?.status?.type||event.status?.type)
-    });
+      status:eventStatus(comp?.status?.type||event.status?.type)});
   }
   return rows;
 }
@@ -51,7 +61,6 @@ export function normalizeEspnTennisEvents(payload,{tour,now=new Date()}={}) {
     const groups=Array.isArray(tournament?.groupings)?tournament.groupings:[];
     for(const group of groups){
       const draw=String(group?.grouping?.displayName||"");
-      // Odds and player-form models are singles-oriented; do not mislabel doubles pairs as individual players.
       if(!/singles/i.test(draw))continue;
       const matches=Array.isArray(group?.competitions)?group.competitions:[];
       for(const match of matches){
@@ -63,56 +72,56 @@ export function normalizeEspnTennisEvents(payload,{tour,now=new Date()}={}) {
         if(!match?.id||!playerOne||!playerTwo||playerOne===playerTwo||!withinWindow(startsAt,now))continue;
         const round=String(match?.round?.displayName||"").trim();
         const tournamentName=String(tournament?.name||tour||"Tennis");
-        rows.push({
-          id:"espn:tennis:"+String(tour||"tour").toLowerCase()+":"+match.id,
-          sport:"tennis",
+        rows.push({id:"espn:tennis:"+String(tour||"tour").toLowerCase()+":"+match.id,sport:"tennis",
           competition:[tournamentName,draw,round].filter(Boolean).join(" · "),
           home:playerOne,away:playerTwo,startsAt:new Date(startsAt).toISOString(),
-          status:eventStatus(match?.status?.type)
-        });
+          status:eventStatus(match?.status?.type)});
       }
     }
   }
   return rows;
 }
-async function fetchScoreboard(entry,{from,to,fetchImpl=fetch,now=new Date()}){
-  const [sport,league,competition]=entry;
-  const response=await fetchImpl(buildEspnScoreboardUrl(sport,league,from,to),{
-    headers:{"accept":"application/json","user-agent":"AshSportsFixtureDiscovery/1.0"},
-    signal:AbortSignal.timeout(12000)
-  });
-  if(!response.ok)throw new Error("ESPN "+league+" HTTP "+response.status);
-  return normalizeEspnEvents(await response.json(),{sport:sport==="soccer"?"football":"basketball",league,competition,now});
+async function getJson(url,fetchImpl) {
+  const response=await fetchImpl(url,{headers:{"accept":"application/json","user-agent":"AshSportsFixtureDiscovery/1.0"},
+    signal:AbortSignal.timeout(12000)});
+  const body=await response.text();
+  if(!response.ok)throw new Error("ESPN HTTP "+response.status+" "+body.replace(/\\s+/g," ").slice(0,140));
+  try{return JSON.parse(body);}catch{throw new Error("ESPN returned invalid JSON: "+body.replace(/\\s+/g," ").slice(0,140));}
 }
-async function fetchTennisScoreboard(entry,{from,to,fetchImpl=fetch,now=new Date()}){
-  const [tour,label]=entry;
-  const response=await fetchImpl(buildEspnTennisScoreboardUrl(tour,from,to),{
-    headers:{"accept":"application/json","user-agent":"AshSportsFixtureDiscovery/1.0"},
-    signal:AbortSignal.timeout(12000)
-  });
-  if(!response.ok)throw new Error("ESPN tennis "+tour+" HTTP "+response.status);
-  return normalizeEspnTennisEvents(await response.json(),{tour:label,now});
+async function fetchLeagueDays(entry,{dates,fetchImpl,now}) {
+  const [sport,league,competition]=entry,rows=[];
+  for(const date of dates) {
+    const payload=await getJson(buildEspnScoreboardUrl(sport,league,date),fetchImpl);
+    rows.push(...normalizeEspnEvents(payload,{sport:sport==="soccer"?"football":"basketball",league,competition,now}));
+  }
+  return [...new Map(rows.map(row=>[row.id,row])).values()];
 }
-export async function discoverPublicFixtures(db,{now=new Date(),fetchImpl=fetch,leagues=LEAGUES,tennisTours=TENNIS_TOURS,concurrency=4}={}){
+async function fetchTennisDays(entry,{dates,fetchImpl,now}) {
+  const [tour,label]=entry,rows=[];
+  for(const date of dates) {
+    const payload=await getJson(buildEspnTennisScoreboardUrl(tour,date),fetchImpl);
+    rows.push(...normalizeEspnTennisEvents(payload,{tour:label,now}));
+  }
+  return [...new Map(rows.map(row=>[row.id,row])).values()];
+}
+export async function discoverPublicFixtures(db,{now=new Date(),fetchImpl=fetch,leagues=LEAGUES,tennisTours=TENNIS_TOURS,concurrency=4}={}) {
   const from=new Date(now.getTime()-12*60*60*1000),to=new Date(now.getTime()+14*86400000);
-  const results=[],errors=[];
-  const width=Math.max(1,Math.min(6,concurrency));
-  for(let offset=0;offset<leagues.length;offset+=width){
-    const batch=await Promise.allSettled(leagues.slice(offset,offset+width).map(entry=>fetchScoreboard(entry,{from,to,fetchImpl,now})));
-    for(let i=0;i<batch.length;i++){
-      const result=batch[i],entry=leagues[offset+i];
+  const dates=calendarDates(from,to),jobs=[
+    ...leagues.map(entry=>({label:entry[1],run:()=>fetchLeagueDays(entry,{dates,fetchImpl,now})})),
+    ...tennisTours.map(entry=>({label:"tennis:"+entry[0],run:()=>fetchTennisDays(entry,{dates,fetchImpl,now})}))
+  ];
+  const results=[],errors=[],width=Math.max(1,Math.min(6,concurrency));
+  for(let offset=0;offset<jobs.length;offset+=width) {
+    const batch=await Promise.allSettled(jobs.slice(offset,offset+width).map(job=>job.run()));
+    for(let i=0;i<batch.length;i++) {
+      const result=batch[i],job=jobs[offset+i];
       if(result.status==="fulfilled")results.push(...result.value);
-      else errors.push({league:entry[1],error:String(result.reason?.message||result.reason).slice(0,180)});
+      else errors.push({league:job.label,error:String(result.reason?.message||result.reason).slice(0,180)});
     }
   }
-  const tennisResults=await Promise.allSettled(tennisTours.map(entry=>fetchTennisScoreboard(entry,{from,to,fetchImpl,now})));
-  for(let i=0;i<tennisResults.length;i++){
-    const result=tennisResults[i],entry=tennisTours[i];
-    if(result.status==="fulfilled")results.push(...result.value);
-    else errors.push({league:"tennis:"+entry[0],error:String(result.reason?.message||result.reason).slice(0,180)});
-  }
+  const unique=[...new Map(results.map(row=>[row.id,row])).values()];
   let inserted=0;
-  for(const fixture of results){
+  for(const fixture of unique) {
     const saved=await db.query(`INSERT INTO sports_matches(id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source,source_updated_at,updated_at)
       VALUES($1,$2,$3,$4,$5,$6::timestamptz,$7,'espn_public_schedule',now(),now())
       ON CONFLICT(id) DO UPDATE SET competition=EXCLUDED.competition,home_or_player_one=EXCLUDED.home_or_player_one,
@@ -121,5 +130,6 @@ export async function discoverPublicFixtures(db,{now=new Date(),fetchImpl=fetch,
       RETURNING id`,[fixture.id,fixture.sport,fixture.competition,fixture.home,fixture.away,fixture.startsAt,fixture.status]);
     inserted+=saved.rowCount;
   }
-  return {provider:"ESPN public scoreboard",eventsFound:results.length,fixturesUpserted:inserted,leaguesAttempted:leagues.length,tennisToursAttempted:tennisTours.length,errors};
+  return {provider:"ESPN public scoreboard",eventsFound:unique.length,fixturesUpserted:inserted,
+    leaguesAttempted:leagues.length,tennisToursAttempted:tennisTours.length,datesRequested:dates.length,errors};
 }
