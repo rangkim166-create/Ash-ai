@@ -118,14 +118,27 @@ export async function runFixtureResultNotifications(db, telegram, {now=new Date(
     UNIQUE(match_id,kind,fingerprint)
   )`);
   const from = new Date(now.getTime()-48*60*60*1000), to = now;
+  // ESPN Site API no longer reliably accepts YYYYMMDD-YYYYMMDD ranges.
+  // Fetch each calendar day separately and deduplicate event IDs.
+  const dates=[];
+  for (let day=new Date(Date.UTC(from.getUTCFullYear(),from.getUTCMonth(),from.getUTCDate()));
+       day<=to; day=new Date(day.getTime()+24*60*60*1000)) dates.push(ymd(day));
   const jobs = [
     ...LEAGUES.map(([sport,league,name]) => async () => {
-      const url = "https://site.api.espn.com/apis/site/v2/sports/"+sport+"/"+league+"/scoreboard?dates="+ymd(from)+"-"+ymd(to);
-      return rowsFromStandard(await getJson(url,fetchImpl),league,sport==="soccer"?"football":"basketball",name);
+      const rows=[];
+      for (const date of dates) {
+        const url = "https://site.api.espn.com/apis/site/v2/sports/"+sport+"/"+league+"/scoreboard?dates="+date;
+        rows.push(...rowsFromStandard(await getJson(url,fetchImpl),league,sport==="soccer"?"football":"basketball",name));
+      }
+      return [...new Map(rows.map(row=>[row.id,row])).values()];
     }),
     ...TENNIS.map(([tour]) => async () => {
-      const url = "https://site.api.espn.com/apis/site/v2/sports/tennis/"+tour+"/scoreboard?dates="+ymd(from)+"-"+ymd(to);
-      return rowsFromTennis(await getJson(url,fetchImpl),tour);
+      const rows=[];
+      for (const date of dates) {
+        const url = "https://site.api.espn.com/apis/site/v2/sports/tennis/"+tour+"/scoreboard?dates="+date;
+        rows.push(...rowsFromTennis(await getJson(url,fetchImpl),tour));
+      }
+      return [...new Map(rows.map(row=>[row.id,row])).values()];
     })
   ];
   const results=[], errors=[];
