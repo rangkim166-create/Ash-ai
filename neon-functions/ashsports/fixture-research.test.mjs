@@ -216,3 +216,17 @@ test("exposes structured search and curated feed failures in research coverage",
   {provider:"sky_football",error:"no parseable RSS entries"}
  ]);
 });
+
+import { buildFixtureFallbackQueries } from "./fixture-research.mjs";
+test("builds compact participant-first fallback searches for every real sport",()=>{
+ const football=buildFixtureFallbackQueries({sport:"football",home:"Vipers SC",away:"KCCA FC",competition:"Uganda Premier League"});
+ const tennis=buildFixtureFallbackQueries({sport:"tennis",home:"Jannik Sinner",away:"Alexander Zverev",competition:"ATP Finals"});
+ const basketball=buildFixtureFallbackQueries({sport:"basketball",home:"Boston Celtics",away:"Los Angeles Lakers",competition:"NBA"});
+ assert.equal(football.length,3);
+ assert.ok(football[0].includes('"Vipers SC"')&&football[0].includes('"KCCA FC"'));
+ assert.ok(football[1].includes("injury availability"));
+ assert.ok(tennis.every(query=>query.includes("tennis")));
+ assert.ok(tennis.some(query=>query.includes("withdrawal retirement")));
+ assert.ok(basketball.every(query=>query.includes("basketball")));
+ assert.ok(basketball.some(query=>query.includes("injury report")));
+});
