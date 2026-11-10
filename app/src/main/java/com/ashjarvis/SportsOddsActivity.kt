@@ -363,10 +363,10 @@ class SportsOddsActivity : Activity() {
                         }
                     }
                 }
-                status.text = "Your saved scouting signals • \${signals.length()} total"
+                status.text = "Your saved scouting signals • ${signals.length()} total"
             } catch (e: Exception) {
                 if (currentTab == "scout") {
-                    body.addView(text("Could not load your scouting signals: \${(e.message ?: "network error").take(150)}", 12f, muted)
+                    body.addView(text("Could not load your scouting signals: ${(e.message ?: "network error").take(150)}", 12f, muted)
                         .apply { setPadding(12, 14, 12, 14) })
                     status.text = "Scout feed unavailable • check connection"
                 }
