@@ -241,10 +241,48 @@ class SportsOddsActivity : Activity() {
             private fun showScout() {
         card("YOUR MATCH SCOUTING SIGNALS",
             "Tell Ash what you think about a team or player. Your view becomes a research lead: Ash checks form, availability, lineups, tactics and opposing evidence. It never forces a bet.") {}
+        val backend = ScoutSignalsClient.backendUrl(this)
+        if (backend.isBlank()) {
+            card("CONNECT ASH SPORTS BACKEND",
+                "The scouting API must be deployed first. Enter its real HTTPS base URL here; Ash will not guess a server address.") {}
+            body.addView(button("CONFIGURE BACKEND URL") { showScoutBackendDialog() })
+            status.text = "Scouting backend not connected"
+            return
+        }
         body.addView(button("ADD MY MATCH VIEW") { showScoutDialog() })
         body.addView(button("REFRESH MY SIGNALS") { render() })
+        body.addView(button("CHANGE BACKEND URL") { showScoutBackendDialog() })
         status.text = "Your scouting notes are saved to this device's private feed"
         loadScoutSignals()
+    }
+
+    private fun showScoutBackendDialog() {
+        val field = EditText(this).apply {
+            hint = "https://your-deployed-ash-sports-api.example"
+            setText(ScoutSignalsClient.backendUrl(this@SportsOddsActivity))
+            isSingleLine = true
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Ash Sports API URL")
+            .setMessage("Paste the HTTPS base URL of the deployed Neon Function service. Do not include /v1/public/scout/signals.")
+            .setView(field)
+            .setNegativeButton("CANCEL", null)
+            .setPositiveButton("SAVE", null)
+            .create().also { dialog ->
+                dialog.setOnShowListener {
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                        try {
+                            ScoutSignalsClient.saveBackendUrl(this, field.text.toString())
+                            dialog.dismiss()
+                            render()
+                        } catch (e: Exception) {
+                            field.error = e.message ?: "Invalid HTTPS URL"
+                        }
+                    }
+                }
+                dialog.show()
+            }
     }
 
     private fun showScoutDialog() {
