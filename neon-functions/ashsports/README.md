@@ -102,3 +102,8 @@ Authenticated endpoint `POST /v1/scout/signals` accepts:
 Supported opinions are `win`, `lose`, `not_win`, `draw`, `upset`, and `avoid`. A matching upcoming fixture is linked immediately and re-queued for research. If no fixture is currently indexed, the team signal is retained and attached when a matching upcoming fixture is later discovered. Use `GET /v1/scout/signals` to review saved signals.
 
 A scouting signal is a research instruction, not a prediction override. It adds targeted searches for contrary views, draw/upset risk, form, injuries, lineups, suspensions and tactical context. It cannot force a pick and does not bypass current odds, evidence, freshness or value checks. This makes the user's football knowledge visible to the research process instead of silently ignoring it.
+
+
+## Independent fixture discovery (new)
+
+Before scheduled research and daily publishing, Ash now queries ESPN's public scoreboard endpoints independently of bookmaker odds for major football competitions (England, Spain, Germany, Italy, France, UEFA Champions/Europa League, MLS, Mexico, Brazil and Argentina) plus the NBA. It normalizes only events with an explicit event ID, both participants and a valid kickoff timestamp, then upserts them into `sports_matches` as `source='espn_public_schedule'`. These fixtures enter the same evidence-research queue even when no odds are listed yet. This source does not invent prices: odds-based picks still require verified bookmaker prices. Coverage depends on ESPN's public scoreboard availability and supported competitions; it is an additional discovery source, not an exhaustive worldwide fixture database.
