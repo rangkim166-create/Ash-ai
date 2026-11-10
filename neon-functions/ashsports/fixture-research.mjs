@@ -370,6 +370,8 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const fixtureResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at,status FROM sports_matches WHERE id=$1",[row.match_id]);
   if(!fixtureResult.rowCount){await db.query("DELETE FROM ash_fixture_research_queue WHERE match_id=$1",[row.match_id]);continue;}
   const f=fixtureResult.rows[0],home=f.home,away=f.away,competition=f.competition;
+  // Attach team-only scouting notes once a fixture feed later discovers the matching event.
+  await db.query("UPDATE ash_user_scout_signals SET match_id=$1,updated_at=now() WHERE match_id IS NULL AND sport=$2 AND (LOWER(team)=LOWER($3) OR LOWER(team)=LOWER($4))",[f.id,f.sport,home,away]).catch(()=>{});
   const queries=buildFixtureQueries(f);
   // User scouting opinions are stored as first-class research signals. They add targeted searches;
   // they never force a selection or override the evidence/market checks.
