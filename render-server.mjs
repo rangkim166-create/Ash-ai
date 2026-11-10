@@ -159,4 +159,21 @@ server.listen(port, "0.0.0.0", () => {
   };
   setTimeout(() => void runResultsTracker(), 90000);
   setInterval(() => void runResultsTracker(), 10 * 60 * 1000).unref();
+  let fixtureTelegramRunning = false;
+  const runFixtureTelegramUpdates = async () => {
+    if (fixtureTelegramRunning) return;
+    fixtureTelegramRunning = true;
+    try {
+      const result = await handler.runFixtureResultNotifications();
+      if (result.fixturesUpdated || result.delivery?.sent || result.delivery?.failed || result.errors?.length) {
+        console.log("[ash-fixture-telegram] result", JSON.stringify(result));
+      }
+    } catch (error) {
+      console.error("[ash-fixture-telegram] run failed", String(error.message || error).slice(0, 220));
+    } finally {
+      fixtureTelegramRunning = false;
+    }
+  };
+  setTimeout(() => void runFixtureTelegramUpdates(), 110000);
+  setInterval(() => void runFixtureTelegramUpdates(), 10 * 60 * 1000).unref();
 });
