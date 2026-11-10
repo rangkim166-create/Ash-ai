@@ -466,19 +466,19 @@ if(p==="/v1/public/scout/signals"&&(req.method==="GET"||req.method==="POST")){
  const deviceId=String(req.headers.get("x-ash-device-id")||"").trim();
  if(deviceId.length<16||deviceId.length>100||!/^[A-Za-z0-9-]+$/.test(deviceId))return reply({error:"device_identity_required"},400);
  const ownerKey=createHash("sha256").update(deviceId).digest("hex");
- await db.query(\`CREATE TABLE IF NOT EXISTS ash_user_scout_signals(
+ await db.query(`CREATE TABLE IF NOT EXISTS ash_user_scout_signals(
   id bigserial PRIMARY KEY,match_id text REFERENCES sports_matches(id) ON DELETE SET NULL,
   sport text NOT NULL,team text NOT NULL,normalized_team text NOT NULL,opinion text NOT NULL,
   reason text NOT NULL DEFAULT '',status text NOT NULL DEFAULT 'active',owner_key text NOT NULL DEFAULT 'legacy',
   created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now()
- )\`);
+ )`);
  await db.query("ALTER TABLE ash_user_scout_signals ADD COLUMN IF NOT EXISTS owner_key text NOT NULL DEFAULT 'legacy'");
  await db.query("CREATE INDEX IF NOT EXISTS ash_user_scout_signals_owner_idx ON ash_user_scout_signals(owner_key,created_at DESC)");
  if(req.method==="GET"){
-  const rows=await db.query(\`SELECT s.id,s.sport,s.team,s.opinion,s.reason,s.status,s.created_at,
+  const rows=await db.query(`SELECT s.id,s.sport,s.team,s.opinion,s.reason,s.status,s.created_at,
    m.id AS fixture_id,m.competition,m.home_or_player_one AS home,m.away_or_player_two AS away,m.starts_at
    FROM ash_user_scout_signals s LEFT JOIN sports_matches m ON m.id=s.match_id
-   WHERE s.owner_key=$1 ORDER BY s.created_at DESC LIMIT 50\`,[ownerKey]);
+   WHERE s.owner_key=$1 ORDER BY s.created_at DESC LIMIT 50`,[ownerKey]);
   return reply({signals:rows.rows});
  }
  const body=await req.json().catch(()=>({}));
