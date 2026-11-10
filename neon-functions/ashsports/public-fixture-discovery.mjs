@@ -18,12 +18,12 @@ function calendarDates(from,to) {
 // Keep the date parameter to one UTC calendar day per request.
 export function buildEspnScoreboardUrl(sport,league,date) {
   const day=date instanceof Date?ymd(date):String(date).replace(/-/g,"");
-  if(!/^\\d{8}$/.test(day)) throw new Error("ESPN scoreboard date must be YYYYMMDD");
+  if(!/^[0-9]{8}$/.test(day)) throw new Error("ESPN scoreboard date must be YYYYMMDD");
   return "https://site.api.espn.com/apis/site/v2/sports/"+encodeURIComponent(sport)+"/"+encodeURIComponent(league)+"/scoreboard?dates="+day;
 }
 export function buildEspnTennisScoreboardUrl(tour,date) {
   const day=date instanceof Date?ymd(date):String(date).replace(/-/g,"");
-  if(!/^\\d{8}$/.test(day)) throw new Error("ESPN tennis scoreboard date must be YYYYMMDD");
+  if(!/^[0-9]{8}$/.test(day)) throw new Error("ESPN tennis scoreboard date must be YYYYMMDD");
   return "https://site.api.espn.com/apis/site/v2/sports/tennis/"+encodeURIComponent(tour)+"/scoreboard?dates="+day;
 }
 function withinWindow(startsAt,now) {
@@ -85,8 +85,8 @@ async function getJson(url,fetchImpl) {
   const response=await fetchImpl(url,{headers:{"accept":"application/json","user-agent":"AshSportsFixtureDiscovery/1.0"},
     signal:AbortSignal.timeout(12000)});
   const body=await response.text();
-  if(!response.ok)throw new Error("ESPN HTTP "+response.status+" "+body.replace(/\\s+/g," ").slice(0,140));
-  try{return JSON.parse(body);}catch{throw new Error("ESPN returned invalid JSON: "+body.replace(/\\s+/g," ").slice(0,140));}
+  if(!response.ok)throw new Error("ESPN HTTP "+response.status+" "+body.replace(/\s+/g," ").slice(0,140));
+  try{return JSON.parse(body);}catch{throw new Error("ESPN returned invalid JSON: "+body.replace(/\s+/g," ").slice(0,140));}
 }
 async function fetchLeagueDays(entry,{dates,fetchImpl,now}) {
   const [sport,league,competition]=entry,rows=[];
