@@ -192,7 +192,7 @@ export function buildNewsSearchProviders(query){
   {name:"bing_news",url:"https://www.bing.com/news/search?q="+encoded+"&format=rss"}
  ];
 }
-export export function buildCuratedSportsFeeds(sport="football"){
+export function buildCuratedSportsFeeds(sport="football"){
  const common=[{name:"bbc_sport",url:"https://feeds.bbci.co.uk/sport/rss.xml"}];
  const normalized=String(sport||"football").toLowerCase();
  if(normalized==="basketball")return [...common,
