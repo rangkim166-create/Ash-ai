@@ -1,7 +1,7 @@
 import { discoverPublicFixtures } from "./public-fixture-discovery.mjs";
 import { validateScoutSignal } from "./scout-signals.mjs";
 import postgres from "postgres";
-import { formatDailyPicks, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
+import { formatDailyPicks, formatDailyScreeningSummary, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
 import { enqueueFixtureResearch, processFixtureResearch, ensureFixtureResearchTables } from "./fixture-research.mjs";
@@ -406,6 +406,7 @@ async function runScheduledDailyPublisher(){
   const ratingMetaResult=await db.query("SELECT match_counts,generated_at FROM historical_ratings_meta WHERE source='ash_elo_baseline'");
   const ratingMatchCounts=ratingMetaResult.rowCount?(ratingMetaResult.rows[0].match_counts||{}):{};
   const picks=selectDailyPicks(fixtures,oddsResult.rows,formResult.rows,{now:new Date(),maxPicks:3,ratings,ratingMatchCounts});
+  const screenedCandidateCount=picks.length;
   await ensureFixtureResearchTables(db);
   const availabilityRows=picks.length?await db.query("SELECT match_id,researched_at,source_count,independent_domains,sources,assessment,coverage FROM ash_fixture_research WHERE match_id=ANY($1::text[]) AND researched_at>now()-interval '24 hours'",[picks.map(p=>String(p.id))]):{rows:[]};
   const availabilityByMatch=new Map(availabilityRows.rows.map(row=>[String(row.match_id),row]));
@@ -428,6 +429,12 @@ async function runScheduledDailyPublisher(){
    if(approved)researchedPicks.push(pick);
    else console.log("[ash-daily-pick-held]",JSON.stringify({match:pick.home_team+" vs "+pick.away_team,reason:availabilityApproved?"strict_web_evidence_gate":"availability_injury_lineup_evidence_missing_or_stale",availabilityGate:pick.availability_research_gate,quality,decision:analysis.decision||"missing",confidence:analysis.confidence||0}));
   }
+  const screeningSummary=formatDailyScreeningSummary({
+   candidateCount:screenedCandidateCount,
+   availabilityBlocked:screenedCandidateCount-availabilityQualified.length,
+   expertBlocked:availabilityQualified.length-researchedPicks.length,
+   qualifiedCount:researchedPicks.length
+  });
   picks.splice(0,picks.length,...researchedPicks);
   const dayLabel=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",day:"2-digit",month:"short",year:"numeric"}).format(new Date());
   const sportOrder=["football","basketball","tennis"];
@@ -437,9 +444,9 @@ async function runScheduledDailyPublisher(){
   const orderedKeys=[...sportOrder.filter(key=>groups.has(key)),...([...groups.keys()].filter(key=>!sportOrder.includes(key)).sort())];
   const messages=orderedKeys.map(key=>{
    const label=sportLabels[key]||("🏆 "+key.toUpperCase());
-   return label+"\\n"+formatDailyPicks(dayLabel,groups.get(key));
+   return label+"\\n"+screeningSummary+"\\n\\n"+formatDailyPicks(dayLabel,groups.get(key));
   });
-  const message=messages.length?messages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n"):"ASH • ODDS OF THE DAY — "+dayLabel+"\\n\\nNo selection passed today's checks. NO BET.";
+  const message=messages.length?messages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n"):"ASH • ODDS OF THE DAY — "+dayLabel+"\\n\\n"+screeningSummary+"\\n\\nNo selection passed all checks. NO BET.";
   // Persist the complete grouped publication before delivery.
   await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,picks.length,message.slice(0,500),message,JSON.stringify(picks)]);
   await savePublishedTips(localDay,picks);
