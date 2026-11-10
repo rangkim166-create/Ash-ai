@@ -130,17 +130,20 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
     if (!hasRecentForm && !hasRatings) continue;
 
     const markets = summarizeBookmakerMarkets(books, fixture, sport);
-    for (const side of ["home", "away"]) {
-      const selection = side === "home" ? home : away;
-      const selectedForm = side === "home" ? homeForm : awayForm;
-      const opponentForm = side === "home" ? awayForm : homeForm;
-      const selectedRating = side === "home" ? homeRating : awayRating;
-      const opponentRating = side === "home" ? awayRating : homeRating;
-      const formEdge = hasRecentForm ? selectedForm.score - opponentForm.score : 0;
-      const ratingDelta = hasRatings ? selectedRating - opponentRating : null;
-      const eloProbability = hasRatings ? 1 / (1 + Math.pow(10, -ratingDelta / 400)) : null;
-      const signal = Math.max(hasRecentForm ? formEdge : 0, hasRatings ? eloProbability - 0.5 : 0);
-      if (signal < 0.06) continue;
+    for (const side of ["home", "draw", "away"]) {
+      const selection = side === "home" ? home : side === "away" ? away : "Draw";
+      const selectedForm = side === "away" ? awayForm : homeForm;
+      const opponentForm = side === "away" ? homeForm : awayForm;
+      const selectedRating = side === "home" ? homeRating : side === "away" ? awayRating : null;
+      const opponentRating = side === "home" ? awayRating : side === "away" ? homeRating : null;
+      const drawRate = hasRecentForm ? (homeForm.draws / homeForm.played + awayForm.draws / awayForm.played) / 2 : 0;
+      const formEdge = side === "draw" ? drawRate - 0.20 : hasRecentForm ? selectedForm.score - opponentForm.score : 0;
+      const ratingDelta = hasRatings && side !== "draw" ? selectedRating - opponentRating : null;
+      const eloProbability = ratingDelta !== null ? 1 / (1 + Math.pow(10, -ratingDelta / 400)) : null;
+      const signal = side === "draw"
+        ? (hasRecentForm ? Math.max(0, formEdge) : 0)
+        : Math.max(hasRecentForm ? formEdge : 0, hasRatings ? eloProbability - 0.5 : 0);
+      if (signal < (side === "draw" ? 0.03 : 0.06)) continue;
 
       const supported = markets.filter(market => market.probabilities[side] != null);
       if (!supported.length) continue;
@@ -159,8 +162,8 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       if (marketDisagreement > 0.08) continue;
 
       const formAdjustment = hasRecentForm ? clamp(formEdge * 0.12, -0.06, 0.06) : 0;
-      const eloAdjustment = hasRatings ? clamp((eloProbability - 0.5) * 0.20, -0.07, 0.07) : 0;
-      const adjustment = hasRecentForm && hasRatings
+      const eloAdjustment = hasRatings && side !== "draw" ? clamp((eloProbability - 0.5) * 0.20, -0.07, 0.07) : 0;
+      const adjustment = side === "draw" ? formAdjustment : hasRecentForm && hasRatings
         ? formAdjustment * 0.55 + eloAdjustment * 0.45
         : hasRecentForm ? formAdjustment : eloAdjustment;
       const estimatedProbability = clamp(marketProbability + adjustment, 0.02, 0.95);
@@ -179,7 +182,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
       const evidenceIndex = Math.max(0, Math.min(100,
         bookmakerCount * 7 + depth * 2 + Math.round(signal * 35) -
         Math.round(marketDisagreement * 100) - riskPenalty));
-      const edgeType = hasRecentForm && hasRatings ? "hybrid_elo_form"
+      const edgeType = side === "draw" ? "draw_form" : hasRecentForm && hasRatings ? "hybrid_elo_form"
         : hasRecentForm ? "recent_form" : "elo_rating";
       const reasonParts = [
         bookmakerCount + " independent bookmaker prices",
@@ -187,8 +190,9 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
         "Ash estimate " + (estimatedProbability * 100).toFixed(1) + "%",
         "value edge " + (valueEdge * 100).toFixed(1) + " percentage points"
       ];
-      if (hasRecentForm) reasonParts.push("recent form " + selectedForm.wins + "W-" + selectedForm.draws + "D-" + selectedForm.losses + "L vs " + opponentForm.wins + "W-" + opponentForm.draws + "D-" + opponentForm.losses + "L");
-      if (hasRatings) reasonParts.push("Elo difference " + Math.round(ratingDelta) + " points from " + historyCount.toLocaleString("en-US") + " archived matches");
+      if (side === "draw" && hasRecentForm) reasonParts.push("draw rates " + (homeForm.draws / homeForm.played * 100).toFixed(0) + "% home side / " + (awayForm.draws / awayForm.played * 100).toFixed(0) + "% away side");
+      else if (hasRecentForm) reasonParts.push("recent form " + selectedForm.wins + "W-" + selectedForm.draws + "D-" + selectedForm.losses + "L vs " + opponentForm.wins + "W-" + opponentForm.draws + "D-" + opponentForm.losses + "L");
+      if (hasRatings && side !== "draw") reasonParts.push("Elo difference " + Math.round(ratingDelta) + " points from " + historyCount.toLocaleString("en-US") + " archived matches");
       reasonParts.push("screening estimate only; lineups, injuries and late tactical changes may be unknown");
 
       ranked.push({
@@ -208,7 +212,7 @@ export function selectDailyPicks(fixtures, oddsRows, formRows, options = {}) {
         home_form_count: homeForm.played, away_form_count: awayForm.played,
         edge_type: edgeType,
         ...(hasRecentForm ? { form_edge_pct: Number((formEdge * 100).toFixed(1)) } : {}),
-        ...(hasRatings ? {
+        ...(hasRatings && side !== "draw" ? {
           home_rating: Number(homeRating.toFixed(1)), away_rating: Number(awayRating.toFixed(1)),
           rating_edge_points: Math.round(ratingDelta), historical_match_count: historyCount
         } : {}),

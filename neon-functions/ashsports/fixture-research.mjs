@@ -1,3 +1,4 @@
+import { buildScoutResearchQueries } from "./scout-signals.mjs";
 const timeout=(ms)=>AbortSignal.timeout(ms);
 
 const OFFICIAL_SPORTS_DOMAINS = new Set(["fifa.com","uefa.com","the-afc.com","cafonline.com","premierleague.com","laliga.com","bundesliga.com","legaseriea.it","ligue1.com","nba.com","euroleaguebasketball.net","fiba.basketball","atptour.com","wtatennis.com"]);
@@ -369,14 +370,24 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
   const fixtureResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at,status FROM sports_matches WHERE id=$1",[row.match_id]);
   if(!fixtureResult.rowCount){await db.query("DELETE FROM ash_fixture_research_queue WHERE match_id=$1",[row.match_id]);continue;}
   const f=fixtureResult.rows[0],home=f.home,away=f.away,competition=f.competition;
+  // Attach team-only scouting notes once a fixture feed later discovers the matching event.
+  await db.query("UPDATE ash_user_scout_signals SET match_id=$1,updated_at=now() WHERE match_id IS NULL AND sport=$2 AND (LOWER(team)=LOWER($3) OR LOWER(team)=LOWER($4))",[f.id,f.sport,home,away]).catch(()=>{});
   const queries=buildFixtureQueries(f);
+  // User scouting opinions are stored as first-class research signals. They add targeted searches;
+  // they never force a selection or override the evidence/market checks.
+  const scoutSignals=await db.query("SELECT team,opinion,reason,sport FROM ash_user_scout_signals WHERE match_id=$1 AND status='active' ORDER BY created_at DESC LIMIT 8",[f.id]).catch(()=>({rows:[]}));
+  for(const signal of scoutSignals.rows){
+   const opponent=String(signal.team||"").toLowerCase()===String(f.home||"").toLowerCase()?f.away:f.home;
+   queries.push(...buildScoutResearchQueries(signal,opponent,f.competition));
+  }
+  const uniqueQueries=[...new Set(queries)].slice(0,22);
   const found=[],errors=[],searchProviderFailures=[],curatedFeedFailures=[];
   const curatedPromise=searchCuratedSportsFeeds(f.sport).catch(error=>({items:[],errors:[String(error?.message||error).slice(0,120)]}));
   // Keep outbound traffic bounded: 14 queries × 3 providers at once was
   // causing transient fetch failures and starving fixture-specific discovery.
   const searchResults=[];
-  for(let offset=0;offset<queries.length;offset+=3){
-   const batch=await Promise.allSettled(queries.slice(offset,offset+3).map(q=>search(q)));
+  for(let offset=0;offset<uniqueQueries.length;offset+=3){
+   const batch=await Promise.allSettled(uniqueQueries.slice(offset,offset+3).map(q=>search(q)));
    searchResults.push(...batch);
   }
   const curatedResults=await curatedPromise;

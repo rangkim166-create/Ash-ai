@@ -91,3 +91,31 @@ The scraper is a conservative generic first stage, not a guaranteed adapter for 
 ## Expanded fixture intelligence research
 
 Ash searches public reporting for match previews, home/away injuries and fitness, doubtful or ruled-out players, confirmed or predicted lineups, suspensions, manager/coach press conferences, training and squad updates, weather/venue conditions, form and head-to-head. Sources are saved with URL, publisher, publication date and category tags. Coverage tags indicate related reporting was found, not that a claim is confirmed. Research refreshes every 15 minutes. Public coverage is not exhaustive; paywalls, publisher restrictions and unindexed pages remain unavailable. Unknown player availability and lineups must stay unknown.
+
+
+## User scouting signals (new)
+
+Authenticated endpoint `POST /v1/scout/signals` accepts:
+```json
+{"sport":"football","team":"Chelsea","opinion":"not_win","reason":"I expect them not to win"}
+```
+Supported opinions are `win`, `lose`, `not_win`, `draw`, `upset`, and `avoid`. A matching upcoming fixture is linked immediately and re-queued for research. If no fixture is currently indexed, the team signal is retained and attached when a matching upcoming fixture is later discovered. Use `GET /v1/scout/signals` to review saved signals.
+
+A scouting signal is a research instruction, not a prediction override. It adds targeted searches for contrary views, draw/upset risk, form, injuries, lineups, suspensions and tactical context. It cannot force a pick and does not bypass current odds, evidence, freshness or value checks. This makes the user's football knowledge visible to the research process instead of silently ignoring it.
+
+
+## Independent fixture discovery (new)
+
+Before scheduled research and daily publishing, Ash queries ESPN's public scoreboard endpoints independently of bookmaker odds for major football competitions (England, Spain, Germany, Italy, France, UEFA Champions/Europa League, MLS, Mexico, Brazil and Argentina), NBA, and ATP/WTA tennis. Tennis fixtures are read from ESPN's nested tournament → draw → singles match structure; doubles are excluded from the current singles-oriented odds workflow. It normalizes only events with a stable event ID, both named participants and a valid start timestamp, then upserts them into `sports_matches` as `source='espn_public_schedule'`. These fixtures enter the same evidence-research queue even when no odds are listed yet. This source does not invent prices: odds-based picks still require verified bookmaker prices. Coverage depends on ESPN's public scoreboard availability and supported competitions; it is an additional discovery source, not an exhaustive worldwide fixture database.
+
+
+## Android scouting signals
+
+The production Android SCOUT client uses the verified Render service base URL `https://ash-sports-api.onrender.com` by default. The Render web service `ash-sports-api` tracks the `ash-neon-backend` branch and runs `render-server.mjs`, which imports this same `index.mjs` handler. A custom HTTPS base URL can still be entered in the app if the service address changes. The app appends `/v1/public/scout/signals`; do not include a route suffix.
+
+The same endpoint can also be hosted as an optional Neon Function, but that is not required for the Render deployment:
+
+- `GET /v1/public/scout/signals`
+- `POST /v1/public/scout/signals`
+
+Requests send an app-generated random `X-Ash-Device-Id`. The server stores only a SHA-256 digest as the owner key and returns only signals belonging to that device ID. This is device-scoped access, not account authentication; keep the app installation/device secure. No server admin token is embedded in the APK. Each device is limited to 30 saved signal rows per 24 hours. The client allows up to 65 seconds for a request to accommodate Render free-instance cold starts. Supported sports are football, basketball and tennis; supported views are win, lose, not-win, draw, upset and avoid. Signals add research queries and never force a pick or bypass odds/evidence checks.

@@ -65,6 +65,16 @@ test("requires a complete three-way football market including the draw", () => {
   assert.equal(picks.length, 0);
 });
 
+test("can select the draw when both football sides show elevated recent draw rates", () => {
+  const drawRows = odds().map(row => row.outcome_name === "Draw" ? { ...row, decimal_odds: 4.8 } : row);
+  const picks = selectDailyPicks([fixture], drawRows,
+    [...form("Arsenal", 0, 6, 4), ...form("Leicester", 0, 6, 4)], { now });
+  assert.equal(picks.length, 1);
+  assert.equal(picks[0].selection, "Draw");
+  assert.equal(picks[0].edge_type, "draw_form");
+  assert.match(picks[0].reason, /draw rates 60% home side \/ 60% away side/);
+});
+
 test("does not publish a forced pick when no selection passes", () => {
   const message = formatDailyPicks("31 Oct 2026", []);
   assert.match(message, /No selection passed/);
