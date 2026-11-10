@@ -107,3 +107,13 @@ A scouting signal is a research instruction, not a prediction override. It adds 
 ## Independent fixture discovery (new)
 
 Before scheduled research and daily publishing, Ash now queries ESPN's public scoreboard endpoints independently of bookmaker odds for major football competitions (England, Spain, Germany, Italy, France, UEFA Champions/Europa League, MLS, Mexico, Brazil and Argentina) plus the NBA. It normalizes only events with an explicit event ID, both participants and a valid kickoff timestamp, then upserts them into `sports_matches` as `source='espn_public_schedule'`. These fixtures enter the same evidence-research queue even when no odds are listed yet. This source does not invent prices: odds-based picks still require verified bookmaker prices. Coverage depends on ESPN's public scoreboard availability and supported competitions; it is an additional discovery source, not an exhaustive worldwide fixture database.
+
+
+## Android scouting signals
+
+The Android app uses the public, device-scoped endpoint:
+
+- `GET /v1/public/scout/signals`
+- `POST /v1/public/scout/signals`
+
+Requests send an app-generated random `X-Ash-Device-Id`. The server stores only a SHA-256 digest as the owner key and returns only signals belonging to that device. No server admin token is embedded in the APK. Each device is limited to 30 saved signal rows per 24 hours. Supported sports are football, basketball and tennis; supported views are win, lose, not-win, draw, upset and avoid. Signals add research queries and never force a pick or bypass odds/evidence checks.
