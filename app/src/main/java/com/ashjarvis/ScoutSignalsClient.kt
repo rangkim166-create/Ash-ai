@@ -10,11 +10,12 @@ import java.util.UUID
 object ScoutSignalsClient {
     private const val BASE_URL_KEY = "ash_sports_backend_url"
     private const val SIGNAL_PATH = "/v1/public/scout/signals"
+    private const val DEFAULT_BASE_URL = "https://ash-sports-api.onrender.com"
     private const val PREFS = "ash_jarvis"
     private const val DEVICE_KEY = "ash_scout_device_id"
 
     fun backendUrl(context: Context): String = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        .getString(BASE_URL_KEY, "").orEmpty().trim().trimEnd('/')
+        .getString(BASE_URL_KEY, DEFAULT_BASE_URL).orEmpty().trim().trimEnd('/')
 
     fun saveBackendUrl(context: Context, value: String) {
         val uri = java.net.URI(value.trim())
@@ -39,8 +40,8 @@ object ScoutSignalsClient {
         if (base.isBlank()) throw IllegalStateException("Configure the deployed Ash Sports API URL first")
         val connection = (URL(base + SIGNAL_PATH).openConnection() as HttpURLConnection).apply {
             requestMethod = method
-            connectTimeout = 12000
-            readTimeout = 20000
+            connectTimeout = 20000
+            readTimeout = 65000
             setRequestProperty("Accept", "application/json")
             setRequestProperty("X-Ash-Device-Id", deviceId(context))
             if (payload != null) {
