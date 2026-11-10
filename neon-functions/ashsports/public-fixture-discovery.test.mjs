@@ -49,8 +49,8 @@ test("discovery requests one day per scoreboard, deduplicates events and upserts
  const now=new Date("2026-11-10T00:00:00Z"),urls=[],saved=[];
  const fetchImpl=async url=>{
   urls.push(url);
-  assert.match(new URL(url).searchParams.get("dates"),/^\\d{8}$/,"no multi-day ESPN ranges");
-  const date=new URL(url).searchParams.get("dates");
+  const dateValue=new URL(url).searchParams.get("dates"); assert.equal(dateValue.length,8); assert.ok(/^[0-9]{8}$/.test(dateValue),"no multi-day ESPN ranges");
+  const date=dateValue;
   return {ok:true,status:200,text:async()=>JSON.stringify({events:date==="20261111"?[
    {id:"same-event",date:"2026-11-11T18:00:00Z",competitions:[{competitors:[
     {homeAway:"home",team:{displayName:"Chelsea"}},{homeAway:"away",team:{displayName:"Arsenal"}}]}]}
