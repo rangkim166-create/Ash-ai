@@ -370,7 +370,7 @@ export function buildRuleBasedAssessment(fixture,pages=[]){
   weatherAndVenue:compact(weather),
   surfaceAndCourtContext:compact(surface),
   formAndStatistics:compact(form),
-  confirmedFacts:compact(official.filter(row=>/\\b(confirm(?:ed)?|announce(?:d)?|official statement|ruled out|will miss|withdrawn)\\b/i.test(row.text))),
+  confirmedFacts:compact(official.filter(row=>/\b(confirm(?:ed)?|announce(?:d)?|official statement|ruled out|will miss|withdrawn)\b/i.test(row.text))),
   officialSourceReports:compact(official),
   rumours:compact(rumors),
   contradictions,
