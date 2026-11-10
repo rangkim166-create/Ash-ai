@@ -11,9 +11,9 @@ export function assessExpertConsensus(pick, pages=[]) {
  for(const page of Array.isArray(pages)?pages:[]) {
   const domain=String(page?.domain||"").toLowerCase().replace(/^www\./,"").trim(),date=Date.parse(page?.publishedAt||page?.date||"");
   if(!domain||domain==="unknown"||!Number.isFinite(date)||now-date>10*86400000||date>now+86400000) continue;
-  const body=String(page?.title||"")+" "+String(page?.excerpt||""),selectedMention=hasName(body,selected),opponentMention=hasName(body,opponent);
-  if(!selectedMention) continue;
-  const supports=positive.test(body),opposes=negative.test(body)||(opponentMention&&positive.test(body));
+  const body=String(page?.title||"")+" "+String(page?.excerpt||"");
+  const supports=signalNear(body,selected,positive);
+  const opposes=signalNear(body,selected,negative)||signalNear(body,opponent,positive);
   if(supports&&!opposes) support.set(domain,{domain,title:String(page.title||"").slice(0,180),date:page.date||null});
   if(opposes) against.set(domain,{domain,title:String(page.title||"").slice(0,180),date:page.date||null});
  }
