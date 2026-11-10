@@ -95,7 +95,7 @@ async function sendOutbox(db, telegram, limit=30) {
   let sent=0, failed=0;
   for (const row of rows.rows) {
     const claim = await db.query(`UPDATE ash_fixture_telegram_notifications SET status='sending',updated_at=now()
-      WHERE id=$1 AND status IN ('pending','failed') AND (updated_at IS NULL OR updated_at < now()-interval '2 minutes')
+      WHERE id=$1 AND status IN ('pending','failed','sending') AND (updated_at IS NULL OR updated_at < now()-interval '2 minutes')
       RETURNING id`, [row.id]);
     if (!claim.rowCount) continue;
     try {
