@@ -397,17 +397,9 @@ async function runScheduledDailyPublisher(){
    const collection={source:'public_scrape',providerOddsApiUsed:false,scraper:await runBookmakerScrapersOnce({limit:8}),independentFixtures};
   const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC");
   const fixtures=fixturesResult.rows;
-  if(!fixtures.length){
-   await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No upcoming bookmaker fixtures are available yet."]);
-   return{sent:false,reason:"no_upcoming_fixtures",collection,localDate:localDay};
-  }
-  const ids=fixtures.map(row=>row.id);
+  // Continue to a Telegram slate even when the collection window has no fixtures.\n  const ids=fixtures.map(row=>row.id);
   const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND source='public_scrape' AND observed_at>now()-interval '15 minutes' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
-  if(!oddsResult.rows.length){
-   await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No fresh head-to-head bookmaker prices are available."]);
-   return{sent:false,reason:"no_fresh_bookmaker_odds",collection,localDate:localDay};
-  }
-  const formResult=await db.query(`WITH upcoming AS(
+  // Missing fresh odds block betting picks, but must not suppress the fixture list.\n  const formResult=await db.query(`WITH upcoming AS(
     SELECT id,sport,home_or_player_one,away_or_player_two FROM sports_matches WHERE id=ANY($1::text[])
    ), teams AS(
     SELECT sport,home_or_player_one AS team FROM upcoming
