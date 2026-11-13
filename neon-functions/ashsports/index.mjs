@@ -391,15 +391,24 @@ async function runScheduledDailyPublisher(){
  await db.query("ALTER TABLE ash_daily_publications ADD COLUMN IF NOT EXISTS message_text text, ADD COLUMN IF NOT EXISTS picks_json jsonb NOT NULL DEFAULT '[]'::jsonb");
  const prior=await db.query("SELECT status,started_at,picks_count,message_text FROM ash_daily_publications WHERE local_date=$1::date",[localDay]);
  if(prior.rowCount&&shouldSkipSentDailyPublication(prior.rows[0]))return{sent:false,skipped:true,reason:Number(prior.rows[0].picks_count||0)>0?"already_sent_today":"zero_pick_retry_cooldown",localDate:localDay};
- if(prior.rowCount&&prior.rows[0].status==="sending"&&Date.now()-new Date(prior.rows[0].started_at).getTime()<20*60*1000)return{sent:false,skipped:true,reason:"publish_already_running",localDate:localDay};
+ if(prior.rowCount&&prior.rows[0].status==="sending"&&Date.now()-new Date(prior.rows[0].started_at).getTime()<90*1000)return{sent:false,skipped:true,reason:"publish_already_running",localDate:localDay};
  await db.query("INSERT INTO ash_daily_publications(local_date,status,attempts,started_at) VALUES($1::date,'sending',1,now()) ON CONFLICT(local_date) DO UPDATE SET status='sending',attempts=ash_daily_publications.attempts+1,started_at=now(),error_summary=NULL",[localDay]);
  try{
    let scraper;
-   try{scraper=await runBookmakerScrapersOnce({limit:8});}
-   catch(error){scraper={status:"failed",error:String(error?.message||error).slice(0,180)};console.error("[ash-daily] scraper failed; using stored fixtures",scraper.error);}
+   let scrapeTimeout;
+   try{
+    const scrapePromise=runBookmakerScrapersOnce({limit:8});
+    scraper=await Promise.race([scrapePromise,new Promise(resolve=>{scrapeTimeout=setTimeout(()=>resolve({status:"timeout",note:"using stored fixtures"}),20000);})]);
+    if(scraper?.status==="timeout")console.warn("[ash-daily] scraper still running after 20s; using stored fixtures");
+   }catch(error){scraper={status:"failed",error:String(error?.message||error).slice(0,180)};console.error("[ash-daily] scraper failed; using stored fixtures",scraper.error);}
+   finally{if(scrapeTimeout)clearTimeout(scrapeTimeout);}
    const collection={source:'public_scrape',providerOddsApiUsed:false,scraper,independentFixtures};
   const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now() AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC");
   const fixtures=fixturesResult.rows;
+  if(!fixtures.length&&scraper?.status==="timeout"){
+   await db.query("UPDATE ash_daily_publications SET status='waiting_for_data',error_summary=$2 WHERE local_date=$1::date",[localDay,"Scraper is still running and no stored fixtures are available yet."]);
+   return{sent:false,reason:"scraper_timeout_no_stored_fixtures",collection,localDate:localDay};
+  }
   // Continue to a Telegram slate even when the collection window has no fixtures.
   const ids=fixtures.map(row=>row.id);
   const oddsResult=await db.query("SELECT DISTINCT ON(match_id,bookmaker_key,market_key,outcome_name) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) AND market_key='h2h' AND source='public_scrape' AND observed_at>now()-interval '15 minutes' ORDER BY match_id,bookmaker_key,market_key,outcome_name,observed_at DESC",[ids]);
