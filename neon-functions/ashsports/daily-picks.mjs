@@ -329,13 +329,9 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
 }
 
 
-export function shouldSkipSentDailyPublication(prior, now = new Date(), retryAfterMs = 2 * 60 * 60 * 1000) {
-  if (!prior || prior.status !== "sent") return false;
-  if (Number(prior.picks_count || 0) > 0) return true;
-  const current = new Date(now).getTime();
-  const started = new Date(prior.started_at || "").getTime();
-  if (!Number.isFinite(current) || !Number.isFinite(started)) return false;
-  return current >= started && current - started < retryAfterMs;
+export function shouldSkipSentDailyPublication(prior) {
+  // A successfully delivered fixture slate is complete even when no betting pick qualifies.
+  return !!prior && prior.status === "sent";
 }
 
 
