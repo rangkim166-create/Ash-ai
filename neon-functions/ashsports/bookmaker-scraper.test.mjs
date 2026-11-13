@@ -150,8 +150,17 @@ test("balances BetPawa event detail capacity across football basketball and tenn
     basketball: selected.filter(event => event.__ashCategoryId === "3").length,
     tennis: selected.filter(event => event.__ashCategoryId === "452").length
   };
-  assert.deepEqual(counts, { football: 100, basketball: 35, tennis: 18 });
-  assert.equal(selected.length, 153);
+  assert.deepEqual(counts, { football: 150, basketball: 35, tennis: 18 });
+  assert.equal(selected.length, 203);
+  const limited = selectBalancedBetPawaEvents([
+    make("2", 150), make("3", 35), make("452", 18)
+  ], { "2": 25, "3": 10, "452": 5 });
+  assert.equal(limited.length, 40);
+  assert.deepEqual({
+    football: limited.filter(event => event.__ashCategoryId === "2").length,
+    basketball: limited.filter(event => event.__ashCategoryId === "3").length,
+    tennis: limited.filter(event => event.__ashCategoryId === "452").length
+  }, { football: 25, basketball: 10, tennis: 5 });
   assert.equal(new Set(selected.map(event => event.id)).size, selected.length);
 });
 
