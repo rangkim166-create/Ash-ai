@@ -394,7 +394,10 @@ async function runScheduledDailyPublisher(){
  if(prior.rowCount&&prior.rows[0].status==="sending"&&Date.now()-new Date(prior.rows[0].started_at).getTime()<20*60*1000)return{sent:false,skipped:true,reason:"publish_already_running",localDate:localDay};
  await db.query("INSERT INTO ash_daily_publications(local_date,status,attempts,started_at) VALUES($1::date,'sending',1,now()) ON CONFLICT(local_date) DO UPDATE SET status='sending',attempts=ash_daily_publications.attempts+1,started_at=now(),error_summary=NULL",[localDay]);
  try{
-   const collection={source:'public_scrape',providerOddsApiUsed:false,scraper:await runBookmakerScrapersOnce({limit:8}),independentFixtures};
+   let scraper;
+   try{scraper=await runBookmakerScrapersOnce({limit:8});}
+   catch(error){scraper={status:"failed",error:String(error?.message||error).slice(0,180)};console.error("[ash-daily] scraper failed; using stored fixtures",scraper.error);}
+   const collection={source:'public_scrape',providerOddsApiUsed:false,scraper,independentFixtures};
   const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC");
   const fixtures=fixturesResult.rows;
   // Continue to a Telegram slate even when the collection window has no fixtures.
@@ -438,7 +441,11 @@ async function runScheduledDailyPublisher(){
   // The Odds API finds candidate fixtures; independent web reporting adds match context.
   const availabilityQualified=picks.filter(pick=>isAvailabilityResearchSufficient(pick.availability_research,{fixtureStart:pick.commence_time,sport:pick.sport,now:new Date()}));
   const availabilityQualifiedIds=new Set(availabilityQualified.map(pick=>String(pick.id)));
-  const webResearch=availabilityQualified.length?await telegramAssistant.researchDailyPicks(availabilityQualified):[];
+  let webResearch=[];
+  if(availabilityQualified.length){
+   try{webResearch=await telegramAssistant.researchDailyPicks(availabilityQualified);}
+   catch(error){console.error("[ash-daily-research] web research failed; picks remain held",String(error?.message||error).slice(0,180));}
+  }
   const researchByMatch=new Map(webResearch.map(item=>[String(item.matchId),item]));
   const researchedPicks=[];
   for(const pick of picks){
