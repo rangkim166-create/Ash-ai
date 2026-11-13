@@ -90,7 +90,8 @@ server.listen(port, "0.0.0.0", () => {
     dailyPublishRunning = true;
     try {
       await ensureReferenceData();
-      // Fixture research runs independently every 15 minutes; never block the daily Telegram slate on it.\n      const result = await handler.runScheduledDailyPublisher();
+      // Fixture research runs independently every 15 minutes; never block the daily Telegram slate on it.
+      const result = await handler.runScheduledDailyPublisher();
       console.log("[ash-daily] Odds of the Day", JSON.stringify(result));
     } catch (error) {
       console.error("[ash-daily] publish attempt failed", error);
