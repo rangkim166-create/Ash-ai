@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
+import { parseFinalScore, settleHeadToHead, orientScoreToTip } from "./results-tracker.mjs";
 
 test("only accepts explicitly completed fixtures with both named scores",()=>{
  const final={completed:true,scores:[{name:"Home FC",score:"2"},{name:"Away FC",score:"1"}]};
@@ -34,4 +34,11 @@ test("moves only overdue scheduled fixtures without a score to awaiting-result s
  assert.equal(shouldMoveFixtureToAwaitingResult({sport:"tennis",startsAt:"2026-11-06T01:59:59Z",now}),true);
  assert.equal(shouldMoveFixtureToAwaitingResult({sport:"football",startsAt:"2026-11-06T08:00:00Z",now,status:"completed",homeScore:2,awayScore:1}),false);
  assert.equal(shouldMoveFixtureToAwaitingResult({sport:"football",startsAt:"2026-11-06T08:00:00Z",now,homeScore:2,awayScore:1}),false);
+});
+
+test("orients ESPN scores to the exact saved tip participants",()=>{
+ assert.deepEqual(orientScoreToTip("Home FC","Away FC","Home FC","Away FC",3,1),{homeScore:3,awayScore:1});
+ assert.deepEqual(orientScoreToTip("Home FC","Away FC","Away FC","Home FC",1,3),{homeScore:3,awayScore:1});
+ assert.equal(orientScoreToTip("Home FC","Away FC","Other FC","Home FC",1,3),null);
+ assert.equal(orientScoreToTip("Home FC","Away FC","Home FC","Away FC",null,3),null);
 });
