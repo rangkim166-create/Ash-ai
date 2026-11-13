@@ -369,15 +369,15 @@ export function formatDailyFixtureSlateMessages(day, fixtures = [], oddsRows = [
   const order = ["football", "basketball", "tennis"];
   const sports = [...order.filter(key => groups.has(key)), ...[...groups.keys()].filter(key => !order.includes(key)).sort()];
   if (!sports.length) {
-    return ["ASH • DAILY GAME LIST — " + day + "\\nNo upcoming fixtures were available in the collection window."];
+    return ["ASH • DAILY GAME LIST — " + day + "\nNo upcoming fixtures were available in the collection window."];
   }
 
   const messages = [];
   for (const sport of sports) {
     const games = groups.get(sport).sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
-    const header = "ASH • DAILY GAME LIST — " + day + "\\n" +
+    const header = "ASH • DAILY GAME LIST — " + day + "\n" +
       (labels[sport] || ("🏆 " + sport.toUpperCase())) + " • " + games.length +
-      " fixture(s)\\nFor our review only — not betting tips. Prices are observed snapshots and may move.";
+      " fixture(s)\nFor our review only — not betting tips. Prices are observed snapshots and may move.";
     let page = header;
     let pageNumber = 1;
     for (let index = 0; index < games.length; index++) {
@@ -403,9 +403,9 @@ export function formatDailyFixtureSlateMessages(day, fixtures = [], oddsRows = [
       if (page.length + line.length + 2 > 3400) {
         messages.push(page);
         pageNumber++;
-        page = header + " (continued " + pageNumber + ")\\n";
+        page = header + " (continued " + pageNumber + ")\n";
       }
-      page += "\\n" + line;
+      page += "\n" + line;
     }
     if (page) messages.push(page);
   }
