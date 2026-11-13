@@ -221,13 +221,14 @@ test("allows two-book consensus for short odds but keeps long odds at three book
 });
 
 
-test("does not permanently lock a day after publishing NO BET", async () => {
+test("retries an old NO BET message until the new fixture slate is delivered", async () => {
   const { shouldSkipSentDailyPublication } = await import("./daily-picks.mjs");
-  const prior = { status: "sent", picks_count: 0, started_at: "2026-10-31T08:00:00.000Z" };
-  assert.equal(shouldSkipSentDailyPublication(prior, "2026-10-31T09:00:00.000Z"), true);
-  assert.equal(shouldSkipSentDailyPublication(prior, "2026-10-31T10:01:00.000Z"), false);
-  assert.equal(shouldSkipSentDailyPublication({ ...prior, picks_count: 2 }, "2026-10-31T12:00:00.000Z"), true);
-  assert.equal(shouldSkipSentDailyPublication({ ...prior, status: "failed" }, "2026-10-31T12:00:00.000Z"), false);
+  const prior = { status: "sent", picks_count: 0, message_text: "ASH • ODDS OF THE DAY — 31 Oct 2026" };
+  assert.equal(shouldSkipSentDailyPublication(prior), false);
+  assert.equal(shouldSkipSentDailyPublication({
+    ...prior, message_text: "ASH • DAILY GAME LIST — 31 Oct 2026"
+  }), true);
+  assert.equal(shouldSkipSentDailyPublication({ ...prior, status: "failed" }), false);
 });
 
 
@@ -291,14 +292,4 @@ test("splits long fixture slates into Telegram-safe messages without dropping ga
 });
 
 
-test("skips only after a Telegram fixture slate was successfully delivered", () => {
-  assert.equal(shouldSkipSentDailyPublication({
-    status: "sent", picks_count: 0, message_text: "ASH • DAILY GAME LIST — 31 Oct 2026"
-  }), true);
-  assert.equal(shouldSkipSentDailyPublication({
-    status: "sent", picks_count: 0, message_text: "ASH • ODDS OF THE DAY — 31 Oct 2026"
-  }), false);
-  assert.equal(shouldSkipSentDailyPublication({
-    status: "failed", picks_count: 0, message_text: "ASH • DAILY GAME LIST"
-  }), false);
-});
+
