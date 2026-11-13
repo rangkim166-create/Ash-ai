@@ -641,7 +641,7 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   // Use those first; fetch detail only for fixtures whose list card lacks them.
   const listCandidates = events.flatMap(event => extractBetPawaEventCandidates({
     ...event,
-    category: event.category || { id: event.__ashCategoryId, name: event.__ashCategoryId === "2" ? "Football" : event.__ashCategoryId === "3" ? "Basketball" : "Tennis" }
+    category: { ...(event.category || {}), id: event.__ashCategoryId, name: event.__ashCategoryId === "2" ? "Football" : event.__ashCategoryId === "3" ? "Basketball" : "Tennis" }
   }));
   const coveredEventKeys = new Set(listCandidates.map(candidate =>
     [candidate.sport, candidate.homeTeam, candidate.awayTeam, candidate.startsAt].join("|")
