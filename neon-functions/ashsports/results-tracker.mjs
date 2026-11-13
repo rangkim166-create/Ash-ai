@@ -16,6 +16,17 @@ export function settleHeadToHead(selection, homeTeam, awayTeam, homeScore, awayS
   return null;
 }
 
+export function orientScoreToTip(tipHome, tipAway, fixtureHome, fixtureAway, fixtureHomeScore, fixtureAwayScore) {
+  const norm = value => String(value ?? "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+  const th = norm(tipHome), ta = norm(tipAway), fh = norm(fixtureHome), fa = norm(fixtureAway);
+  const home = Number(fixtureHomeScore), away = Number(fixtureAwayScore);
+  if (!th || !ta || !fh || !fa || !Number.isFinite(home) || !Number.isFinite(away)) return null;
+  if (th === fh && ta === fa) return { homeScore: home, awayScore: away };
+  if (th === fa && ta === fh) return { homeScore: away, awayScore: home };
+  return null;
+}
+
 export function overdueFixtureThresholdHours(sport) {
   const key = String(sport || "").trim().toLowerCase();
   if (key === "football") return 3;
