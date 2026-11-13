@@ -1118,7 +1118,8 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
           try { apiResult = await fetchBetikaPublicOdds(); }
           catch (error) { console.warn("[ash-bookmaker-scraper] Betika public JSON fallback:", String(error?.message || error).slice(0, 300)); }
         }
-        if (apiResult?.candidates?.length) {
+        if (apiResult?.events > 0 || apiResult?.candidates?.length) {
+          // Persist the full fixture pool even when a category has no usable winner prices.
           page = { html: "", finalUrl: apiResult.finalUrl, status: apiResult.status, contentType: "application/json" };
         } else {
           try { page = await fetchPublicPage(source.source_url); }
@@ -1150,7 +1151,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
           }
         }
         const text = apiResult?.candidates?.length ? apiResult.visibleText : (rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000)));
-        const status = candidates.length > 0 ? "success" : "empty";
+        const status = candidates.length > 0 || Number(apiResult?.events || 0) > 0 ? "success" : "empty";
         const saved = await db.query(`INSERT INTO ash_scraper_runs(
           source_id,bookmaker,source_url,final_url,status,http_status,content_type,extracted_text,structured_data,odds_candidates
         ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
