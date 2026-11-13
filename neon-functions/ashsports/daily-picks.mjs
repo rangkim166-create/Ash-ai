@@ -330,8 +330,9 @@ export function formatDailyPicks(day, picks, timezone = "Africa/Kampala") {
 
 
 export function shouldSkipSentDailyPublication(prior) {
-  // A successfully delivered fixture slate is complete even when no betting pick qualifies.
-  return !!prior && prior.status === "sent";
+  // Only suppress a repeat after the new fixture inventory was actually included.
+  return !!prior && prior.status === "sent" &&
+    String(prior.message_text || "").includes("ASH • DAILY GAME LIST");
 }
 
 
