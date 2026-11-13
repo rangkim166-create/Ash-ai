@@ -1,6 +1,6 @@
 export function parseFinalScore(event, homeTeam, awayTeam) {
   if (!event || event.completed !== true || !Array.isArray(event.scores) || event.scores.length < 2) return null;
-  const norm = value => String(value ?? "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+  const norm = value => String(value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
   const scores = new Map(event.scores.filter(row => String(row.score ?? "").trim() !== "").map(row => [norm(row.name), Number(row.score)]));
   const home = scores.get(norm(homeTeam));
   const away = scores.get(norm(awayTeam));
@@ -8,7 +8,7 @@ export function parseFinalScore(event, homeTeam, awayTeam) {
   return { homeScore: home, awayScore: away };
 }
 export function settleHeadToHead(selection, homeTeam, awayTeam, homeScore, awayScore) {
-  const norm = value => String(value ?? "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+  const norm = value => String(value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
   const chosen = norm(selection);
   if (!chosen || !Number.isFinite(Number(homeScore)) || !Number.isFinite(Number(awayScore))) return null;
   if (chosen === norm(homeTeam)) return Number(homeScore) > Number(awayScore) ? "won" : "lost";
@@ -17,7 +17,7 @@ export function settleHeadToHead(selection, homeTeam, awayTeam, homeScore, awayS
 }
 
 export function orientScoreToTip(tipHome, tipAway, fixtureHome, fixtureAway, fixtureHomeScore, fixtureAwayScore) {
-  const norm = value => String(value ?? "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "")
+  const norm = value => String(value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
   const th = norm(tipHome), ta = norm(tipAway), fh = norm(fixtureHome), fa = norm(fixtureAway);
   const home = Number(fixtureHomeScore), away = Number(fixtureAwayScore);
