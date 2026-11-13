@@ -2,7 +2,7 @@ import { discoverPublicFixtures } from "./public-fixture-discovery.mjs";
 import { validateScoutSignal } from "./scout-signals.mjs";
 import postgres from "postgres";
 import { formatDailyPicks, formatDailyScreeningSummary, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
-import { parseFinalScore, settleHeadToHead } from "./results-tracker.mjs";
+import { parseFinalScore, settleHeadToHead, orientScoreToTip } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
 import { enqueueFixtureResearch, processFixtureResearch, ensureFixtureResearchTables } from "./fixture-research.mjs";
 import { addScraperSource, getScraperStatus, runBookmakerScrapers, createSingleFlight } from "./bookmaker-scraper.mjs";
@@ -263,17 +263,47 @@ async function runTipResultsTracker(){
  const overdueBySport=overdueFixtures.rows.reduce((counts,row)=>{const key=String(row.sport||"other");counts[key]=(counts[key]||0)+1;return counts;},{});
 
  const backfill=await backfillPublishedTips();
+ // ESPN's final-score worker updates sports_matches by exact ESPN IDs or a strict
+ // participant+kickoff match. Scraped bookmaker IDs are not The Odds API event IDs,
+ // so settle those saved tips from the verified scoreboard row they now point to.
+ const scoreboard=await db.query(`SELECT t.tip_id,t.match_id,t.selection,t.decimal_odds,t.home_team,t.away_team,
+   m.home_or_player_one AS fixture_home,m.away_or_player_two AS fixture_away,m.home_score,m.away_score
+   FROM ash_tip_results t JOIN sports_matches m ON m.id=t.match_id
+   WHERE t.status='pending' AND m.status='completed' AND m.home_score IS NOT NULL AND m.away_score IS NOT NULL
+    AND t.commence_time<=now()+interval '15 minutes' AND t.commence_time>=now()-interval '4 days'
+   ORDER BY t.commence_time ASC LIMIT 250`);
+ let scoreboardSettled=0;
+ for(const tip of scoreboard.rows){
+  const score=orientScoreToTip(tip.home_team,tip.away_team,tip.fixture_home,tip.fixture_away,tip.home_score,tip.away_score);
+  if(!score)continue;
+  const outcome=settleHeadToHead(tip.selection,tip.home_team,tip.away_team,score.homeScore,score.awayScore);
+  if(!outcome)continue;
+  const profit=outcome==="won"?Number(tip.decimal_odds)-1:-1;
+  const saved=await db.query(`UPDATE ash_tip_results SET status=$2,home_score=$3,away_score=$4,
+    profit_units=$5,result_source='espn_scoreboard',settled_at=now(),updated_at=now()
+    WHERE tip_id=$1 AND status='pending' RETURNING tip_id`,
+   [tip.tip_id,outcome,score.homeScore,score.awayScore,profit]);
+  if(!saved.rowCount)continue;
+  await db.query("UPDATE ash_predictions SET status=$3,settled_at=now() WHERE match_id=$1 AND selection=$2 AND market_key='h2h' AND status='pending'",
+   [tip.match_id,tip.selection,outcome]);
+  scoreboardSettled++;
+ }
  // Keep old unresolved tips visible as unverified; never turn missing data into a loss or void.
  await db.query("UPDATE ash_tip_results SET status='unverified',updated_at=now() WHERE status='pending' AND commence_time<now()-interval '4 days'");
  await db.query("UPDATE ash_predictions p SET status='stale',settled_at=now() WHERE p.status='pending' AND EXISTS (SELECT 1 FROM ash_tip_results t WHERE t.match_id=p.match_id AND t.selection=p.selection AND t.status='unverified')");
  const apiKey=await read("the_odds_api");
- if(!apiKey)return{checked:0,settled:0,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,reason:"odds_api_not_configured"};
+ if(!apiKey){
+  const notifications=await deliverPendingResultNotifications(),summary=await maybeSendDailyResultsSummary();
+  return{checked:0,settled:scoreboardSettled,scoreboardSettled,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,notifications,summary,reason:"odds_api_not_configured"};
+ }
  const pending=await db.query("SELECT * FROM ash_tip_results WHERE status='pending' AND commence_time<=now()+interval '15 minutes' AND commence_time>=now()-interval '4 days' ORDER BY commence_time ASC LIMIT 250");
- if(!pending.rowCount){const notifications=await deliverPendingResultNotifications();const summary=await maybeSendDailyResultsSummary();return{checked:0,settled:0,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,notifications,summary,reason:"no_due_tips"};}
+ if(!pending.rowCount){const notifications=await deliverPendingResultNotifications();const summary=await maybeSendDailyResultsSummary();return{checked:0,settled:scoreboardSettled,scoreboardSettled,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,notifications,summary,reason:"no_due_tips"};}
  const groups=new Map();
  for(const tip of pending.rows){if(!groups.has(tip.sport_key))groups.set(tip.sport_key,[]);groups.get(tip.sport_key).push(tip);}
  let checked=0,settled=0;const errors=[];
  for(const [sportKey,tips] of groups){
+  // Only The Odds API sport keys are valid for its scores endpoint.
+  if(!/^(soccer_|basketball_|tennis_)/.test(sportKey))continue;
   for(let offset=0;offset<tips.length;offset+=25){
    const batch=tips.slice(offset,offset+25);
    const eventIds=[...new Set(batch.map(x=>x.source_event_id).filter(x=>/^[A-Za-z0-9_-]{20,80}$/.test(x)))];
@@ -308,7 +338,7 @@ async function runTipResultsTracker(){
  }
  const notifications=await deliverPendingResultNotifications();
  const summary=await maybeSendDailyResultsSummary();
- return{checked,settled,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,notifications,errors,summary};
+ return{checked,settled:settled+scoreboardSettled,oddsApiSettled:settled,scoreboardSettled,backfill,overdueFixtures:overdueFixtures.rowCount,overdueBySport,notifications,errors,summary};
 }
 async function maybeSendDailyResultsSummary(){
  const localNow=new Intl.DateTimeFormat("en-GB",{timeZone:"Africa/Kampala",hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date());
