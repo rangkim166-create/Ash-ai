@@ -148,9 +148,8 @@ server.listen(port, "0.0.0.0", () => {
     resultsTrackerRunning = true;
     try {
       const result = await handler.runTipResultsTracker();
-      if (result.checked || result.settled || result.errors?.length) {
-        console.log("[ash-results] tracker", JSON.stringify(result));
-      }
+      // Log every run, including idle/no-pick runs, so a quiet tracker is observable.
+      console.log("[ash-results] tracker", JSON.stringify(result));
     } catch (error) {
       console.error("[ash-results] tracker failed", error);
     } finally {

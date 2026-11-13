@@ -8,6 +8,29 @@ const LEAGUES = [
 ];
 const TENNIS = [["atp","ATP"],["wta","WTA"]];
 const ymd = d => d.toISOString().slice(0,10).replace(/-/g,"");
+function normalizeParticipant(value) {
+  return String(value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
+}
+export function mapScoreToFixture(event, fixture, maxHours = 6) {
+  if (!event || !fixture || event.sport !== fixture.sport) return null;
+  const eventTime = new Date(event.startsAt).getTime();
+  const fixtureTime = new Date(fixture.starts_at).getTime();
+  if (!Number.isFinite(eventTime) || !Number.isFinite(fixtureTime) ||
+      Math.abs(eventTime - fixtureTime) > maxHours * 60 * 60 * 1000) return null;
+  const eventHome = normalizeParticipant(event.home);
+  const eventAway = normalizeParticipant(event.away);
+  const fixtureHome = normalizeParticipant(fixture.home_or_player_one);
+  const fixtureAway = normalizeParticipant(fixture.away_or_player_two);
+  if (!eventHome || !eventAway || !fixtureHome || !fixtureAway) return null;
+  if (eventHome === fixtureHome && eventAway === fixtureAway) {
+    return { homeScore: event.homeScore, awayScore: event.awayScore, reversed: false };
+  }
+  if (eventHome === fixtureAway && eventAway === fixtureHome) {
+    return { homeScore: event.awayScore, awayScore: event.homeScore, reversed: true };
+  }
+  return null;
+}
 const validScore = value => {
   if (value === null || value === undefined || value === "") return null;
   const n = Number(String(value).replace(/[^0-9.-]/g,""));
@@ -152,10 +175,30 @@ export async function runFixtureResultNotifications(db, telegram, {now=new Date(
   }
   let updated=0, queuedFinal=0, queuedLive=0;
   for(const event of results) {
-    const saved=await db.query(`UPDATE sports_matches SET status=$2,home_score=$3,away_score=$4,
+    let saved=await db.query(`UPDATE sports_matches SET status=$2,home_score=$3,away_score=$4,
       source_updated_at=now(),updated_at=now()
       WHERE id=$1 RETURNING id,sport,competition,home_or_player_one,away_or_player_two`,
       [event.id,event.status,event.homeScore,event.awayScore]);
+    // Bookmaker-created fixtures have their own public-scrape IDs, not ESPN IDs.
+    // Match only an exact participant pair in the same sport near the scheduled kickoff.
+    if(!saved.rowCount) {
+      const candidates=await db.query(`SELECT id,sport,starts_at,competition,home_or_player_one,away_or_player_two
+        FROM sports_matches WHERE sport=$1
+          AND starts_at BETWEEN $2::timestamptz-interval '6 hours' AND $2::timestamptz+interval '6 hours'
+          AND status NOT IN ('cancelled','postponed') LIMIT 50`,[event.sport,event.startsAt]);
+      const matched=candidates.rows.map(fixture=>({
+        fixture, score:mapScoreToFixture(event,fixture),
+        distance:Math.abs(new Date(fixture.starts_at).getTime()-new Date(event.startsAt).getTime())
+      })).filter(item=>item.score).sort((a,b)=>a.distance-b.distance);
+      const best=matched[0];
+      // Refuse ambiguous duplicate fixtures rather than attaching a score to the wrong event.
+      if(best && (!matched[1] || matched[1].distance-best.distance>=60*60*1000)) {
+        saved=await db.query(`UPDATE sports_matches SET status=$2,home_score=$3,away_score=$4,
+          source_updated_at=now(),updated_at=now() WHERE id=$1
+          RETURNING id,sport,competition,home_or_player_one,away_or_player_two`,
+          [best.fixture.id,event.status,best.score.homeScore,best.score.awayScore]);
+      }
+    }
     if(!saved.rowCount) continue;
     updated++;
     const fixture=saved.rows[0];
@@ -177,4 +220,4 @@ export async function runFixtureResultNotifications(db, telegram, {now=new Date(
   return {provider:"ESPN scoreboard",eventsWithScores:results.length,fixturesUpdated:updated,
     finalNotificationsQueued:queuedFinal,liveUpdatesQueued:queuedLive,delivery,errors};
 }
-export const __test = { validScore, statusOf, rowsFromStandard, rowsFromTennis };
+export const __test = { validScore, statusOf, rowsFromStandard, rowsFromTennis, mapScoreToFixture };
