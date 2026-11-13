@@ -9,7 +9,7 @@ const LEAGUES = [
 const TENNIS = [["atp","ATP"],["wta","WTA"]];
 const ymd = d => d.toISOString().slice(0,10).replace(/-/g,"");
 function normalizeParticipant(value) {
-  return String(value ?? "").normalize("NFKD").replace(/[\\u0300-\\u036f]/g, "")
+  return String(value ?? "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
     .toLowerCase().replace(/[^a-z0-9]+/g, "").trim();
 }
 export function mapScoreToFixture(event, fixture, maxHours = 6) {
