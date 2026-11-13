@@ -398,7 +398,7 @@ async function runScheduledDailyPublisher(){
    try{scraper=await runBookmakerScrapersOnce({limit:8});}
    catch(error){scraper={status:"failed",error:String(error?.message||error).slice(0,180)};console.error("[ash-daily] scraper failed; using stored fixtures",scraper.error);}
    const collection={source:'public_scrape',providerOddsApiUsed:false,scraper,independentFixtures};
-  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC");
+  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now() AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC");
   const fixtures=fixturesResult.rows;
   // Continue to a Telegram slate even when the collection window has no fixtures.
   const ids=fixtures.map(row=>row.id);
