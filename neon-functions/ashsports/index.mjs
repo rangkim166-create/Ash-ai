@@ -1,7 +1,7 @@
 import { discoverPublicFixtures } from "./public-fixture-discovery.mjs";
 import { validateScoutSignal } from "./scout-signals.mjs";
 import postgres from "postgres";
-import { formatDailyPicks, formatDailyScreeningSummary, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
+import { formatDailyPicks, formatDailyScreeningSummary, formatDailyFixtureSlateMessages, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead, orientScoreToTip } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
 import { enqueueFixtureResearch, processFixtureResearch, ensureFixtureResearchTables } from "./fixture-research.mjs";
@@ -395,7 +395,7 @@ async function runScheduledDailyPublisher(){
  await db.query("INSERT INTO ash_daily_publications(local_date,status,attempts,started_at) VALUES($1::date,'sending',1,now()) ON CONFLICT(local_date) DO UPDATE SET status='sending',attempts=ash_daily_publications.attempts+1,started_at=now(),error_summary=NULL",[localDay]);
  try{
    const collection={source:'public_scrape',providerOddsApiUsed:false,scraper:await runBookmakerScrapersOnce({limit:8}),independentFixtures};
-  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC LIMIT 250");
+  const fixturesResult=await db.query("SELECT id,sport,competition,home_or_player_one AS home,away_or_player_two AS away,starts_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()+interval '30 minutes' AND starts_at<=now()+interval '36 hours' ORDER BY starts_at ASC");
   const fixtures=fixturesResult.rows;
   if(!fixtures.length){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_odds',picks_count=0,message_preview=NULL,message_text=NULL,picks_json='[]'::jsonb,error_summary=$2 WHERE local_date=$1::date",[localDay,"No upcoming bookmaker fixtures are available yet."]);
@@ -477,19 +477,23 @@ async function runScheduledDailyPublisher(){
    return label+"\\n"+screeningSummary+"\\n\\n"+formatDailyPicks(dayLabel,groups.get(key));
   });
   const message=messages.length?messages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n"):"ASH • ODDS OF THE DAY — "+dayLabel+"\\n\\n"+screeningSummary+"\\n\\nNo selection passed all checks. NO BET.";
+  // Always send the fixture inventory separately from the strict, evidence-qualified picks.
+  // This lets Ash deliver the daily games for human review without forcing a prediction.
+  const slateMessages=formatDailyFixtureSlateMessages(dayLabel,fixtures,oddsResult.rows);
+  const deliveryMessages=[...(messages.length?messages:[message]),...slateMessages];
+  const fullMessage=deliveryMessages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n");
   // Persist the complete grouped publication before delivery.
-  await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,picks.length,message.slice(0,500),message,JSON.stringify(picks)]);
+  await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,picks.length,fullMessage.slice(0,500),fullMessage,JSON.stringify(picks)]);
   await savePublishedTips(localDay,picks);
   const bot=await read("telegram_bot");
   if(!bot?.botToken||!bot?.chatId){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_telegram_config',error_summary=$2 WHERE local_date=$1::date",[localDay,"Telegram bot token and chat ID are not configured."]);
-   return{sent:false,reason:"telegram_not_configured",picks:picks.length,localDate:localDay};
+   return{sent:false,reason:"telegram_not_configured",picks:picks.length,fixtures:fixtures.length,localDate:localDay};
   }
   const deliveries=[];
-  for(let i=0;i<messages.length;i++){deliveries.push(await telegram(messages[i]));}
-  if(!messages.length)deliveries.push(await telegram(message));
+  for(const outgoing of deliveryMessages){deliveries.push(await telegram(outgoing));}
   await db.query("UPDATE ash_daily_publications SET status='sent',error_summary=NULL,sent_at=now() WHERE local_date=$1::date",[localDay]);
-  return{sent:true,picks:picks.length,sports:orderedKeys,localDate:localDay,deliveries,collection};
+  return{sent:true,picks:picks.length,fixtures:fixtures.length,fixtureMessages:slateMessages.length,sports:orderedKeys,localDate:localDay,deliveries,collection};
  }catch(error){
   const detail=String(error?.message||error).slice(0,300);
   await db.query("UPDATE ash_daily_publications SET status='failed',error_summary=$2 WHERE local_date=$1::date",[localDay,detail]).catch(()=>{});
