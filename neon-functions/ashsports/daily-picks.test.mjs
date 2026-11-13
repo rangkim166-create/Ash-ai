@@ -286,6 +286,6 @@ test("splits long fixture slates into Telegram-safe messages without dropping ga
   }));
   const messages = formatDailyFixtureSlateMessages("31 Oct 2026", games, []);
   assert.ok(messages.length > 1);
-  assert.equal(messages.join("\\n").match(/Home Team \\d+/g).length, 80);
+  assert.equal(messages.join("\n").match(/Home Team \d+/g).length, 80);
   assert.ok(messages.every(message => message.length <= 3400));
 });
