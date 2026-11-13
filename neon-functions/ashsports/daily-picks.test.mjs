@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatDailyPicks, formatDailyScreeningSummary, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
+import { formatDailyPicks, formatDailyScreeningSummary, formatDailyFixtureSlateMessages, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
 
 const now = new Date("2026-10-31T10:00:00.000Z");
 const fixture = {
@@ -252,4 +252,40 @@ test("daily screening summary explains why candidates were held",()=>{
 });
 test("daily screening summary is honest when no candidates pass odds and form",()=>{
  assert.equal(formatDailyScreeningSummary({candidateCount:0,availabilityBlocked:0,expertBlocked:0,qualifiedCount:0}),"Screening: no candidates passed the odds/form market screen; no pick was forced.");
+});
+
+
+test("formats a complete daily fixture slate independently from qualified betting picks", () => {
+  const games = [
+    { id: "f1", sport: "football", home: "Arsenal", away: "Chelsea", starts_at: "2026-10-31T18:00:00.000Z" },
+    { id: "t1", sport: "tennis", home: "Jannik Sinner", away: "Carlos Alcaraz", starts_at: "2026-10-31T19:00:00.000Z" },
+    { id: "b1", sport: "basketball", home: "Lakers", away: "Celtics", starts_at: "2026-10-31T20:00:00.000Z" }
+  ];
+  const prices = [
+    { match_id: "f1", bookmaker_key: "BetPawa", outcome_name: "Arsenal", decimal_odds: 1.8 },
+    { match_id: "f1", bookmaker_key: "Betika", outcome_name: "Arsenal", decimal_odds: 1.9 },
+    { match_id: "f1", bookmaker_key: "BetPawa", outcome_name: "Draw", decimal_odds: 3.6 }
+  ];
+  const messages = formatDailyFixtureSlateMessages("31 Oct 2026", games, prices);
+  assert.equal(messages.length, 3);
+  assert.match(messages[0], /FOOTBALL/);
+  assert.match(messages[0], /Arsenal vs Chelsea/);
+  assert.match(messages[0], /2 book\(s\)/);
+  assert.match(messages[0], /Arsenal 1.90/);
+  assert.match(messages[1], /BASKETBALL/);
+  assert.match(messages[1], /Lakers vs Celtics/);
+  assert.match(messages[1], /no fresh odds/);
+  assert.match(messages[2], /TENNIS/);
+  assert.match(messages[2], /Jannik Sinner vs Carlos Alcaraz/);
+});
+
+test("splits long fixture slates into Telegram-safe messages without dropping games", () => {
+  const games = Array.from({ length: 80 }, (_, index) => ({
+    id: "f" + index, sport: "football", home: "Home Team " + index,
+    away: "Away Team " + index, starts_at: "2026-10-31T18:00:00.000Z"
+  }));
+  const messages = formatDailyFixtureSlateMessages("31 Oct 2026", games, []);
+  assert.ok(messages.length > 1);
+  assert.equal(messages.join("\\n").match(/Home Team \\d+/g).length, 80);
+  assert.ok(messages.every(message => message.length <= 3400));
 });
