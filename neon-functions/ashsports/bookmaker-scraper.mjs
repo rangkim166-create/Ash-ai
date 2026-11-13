@@ -585,14 +585,12 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
     return { data, status: response.status, finalUrl };
   };
 
-  let selectedBrand = null, lastError = null, listResults = [];
+  let selectedBrand = null, lastError = null, listResults = [], pagesBySport = {}, truncatedSports = [];
   for (const brand of ["betpawa-uganda", "betpawa-ug", null]) {
     try {
       const bySport = [];
       const pageSize = 50;
       const maxPagesPerSport = 100;
-      const pagesBySport = {};
-      const truncatedSports = [];
       for (const categoryId of ["2", "3", "452"]) {
         const collected = new Map();
         let pageCount = 0;
@@ -654,7 +652,7 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
     const participants = Array.isArray(event.participants) ? event.participants : [];
     const home = participants.find(p => String(p?.type || "").toLowerCase() === "home") || participants[0];
     const away = participants.find(p => String(p?.type || "").toLowerCase() === "away") || participants[1];
-    const key = [categoryName, String(home?.name || ""), String(away?.name || ""), new Date(event.startTime || event.start_time || "").toISOString()].join("|");
+    const key = [categoryName, String(home?.name || ""), String(away?.name || ""), (Number.isFinite(Date.parse(event.startTime || event.start_time || "")) ? new Date(event.startTime || event.start_time).toISOString() : "")].join("|");
     return !coveredEventKeys.has(key);
   });
   const candidates = [...listCandidates], failures = [];
