@@ -1150,7 +1150,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
             candidates = uniqueOdds([...embedded.flatMap(item => collectOddsCandidates(item)), ...(rendered?.visibleText ? extractVisibleOddsCandidates(rendered.visibleText, new Date(), fixtureMatches, knownFootballTeams) : [])]);
           }
         }
-        const text = apiResult?.candidates?.length ? apiResult.visibleText : (rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000)));
+        const text = Number(apiResult?.events || 0) > 0 ? apiResult.visibleText : (rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000)));
         const status = candidates.length > 0 || Number(apiResult?.events || 0) > 0 ? "success" : "empty";
         const saved = await db.query(`INSERT INTO ash_scraper_runs(
           source_id,bookmaker,source_url,final_url,status,http_status,content_type,extracted_text,structured_data,odds_candidates
