@@ -291,11 +291,14 @@ test("splits long fixture slates into Telegram-safe messages without dropping ga
 });
 
 
-test("does not resend a successfully delivered daily slate when zero picks qualify", () => {
+test("skips only after a Telegram fixture slate was successfully delivered", () => {
   assert.equal(shouldSkipSentDailyPublication({
-    status: "sent", picks_count: 0, started_at: "2026-10-31T10:00:00.000Z"
+    status: "sent", picks_count: 0, message_text: "ASH • DAILY GAME LIST — 31 Oct 2026"
   }), true);
   assert.equal(shouldSkipSentDailyPublication({
-    status: "failed", picks_count: 0, started_at: "2026-10-31T10:00:00.000Z"
+    status: "sent", picks_count: 0, message_text: "ASH • ODDS OF THE DAY — 31 Oct 2026"
+  }), false);
+  assert.equal(shouldSkipSentDailyPublication({
+    status: "failed", picks_count: 0, message_text: "ASH • DAILY GAME LIST"
   }), false);
 });
