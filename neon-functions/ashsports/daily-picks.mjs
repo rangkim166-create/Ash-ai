@@ -337,3 +337,77 @@ export function shouldSkipSentDailyPublication(prior, now = new Date(), retryAft
   if (!Number.isFinite(current) || !Number.isFinite(started)) return false;
   return current >= started && current - started < retryAfterMs;
 }
+
+
+/**
+ * Build a Telegram-ready inventory of every upcoming fixture returned by the
+ * daily publisher. This is deliberately separate from the qualified-pick
+ * selector: games can be sent for human review without being labelled picks.
+ */
+export function formatDailyFixtureSlateMessages(day, fixtures = [], oddsRows = [], timezone = "Africa/Kampala") {
+  const labels = { football: "⚽ FOOTBALL", soccer: "⚽ FOOTBALL", basketball: "🏀 BASKETBALL", tennis: "🎾 TENNIS" };
+  const oddsByMatch = new Map();
+  for (const row of oddsRows || []) {
+    const id = String(row.match_id || "");
+    const price = Number(row.decimal_odds);
+    const outcome = String(row.outcome_name || "").trim();
+    if (!id || !outcome || !Number.isFinite(price) || price <= 1) continue;
+    if (!oddsByMatch.has(id)) oddsByMatch.set(id, []);
+    oddsByMatch.get(id).push(row);
+  }
+
+  const groups = new Map();
+  for (const fixture of fixtures || []) {
+    const sportRaw = normalize(fixture.sport);
+    const sport = sportRaw === "soccer" ? "football" : sportRaw;
+    const kickoff = Date.parse(fixture.starts_at);
+    if (!sport || !Number.isFinite(kickoff)) continue;
+    if (!groups.has(sport)) groups.set(sport, []);
+    groups.get(sport).push(fixture);
+  }
+
+  const order = ["football", "basketball", "tennis"];
+  const sports = [...order.filter(key => groups.has(key)), ...[...groups.keys()].filter(key => !order.includes(key)).sort()];
+  if (!sports.length) {
+    return ["ASH • DAILY GAME LIST — " + day + "\\nNo upcoming fixtures were available in the collection window."];
+  }
+
+  const messages = [];
+  for (const sport of sports) {
+    const games = groups.get(sport).sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at));
+    const header = "ASH • DAILY GAME LIST — " + day + "\\n" +
+      (labels[sport] || ("🏆 " + sport.toUpperCase())) + " • " + games.length +
+      " fixture(s)\\nFor our review only — not betting tips. Prices are observed snapshots and may move.";
+    let page = header;
+    let pageNumber = 1;
+    for (let index = 0; index < games.length; index++) {
+      const fixture = games[index];
+      const kickoff = new Intl.DateTimeFormat("en-GB", {
+        timeZone: timezone, day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: false
+      }).format(new Date(fixture.starts_at));
+      const rows = oddsByMatch.get(String(fixture.id)) || [];
+      const bookmakers = [...new Set(rows.map(row => String(row.bookmaker_key || "").trim()).filter(Boolean))];
+      const best = new Map();
+      for (const row of rows) {
+        const outcome = String(row.outcome_name || "").trim();
+        const price = Number(row.decimal_odds);
+        if (!outcome || !Number.isFinite(price) || price <= 1) continue;
+        if (!best.has(outcome) || price > best.get(outcome)) best.set(outcome, price);
+      }
+      const prices = [...best.entries()].slice(0, 3)
+        .map(([outcome, price]) => outcome.slice(0, 22) + " " + price.toFixed(2)).join(" / ");
+      const line = (index + 1) + ". " + String(fixture.home || "TBC").slice(0, 42) +
+        " vs " + String(fixture.away || "TBC").slice(0, 42) + " | " + kickoff +
+        " | " + (bookmakers.length ? bookmakers.length + " book(s)" : "no fresh odds") +
+        (prices ? " | " + prices : "");
+      if (page.length + line.length + 2 > 3400) {
+        messages.push(page);
+        pageNumber++;
+        page = header + " (continued " + pageNumber + ")\\n";
+      }
+      page += "\\n" + line;
+    }
+    if (page) messages.push(page);
+  }
+  return messages;
+}
