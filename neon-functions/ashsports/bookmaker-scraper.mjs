@@ -359,7 +359,7 @@ function uniqueOdds(items) {
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
-  }).slice(0, 150);
+  });
 }
 
 async function fetchPublicPage(inputUrl) {
@@ -624,8 +624,7 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
   }
   if (!listResults.length) throw lastError || new Error("BetPawa public event list unavailable");
 
-  // Reserve capacity for all three real sports. A single global earliest-kickoff
-  // slice can let football consume the entire 200-event detail budget.
+  // Keep the complete de-duplicated pool from all three real-sport categories.
   const allGroups = ["2", "3", "452"].map(categoryId => ({
     categoryId,
     events: listResults.filter(group => group.categoryId === categoryId).flatMap(group => group.allEvents || [])
@@ -663,7 +662,7 @@ async function fetchBetPawaPublicOdds(sourceUrl, now = new Date()) {
       try {
         const detail = await requestJson(eventUrl.toString(), selectedBrand);
         const game = detail.data?.data && !Array.isArray(detail.data.data) ? detail.data.data : (detail.data?.event || detail.data);
-        const enriched = { ...game, category: game?.category || { id: event.__ashCategoryId, name: event.__ashCategoryId === "2" ? "Football" : event.__ashCategoryId === "3" ? "Basketball" : "Tennis" } };
+        const enriched = { ...game, category: { ...(game?.category || {}), id: event.__ashCategoryId, name: event.__ashCategoryId === "2" ? "Football" : event.__ashCategoryId === "3" ? "Basketball" : "Tennis" } };
         return { data: detail.data, candidates: extractBetPawaEventCandidates(enriched), error: null };
       } catch (error) { return { data: null, candidates: [], error: String(error?.message || error).slice(0, 240) }; }
     }));
