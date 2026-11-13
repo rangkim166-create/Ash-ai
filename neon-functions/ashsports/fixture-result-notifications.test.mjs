@@ -37,3 +37,19 @@ test("tennis parser keeps singles and records final score",()=>{
   assert.equal(rows[0].id,"espn:tennis:atp:m1");
   assert.equal(rows[0].homeScore,2);
 });
+
+test("maps final scores onto bookmaker fixture IDs using exact participants and kickoff",()=>{
+  const { mapScoreToFixture } = __test;
+  const fixture={sport:"football",starts_at:"2026-11-13T18:00:00Z",
+    home_or_player_one:"Atlético Madrid",away_or_player_two:"Real Madrid"};
+  const same=mapScoreToFixture({sport:"football",startsAt:"2026-11-13T18:05:00Z",
+    home:"Atletico Madrid",away:"Real Madrid",homeScore:2,awayScore:1},fixture);
+  assert.deepEqual(same,{homeScore:2,awayScore:1,reversed:false});
+  const reversed=mapScoreToFixture({sport:"football",startsAt:"2026-11-13T18:05:00Z",
+    home:"Real Madrid",away:"Atletico Madrid",homeScore:1,awayScore:3},fixture);
+  assert.deepEqual(reversed,{homeScore:3,awayScore:1,reversed:true});
+  assert.equal(mapScoreToFixture({sport:"tennis",startsAt:"2026-11-13T18:05:00Z",
+    home:"Real Madrid",away:"Atletico Madrid",homeScore:1,awayScore:3},fixture),null);
+  assert.equal(mapScoreToFixture({sport:"football",startsAt:"2026-11-14T02:01:00Z",
+    home:"Atletico Madrid",away:"Real Madrid",homeScore:2,awayScore:1},fixture),null);
+});
