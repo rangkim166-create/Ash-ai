@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { formatDailyPicks, formatDailyScreeningSummary, formatDailyFixtureSlateMessages, selectDailyPicks, isAvailabilityResearchSufficient } from "./daily-picks.mjs";
+import { formatDailyPicks, formatDailyScreeningSummary, formatDailyFixtureSlateMessages, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
 
 const now = new Date("2026-10-31T10:00:00.000Z");
 const fixture = {
@@ -288,4 +288,14 @@ test("splits long fixture slates into Telegram-safe messages without dropping ga
   assert.ok(messages.length > 1);
   assert.equal(messages.join("\n").match(/Home Team \d+/g).length, 80);
   assert.ok(messages.every(message => message.length <= 3400));
+});
+
+
+test("does not resend a successfully delivered daily slate when zero picks qualify", () => {
+  assert.equal(shouldSkipSentDailyPublication({
+    status: "sent", picks_count: 0, started_at: "2026-10-31T10:00:00.000Z"
+  }), true);
+  assert.equal(shouldSkipSentDailyPublication({
+    status: "failed", picks_count: 0, started_at: "2026-10-31T10:00:00.000Z"
+  }), false);
 });
