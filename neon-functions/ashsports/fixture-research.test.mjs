@@ -209,12 +209,12 @@ test("research queue only enqueues and claims fixtures whose start time is still
  await enqueueFixtureResearch(db);
  const enqueue=calls.find(sql=>sql.includes("INSERT INTO ash_fixture_research_queue"));
  assert.ok(enqueue,"enqueue SQL was executed");
- assert.match(enqueue,/m\\.starts_at>now\\(\\)/);
- assert.doesNotMatch(enqueue,/now\\(\\)-interval '12 hours'/);
+ assert.match(enqueue,/m\.starts_at>now\(\)/);
+ assert.doesNotMatch(enqueue,/now\(\)-interval '12 hours'/);
  calls.length=0;
  await processFixtureResearch(db,{limit:1});
  const claim=calls.find(sql=>sql.includes("WITH due AS"));
  assert.ok(claim,"claim SQL was executed");
- assert.match(claim,/m\\.starts_at>now\\(\\)/);
- assert.doesNotMatch(claim,/now\\(\\)-interval '12 hours'/);
+ assert.match(claim,/m\.starts_at>now\(\)/);
+ assert.doesNotMatch(claim,/now\(\)-interval '12 hours'/);
 });
