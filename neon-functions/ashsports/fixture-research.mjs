@@ -409,7 +409,7 @@ export async function enqueueFixtureResearch(db){
  await ensureFixtureResearchTables(db);
  const r=await db.query(`INSERT INTO ash_fixture_research_queue(match_id,status,due_at)
   SELECT m.id,'pending',now() FROM sports_matches m
-  WHERE m.starts_at>now()-interval '12 hours' AND m.starts_at<now()+interval '14 days' AND m.status NOT IN ('completed','cancelled','postponed')
+  WHERE m.starts_at>now() AND m.starts_at<now()+interval '14 days' AND m.status NOT IN ('completed','cancelled','postponed')
   ON CONFLICT(match_id) DO UPDATE SET status='pending',due_at=now(),updated_at=now(),last_error=NULL
   WHERE (ash_fixture_research_queue.status='failed' AND ash_fixture_research_queue.due_at<=now())
     OR (ash_fixture_research_queue.status='completed' AND NOT EXISTS(
@@ -421,7 +421,7 @@ export async function processFixtureResearch(db,{limit=5,groqKey=null,openrouter
  await ensureFixtureResearchTables(db);
  const claimed=await db.query(`WITH due AS(
   SELECT q.match_id FROM ash_fixture_research_queue q JOIN sports_matches m ON m.id=q.match_id
-  WHERE q.due_at<=now() AND m.starts_at>now()-interval '12 hours' AND m.starts_at<now()+interval '14 days' AND m.status NOT IN ('completed','cancelled','postponed') AND (q.status='pending' OR (q.status='researching' AND q.updated_at<now()-interval '15 minutes'))
+  WHERE q.due_at<=now() AND m.starts_at>now() AND m.starts_at<now()+interval '14 days' AND m.status NOT IN ('completed','cancelled','postponed') AND (q.status='pending' OR (q.status='researching' AND q.updated_at<now()-interval '15 minutes'))
   ORDER BY CASE WHEN m.starts_at<=now()+interval '3 hours' THEN 0 ELSE 1 END,q.due_at ASC LIMIT $1 FOR UPDATE OF q SKIP LOCKED
  ) UPDATE ash_fixture_research_queue q SET status='researching',attempts=q.attempts+1,updated_at=now()
  FROM due WHERE q.match_id=due.match_id RETURNING q.match_id`,[Math.max(1,Math.min(20,limit))]);
