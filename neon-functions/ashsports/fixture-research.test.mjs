@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {buildFixtureQueries,classifyEvidenceCategory,buildRuleBasedAssessment,buildCuratedSportsFeeds,collectNewsProviderFailures,collectResearchProviderFailures} from "./fixture-research.mjs";
+import {buildFixtureQueries,classifyEvidenceCategory,buildRuleBasedAssessment,buildCuratedSportsFeeds,collectNewsProviderFailures,collectResearchProviderFailures,enqueueFixtureResearch,processFixtureResearch} from "./fixture-research.mjs";
 test("searches injury, lineup, suspension, manager, weather and form topics",()=>{const q=buildFixtureQueries({home:"Arsenal",away:"Chelsea",competition:"Premier League"},new Date("2026-11-04T12:00:00Z"));assert.equal(q.length,14);const s=q.join(" ").toLowerCase();for(const x of ["injury","starting xi","suspensions","press conference","weather forecast","head to head","breaking news","african football","official club"])assert.ok(s.includes(x),x);assert.ok(s.includes("after:2026-10-28"));});
 test("tags multiple news coverage categories",()=>{const c=classifyEvidenceCategory("Manager press conference: striker injury doubt, probable starting XI and suspension update");for(const x of ["injury_fitness","lineups","suspensions","manager_training"])assert.ok(c.includes(x),x);});
 test("generic headlines remain general news",()=>assert.deepEqual(classifyEvidenceCategory("A look ahead to the weekend"),["general_news"]));
@@ -201,4 +201,20 @@ test("basketball evidence assessment reports missing categories instead of inven
  assert.equal(assessment.evidenceCoverage.sportRequirementsMet,false);
  assert.ok(assessment.unknowns.some(item=>item.includes("sport-specific evidence")));
  assert.equal(assessment.lineupUpdates.length,0);
+});
+
+test("research queue only enqueues and claims fixtures whose start time is still in the future",async()=>{
+ const calls=[];
+ const db={query:async(sql)=>{calls.push(String(sql));return{rows:[],rowCount:0};}};
+ await enqueueFixtureResearch(db);
+ const enqueue=calls.find(sql=>sql.includes("INSERT INTO ash_fixture_research_queue"));
+ assert.ok(enqueue,"enqueue SQL was executed");
+ assert.match(enqueue,/m\.starts_at>now\(\)/);
+ assert.doesNotMatch(enqueue,/now\(\)-interval '12 hours'/);
+ calls.length=0;
+ await processFixtureResearch(db,{limit:1});
+ const claim=calls.find(sql=>sql.includes("WITH due AS"));
+ assert.ok(claim,"claim SQL was executed");
+ assert.match(claim,/m\.starts_at>now\(\)/);
+ assert.doesNotMatch(claim,/now\(\)-interval '12 hours'/);
 });
