@@ -1152,12 +1152,15 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         }
         const text = Number(apiResult?.events || 0) > 0 ? apiResult.visibleText : (rendered?.visibleText || (json == null ? cleanText(page.html) : JSON.stringify(json).slice(0, 18_000)));
         const status = candidates.length > 0 || Number(apiResult?.events || 0) > 0 ? "success" : "empty";
+        // Embedded bookmaker JSON is used in-memory to extract normalized candidates.
+        // Persisting it duplicates odds_candidates and caused unnecessary Neon storage growth;
+        // retain the legacy column as an empty array for compatibility.
         const saved = await db.query(`INSERT INTO ash_scraper_runs(
           source_id,bookmaker,source_url,final_url,status,http_status,content_type,extracted_text,structured_data,odds_candidates
         ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
         RETURNING id,fetched_at`, [
           source.id, source.bookmaker, source.source_url, page.finalUrl, status,
-          page.status, page.contentType, text, jsonDatabaseValue(db, embedded), jsonDatabaseValue(db, candidates)
+          page.status, page.contentType, text, jsonDatabaseValue(db, []), jsonDatabaseValue(db, candidates)
         ]);
         await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
         results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, siteJsonUsed: !!apiResult?.candidates?.length, siteJsonEvents: apiResult?.events || 0, eventCountsBySport: apiResult?.eventCountsBySport || null, candidateCountsBySport: apiResult?.candidateCountsBySport || null, siteJsonDetailFailures: apiResult?.detailFailures || 0, finalUrl: page.finalUrl });
