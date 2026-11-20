@@ -1157,7 +1157,7 @@ export async function runBookmakerScrapers(db, { limit = 8 } = {}) {
         ) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb)
         RETURNING id,fetched_at`, [
           source.id, source.bookmaker, source.source_url, page.finalUrl, status,
-          page.status, page.contentType, text, jsonDatabaseValue(db, embedded), jsonDatabaseValue(db, candidates)
+          page.status, page.contentType, text, jsonDatabaseValue(db, summarizeStructuredDataForStorage(embedded)), jsonDatabaseValue(db, candidates)
         ]);
         await db.query("UPDATE ash_scraper_sources SET last_status=$2,last_error=NULL,last_scraped_at=now(),updated_at=now() WHERE id=$1", [source.id, status]);
         results.push({ sourceId: source.id, bookmaker: source.bookmaker, status, runId: saved.rows[0].id, fetchedAt: saved.rows[0].fetched_at, textCharacters: text.length, structuredBlocks: embedded.length, oddsCandidates: candidates.length, discoveredPages: discovered.length, newPagesQueued: discoveredSaved, rendered: !!rendered, siteJsonUsed: !!apiResult?.candidates?.length, siteJsonEvents: apiResult?.events || 0, eventCountsBySport: apiResult?.eventCountsBySport || null, candidateCountsBySport: apiResult?.candidateCountsBySport || null, siteJsonDetailFailures: apiResult?.detailFailures || 0, finalUrl: page.finalUrl });
@@ -1206,6 +1206,17 @@ export function createSingleFlight(task) {
     active = Promise.resolve().then(() => task(...args)).finally(() => { active = null; });
     return active;
   };
+}
+
+export function summarizeStructuredDataForStorage(value) {
+  const blocks = Array.isArray(value) ? value : [];
+  if (!blocks.length) return [];
+  const serialized = JSON.stringify(blocks);
+  return [{
+    kind: "snapshot_summary",
+    blockCount: blocks.length,
+    rawBytes: Buffer.byteLength(serialized, "utf8")
+  }];
 }
 
 export function jsonDatabaseValue(db, value) {

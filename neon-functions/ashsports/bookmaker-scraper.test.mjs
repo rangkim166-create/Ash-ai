@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent, countOddsCandidatesBySport, summarizeBookmakerScraperResults, normalizeScrapedSport } from "./bookmaker-scraper.mjs";
+import { addScraperSource, getAllowedBookmakerHosts, isRealWorldCandidate, collectOddsCandidates, extractEmbeddedJson, mapCandidateToFixture, fixtureFromCandidate, discoverBookmakerLinks, jsonDatabaseValue, extractVisibleOddsCandidates, createSingleFlight, extractBetPawaListEvents, extractBetPawaEventCandidates, buildBetPawaListQuery, selectBalancedBetPawaEvents, extractBetikaListItems, extractBetikaEventCandidates, filterCompleteScrapedMarkets, teamsEquivalent, countOddsCandidatesBySport, summarizeBookmakerScraperResults, normalizeScrapedSport, summarizeStructuredDataForStorage } from "./bookmaker-scraper.mjs";
 
 test("only approved bookmaker host families are enabled", () => {
   assert.deepEqual(getAllowedBookmakerHosts(), [
@@ -116,6 +116,24 @@ test("serializes scraper JSONB payloads with the database JSON helper", () => {
   const db = { json: value => ({ jsonParameter: value }) };
   assert.deepEqual(jsonDatabaseValue(db, payload), { jsonParameter: payload });
 });
+test("stores compact metadata instead of raw bookmaker structured snapshots", () => {
+  const payload = [{
+    event: {
+      name: "Arsenal vs Chelsea",
+      market: "Match Result",
+      outcomes: [{ name: "Arsenal", odds: 2.1 }, { name: "Draw", odds: 3.4 }, { name: "Chelsea", odds: 3.2 }]
+    }
+  }];
+  const summary = summarizeStructuredDataForStorage(payload);
+  assert.deepEqual(summary, [{
+    kind: "snapshot_summary",
+    blockCount: 1,
+    rawBytes: Buffer.byteLength(JSON.stringify(payload), "utf8")
+  }]);
+  assert.equal(JSON.stringify(summary).includes("Arsenal"), false);
+  assert.deepEqual(summarizeStructuredDataForStorage([]), []);
+});
+
 test("keeps legacy JSON-string odds payloads readable during import", async () => {
   const calls = [];
   const db = { query: async (sql) => {
