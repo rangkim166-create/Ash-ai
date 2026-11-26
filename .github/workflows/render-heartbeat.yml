@@ -1,0 +1,42 @@
+name: Ash Sports Engine Heartbeat
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ash-sports-engine-heartbeat
+  cancel-in-progress: true
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check Render engine
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            --retry 2 --retry-delay 8 --retry-all-errors \
+            --max-time 100 \
+            https://ash-sports-api.onrender.com/health
+          echo
+      - name: Check public fixtures feed
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            --retry 1 --retry-delay 5 --retry-all-errors \
+            --max-time 100 \
+            https://ash-sports-api.onrender.com/v1/public/odds/events \
+            -o /tmp/ash-fixtures.json
+          python - <<'PY'
+          import json
+          with open("/tmp/ash-fixtures.json", encoding="utf-8") as f:
+              data = json.load(f)
+          events = data.get("data", [])
+          print(f"Engine feed OK: {len(events)} upcoming fixtures; latest odds: {data.get('observedAt')}")
+          PY
