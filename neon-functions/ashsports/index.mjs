@@ -501,17 +501,17 @@ async function runScheduledDailyPublisher(){
   const deliveryMessages=[...(messages.length?messages:[message]),...slateMessages];
   const fullMessage=deliveryMessages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n");
   // Persist the complete grouped publication before delivery.
-  await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,picks.length,fullMessage.slice(0,500),fullMessage,JSON.stringify(picks)]);
-  await savePublishedTips(localDay,picks);
+  await db.query("UPDATE ash_daily_publications SET picks_count=$2,message_preview=$3,message_text=$4,picks_json=$5::jsonb WHERE local_date=$1::date",[localDay,publishedPicks.length,fullMessage.slice(0,500),fullMessage,JSON.stringify(publishedPicks)]);
+  await savePublishedTips(localDay,publishedPicks);
   const bot=await read("telegram_bot");
   if(!bot?.botToken||!bot?.chatId){
    await db.query("UPDATE ash_daily_publications SET status='waiting_for_telegram_config',error_summary=$2 WHERE local_date=$1::date",[localDay,"Telegram bot token and chat ID are not configured."]);
-   return{sent:false,reason:"telegram_not_configured",picks:picks.length,fixtures:fixtures.length,localDate:localDay};
+   return{sent:false,reason:"telegram_not_configured",picks:publishedPicks.length,fixtures:fixtures.length,localDate:localDay};
   }
   const deliveries=[];
   for(const outgoing of deliveryMessages){deliveries.push(await telegram(outgoing));}
   await db.query("UPDATE ash_daily_publications SET status='sent',error_summary=NULL,sent_at=now() WHERE local_date=$1::date",[localDay]);
-  return{sent:true,picks:picks.length,fixtures:fixtures.length,fixtureMessages:slateMessages.length,sports:orderedKeys,localDate:localDay,deliveries,collection};
+  return{sent:true,picks:publishedPicks.length,fixtures:fixtures.length,fixtureMessages:slateMessages.length,sports:orderedKeys,localDate:localDay,deliveries,collection};
  }catch(error){
   const detail=String(error?.message||error).slice(0,300);
   await db.query("UPDATE ash_daily_publications SET status='failed',error_summary=$2 WHERE local_date=$1::date",[localDay,detail]).catch(()=>{});
