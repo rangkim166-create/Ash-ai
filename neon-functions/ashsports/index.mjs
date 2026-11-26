@@ -490,6 +490,10 @@ async function runScheduledDailyPublisher(){
    return label+"\\n"+screeningSummary+"\\n\\n"+body;
   });
   if(!groups.has("football"))messages.unshift("⚽ FOOTBALL\\n"+screeningSummary+"\\n\\n"+formatAccumulator(dayLabel,{status:"NO_BET",reason:"No real-football fixtures passed the strict research checks."}));
+  const publishedPicks=[
+   ...(realFootballAccumulator.status==="QUALIFIED"?realFootballAccumulator.legs:[]),
+   ...[...groups.entries()].filter(([key])=>key!=="football").flatMap(([,items])=>items)
+  ];
   const message=messages.length?messages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n"):"ASH • ODDS OF THE DAY — "+dayLabel+"\\n\\n"+screeningSummary+"\\n\\nNo selection passed all checks. NO BET.";
   // Always send the fixture inventory separately from the strict, evidence-qualified picks.
   // This lets Ash deliver the daily games for human review without forcing a prediction.
