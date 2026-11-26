@@ -1,6 +1,7 @@
 import { discoverPublicFixtures } from "./public-fixture-discovery.mjs";
 import { validateScoutSignal } from "./scout-signals.mjs";
 import postgres from "postgres";
+import { buildAccumulator, formatAccumulator } from "./accumulator.mjs";
 import { formatDailyPicks, formatDailyScreeningSummary, formatDailyFixtureSlateMessages, selectDailyPicks, isAvailabilityResearchSufficient, shouldSkipSentDailyPublication } from "./daily-picks.mjs";
 import { parseFinalScore, settleHeadToHead, orientScoreToTip } from "./results-tracker.mjs";
 import { createTelegramAssistant } from "./telegram-assistant.mjs";
@@ -482,10 +483,13 @@ async function runScheduledDailyPublisher(){
   const groups=new Map();
   for(const pick of picks){const key=String(pick.sport||"other").toLowerCase();if(!groups.has(key))groups.set(key,[]);groups.get(key).push(pick);}
   const orderedKeys=[...sportOrder.filter(key=>groups.has(key)),...([...groups.keys()].filter(key=>!sportOrder.includes(key)).sort())];
+  const realFootballAccumulator=buildAccumulator(groups.get("football")||[],{targetOdds:2,minOdds:1.8,maxOdds:2.2,maxLegs:3});
   const messages=orderedKeys.map(key=>{
    const label=sportLabels[key]||("🏆 "+key.toUpperCase());
-   return label+"\\n"+screeningSummary+"\\n\\n"+formatDailyPicks(dayLabel,groups.get(key));
+   const body=key==="football"?formatAccumulator(dayLabel,realFootballAccumulator):formatDailyPicks(dayLabel,groups.get(key));
+   return label+"\\n"+screeningSummary+"\\n\\n"+body;
   });
+  if(!groups.has("football"))messages.unshift("⚽ FOOTBALL\\n"+screeningSummary+"\\n\\n"+formatAccumulator(dayLabel,{status:"NO_BET",reason:"No real-football fixtures passed the strict research checks."}));
   const message=messages.length?messages.join("\\n\\n━━━━━━━━━━━━━━━━━━\\n\\n"):"ASH • ODDS OF THE DAY — "+dayLabel+"\\n\\n"+screeningSummary+"\\n\\nNo selection passed all checks. NO BET.";
   // Always send the fixture inventory separately from the strict, evidence-qualified picks.
   // This lets Ash deliver the daily games for human review without forcing a prediction.
