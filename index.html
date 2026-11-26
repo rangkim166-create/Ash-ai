@@ -73,10 +73,22 @@ const label=latest?"latest "+age(latest)+" old":"no timestamp";
 setState("oddsDot","oddsState",fresh+" fresh / "+events.filter(e=>e.latest_odds_at).length+" priced",fresh?"ok":latest?"bad":"bad");
 $("sOddsSub").textContent=label+" · freshness target 15 minutes";
 }
-async function load(){ $("refresh").classList.add("loading");await heartbeat();const results=await Promise.allSettled([get("/v1/public/odds/events"),get("/v1/public/research/summary"),get("/v1/public/results/summary"),get("/v1/public/predictions/metrics"),get("/v1/public/results/tips?limit=40"),get("/v1/public/history/summary"),get("/v1/public/odds/daily")]);const val=i=>results[i].status==="fulfilled"?results[i].value:null;
+async function load(){ $("refresh").classList.add("loading");await heartbeat();const results=await Promise.allSettled([get("/v1/public/odds/events"),get("/v1/public/research/summary"),get("/v1/public/results/summary"),get("/v1/public/predictions/metrics"),get("/v1/public/results/tips?limit=40"),get("/v1/public/history/summary"),get("/v1/public/odds/daily"),get("/v1/public/system/summary")]);const val=i=>results[i].status==="fulfilled"?results[i].value:null;
 const odds=val(0);events=odds?.data||[];$("sFixtures").textContent=n(events.length);$("sPriced").textContent=n(events.filter(e=>(e.bookmakers||[]).length).length);$("sOddsSub").textContent="Latest observed price · "+(odds?.observedAt?age(odds.observedAt)+" old":"no recorded price timestamp");$("overviewFixtures").innerHTML=eventRows(events.slice(0,12));$("fixtureCount").textContent=n(events.length)+" returned by engine";renderBooks();renderSport("football");renderSport("tennis");renderSport("basketball");
 const r=val(1);if(r)renderResearch(r);else $("researchRows").innerHTML='<tr><td colspan="8" class="empty">Research endpoint unavailable.</td></tr>';
 const summary=val(2),tot=summary?.totals||{};$("sSettled").textContent=n(tot.settled||0);$("resSettled").textContent=n(tot.settled||0);$("resWL").textContent=n(tot.won||0)+" / "+n(tot.lost||0);$("resHit").textContent=tot.hit_rate_pct==null?"—":tot.hit_rate_pct+"%";$("resProfit").textContent=Number(tot.profit||0).toFixed(2);
+const system=val(7);
+if(system?.database){
+ const bytes=Number(system.database.sizeBytes||0),limit=Number(system.database.limitBytes||1073741824),ratio=limit?bytes/limit:0;
+ const dbKind=ratio>=1?"bad":ratio>=0.9?"warn":"ok";
+ setState("dbDot","dbState","connected · "+(bytes/1048576).toFixed(0)+" / "+(limit/1048576).toFixed(0)+" MB",dbKind);
+ $("dbDot2").className="dot "+dbKind;
+}
+if(system?.ai){
+ const primary=!!system.ai.primaryConfigured,fallback=!!system.ai.fallbackConfigured;
+ const label=primary?(fallback?"Groq primary · OpenRouter fallback":"Groq configured · fallback missing"):"Groq key not configured";
+ setState("providerDot","providerState",label,primary&&fallback?"ok":primary?"warn":"bad");
+}
 const daily=val(6)?.daily||null;
 const parsePicks=value=>{if(Array.isArray(value))return value;if(typeof value==="string"){try{const parsed=JSON.parse(value);return Array.isArray(parsed)?parsed:[]}catch{return []}}return []};
 const dailyPicks=parsePicks(daily?.picks_json);
