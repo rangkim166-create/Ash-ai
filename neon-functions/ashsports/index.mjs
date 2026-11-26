@@ -563,22 +563,25 @@ for(const row of r.rows){const key=String(row.id).split(":")[0];if(seen.has(key)
 return reply({data});
 }
 if(p==="/v1/public/odds/events"&&req.method==="GET"){
-const matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source_updated_at FROM sports_matches WHERE status='scheduled' AND starts_at>now()-interval '1 day' ORDER BY starts_at ASC LIMIT 400");
+const matches=await db.query("SELECT id,sport,competition,home_or_player_one,away_or_player_two,starts_at,status,source_updated_at FROM sports_matches WHERE status='scheduled' AND starts_at>now() AND starts_at<=now()+interval '14 days' ORDER BY starts_at ASC LIMIT 400");
 const ids=matches.rows.map(x=>x.id);
-if(!ids.length)return reply({data:[],observedAt:new Date().toISOString()});
+if(!ids.length)return reply({data:[],observedAt:null,generatedAt:new Date().toISOString(),note:"No upcoming fixtures are currently stored."});
 const odds=await db.query("SELECT DISTINCT ON (match_id,bookmaker_key,market_key,outcome_name,COALESCE(line,0)) match_id,bookmaker_key,market_key,outcome_name,decimal_odds,line,observed_at FROM bookmaker_odds WHERE match_id=ANY($1::text[]) ORDER BY match_id,bookmaker_key,market_key,outcome_name,COALESCE(line,0),observed_at DESC", [ids]);
-const byMatch=new Map();
+const byMatch=new Map(),latestByMatch=new Map();
 for(const row of odds.rows){
+const observed=Date.parse(row.observed_at),prior=Date.parse(latestByMatch.get(row.match_id)||"");
+if(Number.isFinite(observed)&&(!Number.isFinite(prior)||observed>prior))latestByMatch.set(row.match_id,row.observed_at);
 let event=byMatch.get(row.match_id);if(!event){event=new Map();byMatch.set(row.match_id,event);}
 let book=event.get(row.bookmaker_key);if(!book){book={key:row.bookmaker_key,title:row.bookmaker_key,markets:new Map()};event.set(row.bookmaker_key,book);}
 let market=book.markets.get(row.market_key);if(!market){market={key:row.market_key,outcomes:[]};book.markets.set(row.market_key,market);}
-market.outcomes.push({name:row.outcome_name,price:Number(row.decimal_odds),...(row.line==null?{}:{point:Number(row.line)})});
+market.outcomes.push({name:row.outcome_name,price:Number(row.decimal_odds),observed_at:row.observed_at,...(row.line==null?{}:{point:Number(row.line)})});
 }
 const data=matches.rows.map(row=>{
 const books=byMatch.get(row.id);
-return {id:row.id,sport_key:String(row.id).split(":")[0],sport_title:row.competition,home_team:row.home_or_player_one,away_team:row.away_or_player_two,commence_time:row.starts_at,bookmakers:books?[...books.values()].map(b=>({key:b.key,title:b.title,markets:[...b.markets.values()]})):[]};
+return {id:row.id,sport:row.sport,sport_key:row.sport,sport_title:row.competition,home_team:row.home_or_player_one,away_team:row.away_or_player_two,commence_time:row.starts_at,source_updated_at:row.source_updated_at,latest_odds_at:latestByMatch.get(row.id)||null,bookmakers:books?[...books.values()].map(b=>({key:b.key,title:b.title,markets:[...b.markets.values()]})):[]};
 });
-return reply({data,observedAt:new Date().toISOString()});
+const observedAt=data.map(x=>x.latest_odds_at).filter(Boolean).sort().at(-1)||null;
+return reply({data,observedAt,generatedAt:new Date().toISOString(),freshness_window_minutes:15});
 }
 
 if(p==="/v1/public/results/tips"&&req.method==="GET"){
