@@ -556,6 +556,30 @@ if(p==="/v1/public/scout/signals"&&(req.method==="GET"||req.method==="POST")){
  }
  return reply({saved:saved.length,matchedFixtures:fixtures.rows,signals:saved,note:fixtures.rows.length?"Signal attached to upcoming fixture research. It informs searches but does not force a pick.":"Signal saved for this device. It will attach when an upcoming fixture is discovered."},201);
 }
+if(p==="/v1/public/system/summary"&&req.method==="GET"){
+const r=await db.query(`SELECT
+ pg_database_size(current_database())::bigint AS database_bytes,
+ (SELECT MAX(observed_at) FROM bookmaker_odds) AS latest_odds_at,
+ (SELECT COUNT(*)::int FROM sports_matches WHERE status='scheduled' AND starts_at>now()) AS upcoming_fixtures,
+ (SELECT COUNT(*)::int FROM ash_fixture_research) AS research_records,
+ (SELECT COUNT(*)::int FROM ash_fixture_research WHERE source_count=0) AS zero_source_research,
+ (SELECT MAX(researched_at) FROM ash_fixture_research) AS latest_research_at,
+ (SELECT COUNT(*)::int FROM ash_fixture_research_queue WHERE status='pending') AS pending_research,
+ (SELECT COUNT(*)::int FROM ash_scraper_runs WHERE status='failed') AS failed_scraper_runs,
+ (SELECT MAX(fetched_at) FROM ash_scraper_runs) AS latest_scraper_at`);
+const row=r.rows[0]||{};
+let groqConfigured=Boolean(process.env.GROQ_API_KEY),openrouterConfigured=Boolean(process.env.OPENROUTER_API_KEY);
+if(!groqConfigured){try{groqConfigured=Boolean(await read("groq"));}catch{}}
+if(!openrouterConfigured){try{openrouterConfigured=Boolean(await read("openrouter"));}catch{}}
+return reply({
+ database:{connected:true,sizeBytes:Number(row.database_bytes||0),limitBytes:1073741824},
+ fixtures:{upcoming:Number(row.upcoming_fixtures||0)},
+ odds:{latestAt:row.latest_odds_at||null},
+ research:{records:Number(row.research_records||0),zeroSource:Number(row.zero_source_research||0),latestAt:row.latest_research_at||null,pending:Number(row.pending_research||0)},
+ scraper:{latestAt:row.latest_scraper_at||null,failedRuns:Number(row.failed_scraper_runs||0)},
+ ai:{primary:"Groq",primaryConfigured:groqConfigured,fallback:"OpenRouter",fallbackConfigured:openrouterConfigured,localInference:false}
+});
+}
 if(p==="/v1/public/odds/sports"&&req.method==="GET"){
 const r=await db.query("SELECT id,competition,sport FROM sports_matches WHERE status='scheduled' AND starts_at>now()-interval '1 day' ORDER BY starts_at DESC LIMIT 500");
 const seen=new Set(),data=[];
