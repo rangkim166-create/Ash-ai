@@ -1,13 +1,14 @@
 import http from "node:http";
 import handler from "./neon-functions/ashsports/index.mjs";
 import { importPublicFootballHistory } from "./neon-functions/ashsports/public-history.mjs";
+
 const port = Number(process.env.PORT || 10000);
 const server = http.createServer(async (req, res) => {
   try {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
     const body = Buffer.concat(chunks);
-    const origin = `http://127.0.0.1:${port}`;
+    const origin = "http://127.0.0.1:" + port;
     const init = { method: req.method, headers: req.headers };
     if (req.method !== "GET" && req.method !== "HEAD" && body.length) init.body = body;
     const request = new Request(new URL(req.url || "/", origin), init);
@@ -20,154 +21,104 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: "internal_server_error" }));
   }
 });
+
 server.listen(port, "0.0.0.0", () => {
-  console.log(`Ash Sports API listening on ${port}`);
+  console.log("[ash-sports] engine listening", JSON.stringify({
+    port,
+    mode: "website-first",
+    telegramPublishing: false
+  }));
+
+  let scraperRunning = false;
+  const runBookmakerScrapers = async () => {
+    if (scraperRunning) return;
+    scraperRunning = true;
+    try {
+      const result = await handler.runScheduledScraping();
+      console.log("[ash-bookmaker-scraper]", JSON.stringify(result));
+    } catch (error) {
+      console.error("[ash-bookmaker-scraper] failed", String(error?.message || error).slice(0, 240));
+    } finally {
+      scraperRunning = false;
+    }
+  };
+
+  let researchRunning = false;
+  const runFixtureResearch = async () => {
+    if (researchRunning) return;
+    researchRunning = true;
+    try {
+      const result = await handler.runScheduledFixtureResearch();
+      console.log("[ash-research]", JSON.stringify(result));
+    } catch (error) {
+      console.error("[ash-research] failed", String(error?.message || error).slice(0, 240));
+    } finally {
+      researchRunning = false;
+    }
+  };
+
   let scoutRunning = false;
   const runScout = async () => {
-    if (scoutRunning) {
-      console.log("[ash-scout] skipped: previous run still active; retrying shortly");
-      setTimeout(() => void runScout(), 60 * 1000).unref();
+    if (scoutRunning) return;
+    if (process.env.ASH_ENABLE_ODDS_API_FIXTURE_DISCOVERY !== "true") {
+      console.log("[ash-scout] optional Odds API fixture discovery disabled");
       return;
     }
-    if (process.env.ASH_ENABLE_ODDS_API_FIXTURE_DISCOVERY !== "true") return console.log("[ash-scout] disabled: public bookmaker scraping is the default data path");
     scoutRunning = true;
     try {
       const result = await handler.runScheduledCollection();
-      console.log("[ash-scout] scheduled collection", JSON.stringify(result));
-      // Publish as soon as fresh odds have been collected instead of waiting
-      // for the next hourly timer after the first startup attempt.
-      if (result && (result.status === "success" || result.status === "partial")) {
-        await runDailyPublish();
-      }
-      // Retry interrupted, failed, or partial collection runs. The database
-      // cooldown prevents repeated provider calls when a run is healthy.
-      const retryDelay = result?.status === "failed" || result?.lastStatus === "failed"
-        ? 2 * 60 * 1000
-        : result?.status === "partial" || result?.lastStatus === "partial"
-          ? 6 * 60 * 1000
-          : result?.lastStatus === "running"
-            ? 2 * 60 * 1000
-            : 0;
-      if (retryDelay > 0) setTimeout(() => void runScout(), retryDelay).unref();
+      console.log("[ash-scout]", JSON.stringify(result));
+      const retryDelay = result?.status === "failed" ? 2 * 60 * 1000
+        : result?.status === "partial" ? 6 * 60 * 1000 : 0;
+      if (retryDelay) setTimeout(() => void runScout(), retryDelay).unref();
     } catch (error) {
-      console.error("[ash-scout] scheduled collection failed", error);
+      console.error("[ash-scout] failed", String(error?.message || error).slice(0, 240));
       setTimeout(() => void runScout(), 2 * 60 * 1000).unref();
     } finally {
       scoutRunning = false;
     }
   };
-  let referenceDataPromise = null;
-  const ensureReferenceData = () => {
-    if (!referenceDataPromise) {
-      referenceDataPromise = Promise.allSettled([
+
+  let ratingsPromise;
+  const importReferenceData = () => {
+    if (!ratingsPromise) {
+      ratingsPromise = Promise.allSettled([
         importPublicFootballHistory(),
         handler.runHistoricalRatingsImport()
       ]).then(results => {
-        const [history, ratings] = results;
-        if (history.status === "fulfilled") {
-          console.log("[ash-history] import finished", JSON.stringify(history.value));
-        } else {
-          console.error("[ash-history] import failed", history.reason);
+        for (const [index, result] of results.entries()) {
+          const label = index === 0 ? "football-history" : "historical-ratings";
+          if (result.status === "fulfilled") console.log("[ash-reference]", label, JSON.stringify(result.value));
+          else console.error("[ash-reference]", label, String(result.reason?.message || result.reason));
         }
-        if (ratings.status === "fulfilled") {
-          console.log("[ash-ratings] import finished", JSON.stringify(ratings.value));
-        } else {
-          console.error("[ash-ratings] import failed", ratings.reason);
-        }
-        // Retry a failed source on the next publication attempt without blocking
-        // today's ticket from using whichever reference data did load.
-        if (history.status === "rejected" || ratings.status === "rejected") {
-          referenceDataPromise = null;
-        }
+        if (results.some(result => result.status === "rejected")) ratingsPromise = null;
         return results;
       });
     }
-    return referenceDataPromise;
+    return ratingsPromise;
   };
-  let dailyPublishRunning = false;
-  const runDailyPublish = async () => {
-    if (dailyPublishRunning) return console.log("[ash-daily] skipped: previous publish attempt still running");
-    dailyPublishRunning = true;
-    try {
-      await ensureReferenceData();
-      // Fixture research runs independently every 15 minutes; never block the daily Telegram slate on it.
-      const result = await handler.runScheduledDailyPublisher();
-      console.log("[ash-daily] Odds of the Day", JSON.stringify(result));
-    } catch (error) {
-      console.error("[ash-daily] publish attempt failed", error);
-    } finally {
-      dailyPublishRunning = false;
-    }
-  };
-  let bookmakerScraperRunning = false;
-  const runBookmakerScrapers = async () => {
-    if (bookmakerScraperRunning) return;
-    bookmakerScraperRunning = true;
-    try {
-      const result = await handler.runScheduledScraping();
-      console.log("[ash-bookmaker-scraper] scheduled run", JSON.stringify(result));
-    } catch (error) {
-      console.error("[ash-bookmaker-scraper] scheduled run failed", String(error.message || error).slice(0, 220));
-    } finally {
-      bookmakerScraperRunning = false;
-    }
-  };
-  setTimeout(() => void runBookmakerScrapers(), 45000);
-  setInterval(() => void runBookmakerScrapers(), 30 * 60 * 1000).unref();
-  let fixtureResearchBusy = false;
-  const refreshFixtureResearch = async () => { if (fixtureResearchBusy) return; fixtureResearchBusy = true; try { const result = await handler.runScheduledFixtureResearch(); console.log("[ash-research] injury-lineup-news refresh", JSON.stringify(result)); } catch (error) { console.error("[ash-research] refresh failed", String(error.message || error).slice(0, 200)); } finally { fixtureResearchBusy = false; } };
-  setTimeout(() => void refreshFixtureResearch(), 70000);
-  setInterval(() => void refreshFixtureResearch(), 15 * 60 * 1000).unref();
-  // Configure a single Telegram webhook; avoids getUpdates conflicts across Render deploys.
-  let telegramWebhookReady = false;
-  const configureTelegramWebhook = async () => {
-    if (telegramWebhookReady) return;
-    try {
-      telegramWebhookReady = await handler.configureTelegramWebhook();
-      if (!telegramWebhookReady) setTimeout(() => void configureTelegramWebhook(), 60000).unref();
-    } catch (error) {
-      console.error("[ash-telegram] webhook setup failed", String(error.message || error));
-      setTimeout(() => void configureTelegramWebhook(), 60000).unref();
-    }
-  };
-  console.log("[ash-telegram] webhook setup scheduled", JSON.stringify({botTokenConfigured:!!process.env.TELEGRAM_BOT_TOKEN,chatIdConfigured:!!process.env.TELEGRAM_CHAT_ID,groqConfigured:!!process.env.GROQ_API_KEY,openrouterConfigured:!!process.env.OPENROUTER_API_KEY}));
-  setTimeout(() => void configureTelegramWebhook(), 5000);
-  setTimeout(() => void runScout(), 20000);
-  setTimeout(() => void runDailyPublish(), 60000);
-  setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
-  // Retry hourly until today's sheet is delivered; the database publication row prevents duplicates.
-  setInterval(() => void runDailyPublish(), 60 * 60 * 1000).unref();
-  let resultsTrackerRunning = false;
+
+  let resultsRunning = false;
   const runResultsTracker = async () => {
-    if (resultsTrackerRunning) return;
-    resultsTrackerRunning = true;
+    if (resultsRunning) return;
+    resultsRunning = true;
     try {
       const result = await handler.runTipResultsTracker();
-      // Log every run, including idle/no-pick runs, so a quiet tracker is observable.
-      console.log("[ash-results] tracker", JSON.stringify(result));
+      console.log("[ash-results]", JSON.stringify(result));
     } catch (error) {
-      console.error("[ash-results] tracker failed", error);
+      console.error("[ash-results] failed", String(error?.message || error).slice(0, 240));
     } finally {
-      resultsTrackerRunning = false;
+      resultsRunning = false;
     }
   };
+
+  void importReferenceData();
+  setTimeout(() => void runBookmakerScrapers(), 45000);
+  setInterval(() => void runBookmakerScrapers(), 30 * 60 * 1000).unref();
+  setTimeout(() => void runFixtureResearch(), 70000);
+  setInterval(() => void runFixtureResearch(), 15 * 60 * 1000).unref();
+  setTimeout(() => void runScout(), 20000);
+  setInterval(() => void runScout(), 4 * 60 * 60 * 1000).unref();
   setTimeout(() => void runResultsTracker(), 90000);
   setInterval(() => void runResultsTracker(), 10 * 60 * 1000).unref();
-  let fixtureTelegramRunning = false;
-  const runFixtureTelegramUpdates = async () => {
-    if (fixtureTelegramRunning) return;
-    fixtureTelegramRunning = true;
-    try {
-      const result = await handler.runFixtureResultNotifications();
-      if (result.fixturesUpdated || result.delivery?.sent || result.delivery?.failed || result.errors?.length) {
-        console.log("[ash-fixture-telegram] result", JSON.stringify(result));
-      }
-    } catch (error) {
-      console.error("[ash-fixture-telegram] run failed", String(error.message || error).slice(0, 220));
-    } finally {
-      fixtureTelegramRunning = false;
-    }
-  };
-  setTimeout(() => void runFixtureTelegramUpdates(), 110000);
-  setInterval(() => void runFixtureTelegramUpdates(), 10 * 60 * 1000).unref();
 });
